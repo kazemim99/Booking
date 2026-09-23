@@ -514,6 +514,24 @@ void main() {
     });
   });
 
+  // QA recording 2026-09-23 #10: guest or signed in, the profile says where a review is written.
+  group('where to leave a review', () {
+    testWidgets('a guest is told', (tester) async {
+      await tester.pumpWidget(_app(_loaded(_fullProvider(), reviews: _oneReview), now: _tuesdayNoon));
+      await tester.pumpAndSettle();
+
+      expect(find.text(AppStrings.reviewsHowToWrite), findsOneWidget);
+    });
+
+    testWidgets('a signed-in customer is told', (tester) async {
+      await tester.pumpWidget(_app(_loaded(_fullProvider(), reviews: _oneReview),
+          now: _tuesdayNoon, auth: FakeAuthBloc()..signIn()));
+      await tester.pumpAndSettle();
+
+      expect(find.text(AppStrings.reviewsHowToWrite), findsOneWidget);
+    });
+  });
+
   // QA recording 2026-09-23 #7: «تماس و موقعیت» showed the address, and «موقعیت روی نقشه» further down repeated
   // it above the map. One section now: address row, map, directions.
   group('one «تماس و موقعیت» section', () {

@@ -10,7 +10,9 @@ import '../../domain/entities/review.dart';
 /// what they wrote (openspec/changes/customer-app-discovery-pass).
 ///
 /// A salon nobody has reviewed says so plainly — an empty section would read as
-/// a loading failure, and inventing filler stars would be worse.
+/// a loading failure, and inventing filler stars would be worse. Under the
+/// heading, a line says where a review is written: from a completed visit, in
+/// «نوبت‌ها».
 class ProviderReviewsSection extends StatelessWidget {
   final ProviderReviews? reviews;
 
@@ -48,6 +50,15 @@ class ProviderReviewsSection extends StatelessWidget {
                 reviewCount: data.totalReviews,
               ),
           ],
+        ),
+        // Where a review is written, for guests and customers alike: only from a completed appointment, which
+        // nothing on the profile said (QA recording 2026-09-23 #10, "where do I leave my review?").
+        const SizedBox(height: AppSpacing.xxs),
+        Text(
+          AppStrings.reviewsHowToWrite,
+          key: const Key('provider-reviews-how-to'),
+          style: theme.textTheme.bodySmall
+              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
         if (data != null && data.dimensions.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xs),

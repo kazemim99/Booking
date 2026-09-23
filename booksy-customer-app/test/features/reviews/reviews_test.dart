@@ -62,6 +62,38 @@ void main() {
     });
   });
 
+  // QA recording 2026-09-23 #10: "where do I leave my review?" — the profile only shows reviews, and the only way
+  // to write one is from a completed appointment, which nothing said.
+  group('where a review is written', () {
+    final cases = <String, ({ProviderReviews? reviews, bool loading})>{
+      'no reviews yet': (reviews: const ProviderReviews(), loading: false),
+      'some reviews': (
+        reviews: const ProviderReviews(
+          averageRating: 5,
+          totalReviews: 1,
+          items: [Review(id: 'r1', customerName: 'سارا', rating: 5)],
+        ),
+        loading: false,
+      ),
+      'still loading': (reviews: null, loading: true),
+    };
+    for (final entry in cases.entries) {
+      testWidgets('is said under the heading — ${entry.key}', (tester) async {
+        await pumpSection(tester, reviews: entry.value.reviews, loading: entry.value.loading);
+
+        final hint = find.byKey(const Key('provider-reviews-how-to'));
+        expect(hint, findsOneWidget);
+        expect(find.text(AppStrings.reviewsHowToWrite), findsOneWidget);
+        expect(tester.getTopLeft(hint).dy,
+            greaterThan(tester.getTopLeft(find.text(AppStrings.reviewsTitle)).dy));
+      });
+    }
+
+    test('it names the appointments tab it points to', () {
+      expect(AppStrings.reviewsHowToWrite, contains(AppStrings.appointmentsTitle));
+    });
+  });
+
   group('leaving a review', () {
     Future<ReviewDraft?> open(WidgetTester tester) async {
       ReviewDraft? result;

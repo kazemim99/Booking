@@ -254,6 +254,9 @@ class AppStrings {
   static const String firstNameRequired = 'لطفاً نام خود را وارد کنید';
   static const String reviewsTitle = 'نظرها';
   static const String reviewsEmpty = 'هنوز نظری ثبت نشده است';
+  // "Where do I leave my review?" (QA recording 2026-09-23 #10).
+  static const String reviewsHowToWrite =
+      'پس از انجام نوبت، از همان نوبت در «$appointmentsTitle» می‌توانید برای این سالن نظر ثبت کنید.';
   static const String reviewAnonymous = 'مشتری';
   static const String reviewProviderReply = 'پاسخ سالن';
   static const String reviewWriteAction = 'ثبت نظر';
