@@ -51,6 +51,12 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late final NearbyProvidersCubit _nearby;
 
+  GoRouter? _router;
+
+  /// A salon's profile was shown since home was last on screen. The profile records the visit and holds the
+  /// favourite heart, so the recent/favourites section is re-read when home is shown again.
+  bool _salonVisited = false;
+
   /// Only a self-resolved cubit is disposed here; an injected one belongs to
   /// the caller.
   late final bool _ownsNearby;
@@ -71,10 +77,37 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final router = GoRouter.maybeOf(context);
+    if (router != _router) {
+      _router?.routerDelegate.removeListener(_onLocationChanged);
+      _router = router?..routerDelegate.addListener(_onLocationChanged);
+    }
+  }
+
+  @override
   void dispose() {
+    _router?.routerDelegate.removeListener(_onLocationChanged);
     if (_ownsNearby) _nearby.close();
     super.dispose();
   }
+
+  /// Home stays alive in the tab shell and loads once; a salon's profile — opened from here or from another tab —
+  /// changes what its last section shows. Only that section is re-read, keeping the page on screen.
+  void _onLocationChanged() {
+    final router = _router;
+    if (router == null || !mounted) return;
+    final path = AppRouter.visiblePath(router);
+    if (_salonProfile.hasMatch(path)) {
+      _salonVisited = true;
+    } else if (_salonVisited && path == Routes.home) {
+      _salonVisited = false;
+      context.read<HomeBloc>().add(const RetryHomeSection(HomeSection.recentAndFavorites));
+    }
+  }
+
+  static final _salonProfile = RegExp(r'^/providers/[^/]+$');
 
   Future<void> _onRefresh() {
     final bloc = context.read<HomeBloc>();

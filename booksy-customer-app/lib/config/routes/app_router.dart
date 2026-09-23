@@ -167,6 +167,14 @@ class AppRouter {
     return null;
   }
 
+  /// The path of the screen on top. A pushed route does not change the router's own location, so it is read from
+  /// the pushed match.
+  static String visiblePath(GoRouter router) {
+    final config = router.routerDelegate.currentConfiguration;
+    final top = config.lastOrNull;
+    return (top is ImperativeRouteMatch ? top.matches.uri : config.uri).path;
+  }
+
   /// Opens [location] from code that does not know which screen is on top — a tapped push notification.
   ///
   /// On a tab, the location is pushed, so back returns to where the customer was. Above the tab shell (booking,

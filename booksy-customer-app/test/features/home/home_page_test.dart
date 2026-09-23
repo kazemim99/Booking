@@ -43,6 +43,9 @@ import 'package:booksy_customer_app/features/search/presentation/widgets/service
 class _FakeGetHomeData implements GetHomeData {
   Either<Failure, HomeData> callResult = Right(_homeData());
 
+  /// Every section re-read, in order.
+  final retried = <HomeSection>[];
+
   @override
   Future<Either<Failure, HomeData>> call() async => callResult;
 
@@ -50,8 +53,10 @@ class _FakeGetHomeData implements GetHomeData {
   Future<Either<Failure, HomeData>> retrySection(
     HomeSection section,
     HomeData current,
-  ) async =>
-      callResult;
+  ) async {
+    retried.add(section);
+    return callResult;
+  }
 
   @override
   HomeRepository get repository => throw UnimplementedError();
@@ -62,9 +67,11 @@ class _FakeGetHomeData implements GetHomeData {
 
 /// Emits a fixed state so the page never depends on async loading order.
 class _StubHomeBloc extends HomeBloc {
-  _StubHomeBloc(HomeState initial) : super(_FakeGetHomeData()) {
+  _StubHomeBloc(HomeState initial, [_FakeGetHomeData? data]) : super(data ?? _FakeGetHomeData()) {
     emit(initial);
   }
+
+  _FakeGetHomeData get data => getHomeData as _FakeGetHomeData;
 }
 
 class _UnusedLocationService implements LocationService {
@@ -585,6 +592,53 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(nav.visited, contains('/providers/f1'));
+    });
+
+    // Review of the merged branch: a salon profile records the visit and holds the heart, but home loaded once and
+    // showed the old lists until pull-to-refresh.
+    testWidgets('coming back from a salon shows the visit and heart made there', (tester) async {
+      final bloc = _StubHomeBloc(HomeLoaded.fromData(_homeData(favorites: [favourite])));
+      await tester.pumpWidget(_app(
+        bloc: bloc,
+        nearby: _StubNearbyCubit(const NearbyState(status: NearbyStatus.empty)),
+        nav: nav,
+      ));
+      await tester.pump();
+      expect(find.text('سالن دیده‌شده', skipOffstage: false), findsNothing);
+
+      await tester.scrollUntilVisible(find.text('سالن محبوب'), 200,
+          scrollable: find.byType(Scrollable).first);
+      await tester.tap(find.text('سالن محبوب'));
+      await tester.pumpAndSettle();
+      expect(find.text('provider-detail'), findsOneWidget);
+      // Visited (and perhaps hearted) there.
+      bloc.data.callResult = Right(_homeData(recentlyVisited: [recent], favorites: [favourite]));
+
+      GoRouter.of(tester.element(find.text('provider-detail'))).pop();
+      // Bounded: the new logo's placeholder animates while the (unreachable) image loads.
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      expect(bloc.data.retried, [HomeSection.recentAndFavorites]);
+      expect(find.text('سالن دیده‌شده', skipOffstage: false), findsOneWidget);
+    });
+
+    testWidgets('moving around home without opening a salon re-reads nothing', (tester) async {
+      final bloc = _StubHomeBloc(HomeLoaded.fromData(_homeData(favorites: [favourite])));
+      await tester.pumpWidget(_app(
+        bloc: bloc,
+        nearby: _StubNearbyCubit(const NearbyState(status: NearbyStatus.empty)),
+        nav: nav,
+      ));
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('home-map-search-button')));
+      await tester.pumpAndSettle();
+      GoRouter.of(tester.element(find.text('map'))).go('/home');
+      await tester.pumpAndSettle();
+
+      expect(bloc.data.retried, isEmpty);
     });
 
     testWidgets('shows each salon logo and names it as a button',

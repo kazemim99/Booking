@@ -151,14 +151,10 @@ class _AppointmentsViewState extends State<_AppointmentsView> {
 
   static final _bookingFlowPath = RegExp(r'^/providers/[^/]+/book(/|$)');
 
-  /// The path of the screen on top. A pushed route (a notification opens a
-  /// booking with `push`) does not change the router's own location, so it
-  /// is read from the pushed match.
+  /// The path of the screen on top (a notification opens a booking with `push`).
   String _visiblePath() {
-    final config = _router?.routerDelegate.currentConfiguration;
-    if (config == null) return '';
-    final top = config.lastOrNull;
-    return (top is ImperativeRouteMatch ? top.matches.uri : config.uri).path;
+    final router = _router;
+    return router == null ? '' : AppRouter.visiblePath(router);
   }
 
   /// A booking's detail can cancel or reschedule it, and it is reached from
