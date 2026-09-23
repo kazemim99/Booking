@@ -1,3 +1,4 @@
+using Booksy.ServiceCatalog.Application.Abstractions.Identity;
 using Booksy.API.Extensions;
 using Booksy.Core.Application.DTOs;
 using Booksy.Core.Application.Exceptions;
@@ -1255,11 +1256,13 @@ public class ProvidersController : ControllerBase
             {
                 FirstName = c.FirstName,
                 LastName = c.LastName,
-                // Falls back to first+last for legacy sub-provider staff, whose names are on
-                // the Provider record rather than a staff profile.
-                FullName = string.IsNullOrWhiteSpace(c.FullName)
-                    ? $"{c.FirstName} {c.LastName}".Trim()
-                    : c.FullName,
+                // GetProviderStaffQuery already names every member (real name, the salon's name for them,
+                // or the salon). This used to rebuild "{FirstName} {LastName}" whenever FullName was blank,
+                // which is exactly how a nameless owner reached the customer app's confirm step as
+                // «ارائه‌دهنده 9123135143» (production QA 2026-09-23) — the parts are never re-joined here.
+                FullName = PersonName.Sanitize(c.FullName)
+                    ?? PersonName.RealOrNull(c.FirstName, c.LastName)
+                    ?? result.BusinessName,
                 Id = c.Id,
                 IsActive = c.IsActive,
                 JoinedAt = c.HiredAt,

@@ -1,6 +1,7 @@
 // ========================================
 // Booksy.ServiceCatalog.Infrastructure/Persistence/Repositories/ProviderClientsReadService.cs
 // ========================================
+using Booksy.ServiceCatalog.Application.Abstractions.Identity;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderClients;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
@@ -27,14 +28,15 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
         private const string Sql = """
             SELECT
                 b."CustomerId"                                   AS customer_id,
-                COALESCE(NULLIF(TRIM(CONCAT(p.first_name, ' ', p.last_name)), ''), '') AS name,
+                p.first_name                                     AS first_name,
                 COALESCE(u."PhoneNumber", '')                    AS phone,
                 COUNT(*)::int                                    AS total,
                 COUNT(*) FILTER (WHERE b."Status" = 'Completed')::int AS completed,
                 COUNT(*) FILTER (
                     WHERE b."StartTime" >= NOW()
                       AND b."Status" IN ('Requested', 'Confirmed'))::int AS upcoming,
-                MAX(b."StartTime") FILTER (WHERE b."StartTime" < NOW()) AS last_visit
+                MAX(b."StartTime") FILTER (WHERE b."StartTime" < NOW()) AS last_visit,
+                p.last_name                                      AS last_name
             FROM "ServiceCatalog"."Bookings" b
             LEFT JOIN user_management.users u          ON u.id = b."CustomerId"
             LEFT JOIN user_management.user_profiles p  ON p.user_id = b."CustomerId"
@@ -80,7 +82,12 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 {
                     clients.Add(new ProviderClientDto(
                         CustomerId: reader.GetGuid(0),
-                        Name: reader.GetString(1),
+                        // The real name only: a customer who signed up by OTP and gave none is stored as
+                        // «مشتری <digits>», and the salon's client book printed that as their name (QA
+                        // 2026-09-23). Empty lets the app show its own label; the phone is its own field.
+                        Name: PersonName.RealOrNull(
+                            reader.IsDBNull(1) ? null : reader.GetString(1),
+                            reader.IsDBNull(7) ? null : reader.GetString(7)) ?? string.Empty,
                         Phone: reader.GetString(2),
                         TotalBookings: reader.GetInt32(3),
                         CompletedBookings: reader.GetInt32(4),

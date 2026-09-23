@@ -25,7 +25,9 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingDetails
         DateTime? ConfirmedAt,
         DateTime? CancelledAt,
         DateTime? CompletedAt,
-        List<BookingHistoryDto> History);
+        List<BookingHistoryDto> History,
+        // Same rule as CustomerBookingDto.StaffName.
+        string? StaffName = null);
 
     public sealed record PaymentInfoDto(
         decimal TotalAmount,

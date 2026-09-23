@@ -23,5 +23,8 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetCustomerBookings
         string PaymentStatus,
         DateTime RequestedAt,
         DateTime? ConfirmedAt,
-        string? CustomerNotes);
+        string? CustomerNotes,
+        // Who does it: the assigned member's name (real name, else the salon's name for them, else the salon's
+        // own name — never a placeholder or a phone); null when the booking is held by the salon itself.
+        string? StaffName = null);
 }

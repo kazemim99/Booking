@@ -6,6 +6,7 @@ using Booksy.Core.Application.DTOs;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Application.Abstractions.Identity;
+using Booksy.ServiceCatalog.Application.Services;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Microsoft.Extensions.Logging;
@@ -23,6 +24,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetCustomerBookings
         private readonly IServiceReadRepository _serviceRepository;
         private readonly IProviderCustomerRepository _providerCustomers;
         private readonly IPersonDirectory _people;
+        private readonly IBookingStaffNames _staffNames;
         private readonly ILogger<GetCustomerBookingsQueryHandler> _logger;
 
         public GetCustomerBookingsQueryHandler(
@@ -31,6 +33,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetCustomerBookings
             IServiceReadRepository serviceRepository,
             IProviderCustomerRepository providerCustomers,
             IPersonDirectory people,
+            IBookingStaffNames staffNames,
             ILogger<GetCustomerBookingsQueryHandler> logger)
         {
             _bookingRepository = bookingRepository;
@@ -38,6 +41,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetCustomerBookings
             _serviceRepository = serviceRepository;
             _providerCustomers = providerCustomers;
             _people = people;
+            _staffNames = staffNames;
             _logger = logger;
         }
 
@@ -126,7 +130,8 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetCustomerBookings
                     PaymentStatus: booking.PaymentInfo.Status.ToString(),
                     RequestedAt: booking.RequestedAt,
                     ConfirmedAt: booking.ConfirmedAt,
-                    CustomerNotes: booking.CustomerNotes));
+                    CustomerNotes: booking.CustomerNotes,
+                    StaffName: await _staffNames.ForAsync(provider, booking.StaffId, cancellationToken)));
             }
 
             _logger.LogInformation(

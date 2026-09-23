@@ -2,6 +2,7 @@
 // Booksy.ServiceCatalog.Application/Queries/Booking/GetBookingDetails/GetBookingDetailsQueryHandler.cs
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.ServiceCatalog.Application.Services;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
@@ -13,17 +14,20 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingDetails
         private readonly IBookingReadRepository _bookingRepository;
         private readonly IProviderReadRepository _providerRepository;
         private readonly IServiceReadRepository _serviceRepository;
+        private readonly IBookingStaffNames _staffNames;
         private readonly ILogger<GetBookingDetailsQueryHandler> _logger;
 
         public GetBookingDetailsQueryHandler(
             IBookingReadRepository bookingRepository,
             IProviderReadRepository providerRepository,
             IServiceReadRepository serviceRepository,
+            IBookingStaffNames staffNames,
             ILogger<GetBookingDetailsQueryHandler> logger)
         {
             _bookingRepository = bookingRepository;
             _providerRepository = providerRepository;
             _serviceRepository = serviceRepository;
+            _staffNames = staffNames;
             _logger = logger;
         }
 
@@ -80,7 +84,8 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingDetails
                         h.Description,
                         h.Status.ToString(),
                         h.OccurredAt))
-                    .ToList());
+                    .ToList(),
+                StaffName: await _staffNames.ForAsync(provider, booking.StaffId, cancellationToken));
         }
     }
 }

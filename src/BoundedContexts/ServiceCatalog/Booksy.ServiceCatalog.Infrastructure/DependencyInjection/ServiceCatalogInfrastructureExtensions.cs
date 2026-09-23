@@ -177,6 +177,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.DependencyInjection
             // keyed" — shared by booking creation and rescheduling so they cannot drift.
             services.AddScoped<Application.Services.IBookableResourceResolver,
                 Application.Services.BookableResourceResolver>();
+            // Names a booking's staff member for the customer's own views (never a placeholder or a phone).
+            services.AddScoped<Application.Services.IBookingStaffNames,
+                Application.Services.BookingStaffNames>();
 
             // Application Services
             services.AddScoped<IProviderApplicationService, ProviderApplicationService>();

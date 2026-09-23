@@ -793,6 +793,7 @@ public class BookingsController : ControllerBase
             ProviderId = result.ProviderId,
             ServiceId = result.ServiceId,
             StaffProviderId = result.StaffId,
+            StaffName = result.StaffName,
             ServiceName = result.ServiceName,
             ProviderBusinessName = result.ProviderName,
             StartTime = result.StartTime,

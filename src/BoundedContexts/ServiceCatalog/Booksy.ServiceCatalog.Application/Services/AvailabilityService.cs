@@ -520,16 +520,16 @@ namespace Booksy.ServiceCatalog.Application.Services
 
                 foreach (var member in serviceProviders)
                 {
-                    // Prefer the person's real name; fall back to the salon-provided
-                    // display name for an unclaimed member; then the business name.
-                    var name = member.StaffProfile?.DisplayName ?? provider.Profile.BusinessName;
-                    if (member.PersonId is not null && people.TryGetValue(member.PersonId.Value, out var person)
-                        && PersonName.RealOrNull(person.FirstName, person.LastName) is { } full)
-                    {
-                        name = full;
-                    }
+                    // Prefer the person's real name; fall back to the salon-provided display name for an
+                    // unclaimed member; then the business name. Never a placeholder or a phone — including a
+                    // display name the salon typed as a number.
+                    PersonInfo? person = null;
+                    if (member.PersonId is not null)
+                        people.TryGetValue(member.PersonId.Value, out person);
 
-                    resources.Add(new BookableResource(member.Id, name));
+                    resources.Add(new BookableResource(
+                        member.Id,
+                        PersonName.ForMember(person, member.StaffProfile?.DisplayName, provider.Profile.BusinessName)));
                 }
             }
 

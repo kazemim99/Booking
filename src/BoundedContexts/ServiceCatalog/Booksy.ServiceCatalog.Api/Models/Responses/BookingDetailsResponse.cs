@@ -11,6 +11,12 @@ public class BookingDetailsResponse
     public Guid ServiceId { get; set; }
     public Guid StaffProviderId { get; set; }
 
+    /// <summary>
+    /// Who does it: the assigned member's name — real name, else the salon's name for them, else the salon's own
+    /// name; never a placeholder or a phone. Null (left out of the JSON) when the salon itself holds the booking.
+    /// </summary>
+    public string? StaffName { get; set; }
+
     // Service information
     public string ServiceName { get; set; } = string.Empty;
     public string ServiceCategory { get; set; } = string.Empty;

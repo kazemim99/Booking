@@ -52,17 +52,20 @@ public sealed class GetOrganizationMembershipsQueryHandler
 
         var members = memberships.Select(m =>
         {
-            string name = string.Empty;
+            string? name = null;
             string? phone = null;
             if (m.PersonId is not null && people.TryGetValue(m.PersonId.Value, out var person))
             {
-                name = $"{person.FirstName} {person.LastName}".Trim();
+                // Not the raw parts: an account made by OTP is «ارائه‌دهنده <digits>», and the salon app printed
+                // it as the owner's name (QA 2026-09-23). The number stays available — as PhoneNumber.
+                name = PersonName.RealOrNull(person.FirstName, person.LastName);
                 phone = person.PhoneNumber;
             }
 
-            // Unclaimed member (added by the salon, no app account yet).
-            if (string.IsNullOrEmpty(name))
-                name = m.StaffProfile?.DisplayName ?? string.Empty;
+            // Unclaimed member (added by the salon, no app account yet), or a person with no real name: the
+            // salon's name for them, if it is one. Otherwise empty, and each app shows its own "no name" label —
+            // on the salon's own roster the salon's name would read as if the member were the salon.
+            name ??= PersonName.Sanitize(m.StaffProfile?.DisplayName) ?? string.Empty;
 
             return new OrganizationMemberDto(
                 MembershipId: m.Id,

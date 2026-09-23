@@ -60,20 +60,21 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderStaff
 
             foreach (var member in visible)
             {
-                string first = string.Empty, last = string.Empty, phone = string.Empty;
-                if (member.PersonId is not null && people.TryGetValue(member.PersonId.Value, out var person))
-                {
-                    first = person.FirstName ?? string.Empty;
-                    last = person.LastName ?? string.Empty;
-                    phone = person.PhoneNumber ?? string.Empty;
-                }
+                PersonInfo? person = null;
+                if (member.PersonId is not null)
+                    people.TryGetValue(member.PersonId.Value, out person);
 
-                // Unclaimed member, or one whose account still carries the OTP placeholder «ارائه‌دهنده <digits>»:
-                // the salon-provided display name is the identity. Showing the placeholder put a phone number
-                // where the customer's booking summary names the person (QA walkthrough 2026-09-22).
-                var fullName = PersonName.RealOrNull(first, last)
-                               ?? member.StaffProfile?.DisplayName
-                               ?? string.Empty;
+                // Only the real parts of the person's name leave this handler. The 2026-09-22 fix (3.4) left the
+                // raw «ارائه‌دهنده» / «9123135143» here and an EMPTY FullName for a member with no display name —
+                // the salon's owner — so GET /Providers/{id} rebuilt the placeholder from the parts and the
+                // customer app's confirm step printed it (production QA 2026-09-23).
+                var (first, last) = PersonName.RealParts(person?.FirstName, person?.LastName);
+                var phone = person?.PhoneNumber ?? string.Empty;
+
+                // Real name, else the salon's name for them, else the salon's own name — never empty, so no
+                // client ever has a reason to assemble one itself.
+                var fullName = PersonName.ForMember(
+                    person, member.StaffProfile?.DisplayName, organization.Profile.BusinessName);
 
                 staffDtos.Add(new StaffDto(
                     member.Id,                       // the bookable resource id

@@ -87,19 +87,16 @@ namespace Booksy.ServiceCatalog.Application.Queries.Service.GetQualifiedStaff
             var qualifiedStaff = bookable
                 .Select(m =>
                 {
-                    // Real name when the membership is claimed; the salon's display name for
-                    // a member who has no account.
-                    var name = m.StaffProfile?.DisplayName ?? string.Empty;
-                    if (m.PersonId is not null && people.TryGetValue(m.PersonId.Value, out var person))
-                    {
-                        var full = $"{person.FirstName} {person.LastName}".Trim();
-                        if (!string.IsNullOrEmpty(full))
-                            name = full;
-                    }
+                    // Real name when the membership is claimed; the salon's display name for a member who has no
+                    // account; the salon's own name otherwise. Never the OTP placeholder or a phone number: this
+                    // joined the raw parts and named a nameless owner «ارائه‌دهنده 9123135143» (QA 2026-09-23).
+                    PersonInfo? person = null;
+                    if (m.PersonId is not null)
+                        people.TryGetValue(m.PersonId.Value, out person);
 
                     return new StaffMemberDto(
                         m.Id,
-                        string.IsNullOrWhiteSpace(name) ? provider.Profile.BusinessName : name,
+                        PersonName.ForMember(person, m.StaffProfile?.DisplayName, provider.Profile.BusinessName),
                         _urlService.AbsoluteOrNull(m.StaffProfile?.PhotoUrl),
                         null, // Rating - not modelled per member yet
                         null, // ReviewCount - not modelled per member yet

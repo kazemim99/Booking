@@ -136,11 +136,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.BackgroundJobs
         private static Guid? SubjectIdFor(NotificationOutboxEntry row, string subjectType) =>
             string.Equals(row.SubjectType, subjectType, StringComparison.Ordinal) ? row.SubjectId : null;
 
+        /// <summary>The recipient's real name — never the «مشتری <digits>» an OTP sign-up without a name stores.</summary>
         private static string? FullName(PersonInfo? person) =>
-            person is null
-                ? null
-                : string.Join(' ', new[] { person.FirstName, person.LastName }
-                    .Where(n => !string.IsNullOrWhiteSpace(n)));
+            person is null ? null : PersonName.RealOrNull(person.FirstName, person.LastName);
 
         private static IReadOnlyDictionary<string, string> Deserialize(string json)
         {
