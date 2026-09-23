@@ -208,6 +208,13 @@ delivery (checked on production 2026-09-21). add-notification-clients stays STOP
 until the files arrive and a build on a real device shows a notification. Android also cannot be built on this
 workstation (Google Maven unreachable), so that check needs a machine or CI runner that can.
 
+**Web (2026-09-23, web-push).** Production is Flutter web on Android Chrome, so browser push is the path that
+matters now; it is implemented and waits on the Firebase **Web** app config + VAPID public key as five GitHub
+variables (`FIREBASE_WEB_*`) and the service-account JSON in `/opt/booksy/.env` — exact steps in
+docs/DEPLOYMENT_RUNBOOK.md › Web push. Unverified and possibly the real blocker: whether the box (Iranian network,
+#59) can reach `oauth2.googleapis.com` / `fcm.googleapis.com` at all, and whether phones in Iran can reach Google's
+registration endpoints without a VPN. Check from the box first (the runbook has the command).
+
 ## #69 Registration step 3 can reach an active salon
 `ProviderWriteRepository.GetDraftProviderByOwnerIdAsync` has no status filter, so `SaveStep3LocationCommand`
 (and `CreateProviderDraftCommand`, which then throws "Can only update draft providers") load an ACTIVE provider

@@ -349,8 +349,43 @@ jobs:
     - name: Test
       run: flutter test
 
+    - name: Test the web push service worker
+      # JavaScript no Dart test reaches: it decides where every tapped browser notification goes.
+      run: node --test tool/push_sw_test.mjs
+
     - name: Build web bundle
-      run: flutter build web --release --dart-define=API_BASE_URL=https://back.nahalkmi.ir
+      # Web push is configured at build time. The five FIREBASE_WEB_* values are public identifiers (they ship in
+      # every bundle), so they are repository VARIABLES; a secret of the same name is accepted too. Unset, they are
+      # passed empty and the app is built exactly as before web push: no Firebase load, no prompt.
+      # docs/DEPLOYMENT_RUNBOOK.md › Web push says where each value comes from.
+      env:
+        FIREBASE_WEB_API_KEY: ${{ vars.FIREBASE_WEB_API_KEY || secrets.FIREBASE_WEB_API_KEY }}
+        FIREBASE_WEB_APP_ID: ${{ vars.FIREBASE_WEB_APP_ID || secrets.FIREBASE_WEB_APP_ID }}
+        FIREBASE_WEB_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_WEB_MESSAGING_SENDER_ID || secrets.FIREBASE_WEB_MESSAGING_SENDER_ID }}
+        FIREBASE_WEB_PROJECT_ID: ${{ vars.FIREBASE_WEB_PROJECT_ID || secrets.FIREBASE_WEB_PROJECT_ID }}
+        FIREBASE_WEB_VAPID_KEY: ${{ vars.FIREBASE_WEB_VAPID_KEY || secrets.FIREBASE_WEB_VAPID_KEY }}
+      run: |
+        flutter build web --release --dart-define=API_BASE_URL=https://back.nahalkmi.ir \
+          --dart-define=FIREBASE_WEB_API_KEY="$FIREBASE_WEB_API_KEY" \
+          --dart-define=FIREBASE_WEB_APP_ID="$FIREBASE_WEB_APP_ID" \
+          --dart-define=FIREBASE_WEB_MESSAGING_SENDER_ID="$FIREBASE_WEB_MESSAGING_SENDER_ID" \
+          --dart-define=FIREBASE_WEB_PROJECT_ID="$FIREBASE_WEB_PROJECT_ID" \
+          --dart-define=FIREBASE_WEB_VAPID_KEY="$FIREBASE_WEB_VAPID_KEY"
+
+    - name: Say whether web push was compiled in
+      # Unset values are not a failure (the app simply has no web push, as before). A failure means the worker is
+      # missing from the bundle, or the values were set and did not reach it.
+      env:
+        FIREBASE_WEB_PROJECT_ID: ${{ vars.FIREBASE_WEB_PROJECT_ID || secrets.FIREBASE_WEB_PROJECT_ID }}
+        FIREBASE_WEB_VAPID_KEY: ${{ vars.FIREBASE_WEB_VAPID_KEY || secrets.FIREBASE_WEB_VAPID_KEY }}
+      run: |
+        test -f build/web/push/firebase-messaging-sw.js
+        if [ -n "$FIREBASE_WEB_PROJECT_ID" ] && [ -n "$FIREBASE_WEB_VAPID_KEY" ]; then
+          grep -q "$FIREBASE_WEB_PROJECT_ID" build/web/main.dart.js
+          echo "::notice::Provider app web push is configured (project $FIREBASE_WEB_PROJECT_ID)."
+        else
+          echo "::notice::Provider app web push is OFF: set the FIREBASE_WEB_* repository variables to turn it on."
+        fi
 
     - name: Verify the production API URL was compiled in
       # Without the --dart-define the bundle silently points at http://localhost:5000
@@ -402,8 +437,43 @@ jobs:
     - name: Test
       run: flutter test
 
+    - name: Test the web push service worker
+      # JavaScript no Dart test reaches: it decides where every tapped browser notification goes.
+      run: node --test tool/push_sw_test.mjs
+
     - name: Build web bundle
-      run: flutter build web --release --dart-define=API_BASE_URL=https://back.nahalkmi.ir
+      # Web push is configured at build time. The five FIREBASE_WEB_* values are public identifiers (they ship in
+      # every bundle), so they are repository VARIABLES; a secret of the same name is accepted too. Unset, they are
+      # passed empty and the app is built exactly as before web push: no Firebase load, no prompt.
+      # docs/DEPLOYMENT_RUNBOOK.md › Web push says where each value comes from.
+      env:
+        FIREBASE_WEB_API_KEY: ${{ vars.FIREBASE_WEB_API_KEY || secrets.FIREBASE_WEB_API_KEY }}
+        FIREBASE_WEB_APP_ID: ${{ vars.FIREBASE_WEB_APP_ID || secrets.FIREBASE_WEB_APP_ID }}
+        FIREBASE_WEB_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_WEB_MESSAGING_SENDER_ID || secrets.FIREBASE_WEB_MESSAGING_SENDER_ID }}
+        FIREBASE_WEB_PROJECT_ID: ${{ vars.FIREBASE_WEB_PROJECT_ID || secrets.FIREBASE_WEB_PROJECT_ID }}
+        FIREBASE_WEB_VAPID_KEY: ${{ vars.FIREBASE_WEB_VAPID_KEY || secrets.FIREBASE_WEB_VAPID_KEY }}
+      run: |
+        flutter build web --release --dart-define=API_BASE_URL=https://back.nahalkmi.ir \
+          --dart-define=FIREBASE_WEB_API_KEY="$FIREBASE_WEB_API_KEY" \
+          --dart-define=FIREBASE_WEB_APP_ID="$FIREBASE_WEB_APP_ID" \
+          --dart-define=FIREBASE_WEB_MESSAGING_SENDER_ID="$FIREBASE_WEB_MESSAGING_SENDER_ID" \
+          --dart-define=FIREBASE_WEB_PROJECT_ID="$FIREBASE_WEB_PROJECT_ID" \
+          --dart-define=FIREBASE_WEB_VAPID_KEY="$FIREBASE_WEB_VAPID_KEY"
+
+    - name: Say whether web push was compiled in
+      # Unset values are not a failure (the app simply has no web push, as before). A failure means the worker is
+      # missing from the bundle, or the values were set and did not reach it.
+      env:
+        FIREBASE_WEB_PROJECT_ID: ${{ vars.FIREBASE_WEB_PROJECT_ID || secrets.FIREBASE_WEB_PROJECT_ID }}
+        FIREBASE_WEB_VAPID_KEY: ${{ vars.FIREBASE_WEB_VAPID_KEY || secrets.FIREBASE_WEB_VAPID_KEY }}
+      run: |
+        test -f build/web/push/firebase-messaging-sw.js
+        if [ -n "$FIREBASE_WEB_PROJECT_ID" ] && [ -n "$FIREBASE_WEB_VAPID_KEY" ]; then
+          grep -q "$FIREBASE_WEB_PROJECT_ID" build/web/main.dart.js
+          echo "::notice::Customer app web push is configured (project $FIREBASE_WEB_PROJECT_ID)."
+        else
+          echo "::notice::Customer app web push is OFF: set the FIREBASE_WEB_* repository variables to turn it on."
+        fi
 
     - name: Verify the production API URL was compiled in
       # Without the --dart-define the bundle silently points at http://localhost:5000

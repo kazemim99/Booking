@@ -295,6 +295,100 @@ rollback: without the vhost change the same bundle is served uncompressed, as be
   Note that push also needs registered devices — `POST /api/v1/DeviceTokens` from the apps. With no
   registered device a push is skipped with "The recipient has no registered device", which is not a failure
   and does not consume the notification's retry budget.
+  Every message also carries a `webpush` block (Persian, right-to-left, app icon, `tag` = notification id,
+  `Urgency: high`) that FCM applies to browser tokens only — see *Web push* below.
+
+### Web push (notifications on the phone, for the web apps)
+
+Both apps run in production as Flutter **web** on Android Chrome, so phone notifications there are browser push
+(FCM for web). The code is in place (`openspec/changes/_inline/web-push/tasks.md`); it stays **off** until the
+values below exist, and a build without them behaves exactly as before — Firebase is never loaded.
+
+**What you have to create, once** (nothing here is in the repository):
+
+1. **A Web app in the existing Firebase project** — the project whose service-account JSON the API already uses
+   (`Notifications:Firebase:CredentialsJson` / `CredentialsPath`, above). Firebase console → Project settings →
+   General → *Your apps* → *Add app* → Web (`</>`), nickname e.g. `Booksy web`, no Hosting. One Web app serves
+   both sites. From its config snippet copy `apiKey`, `appId`, `messagingSenderId`, `projectId`
+   (`authDomain`, `storageBucket`, `measurementId` are not used).
+2. **A Web Push (VAPID) key pair** — Project settings → Cloud Messaging → *Web configuration* → *Web Push
+   certificates* → *Generate key pair*. Copy the **public** key (the long string shown). The private half stays in
+   Firebase: never download it, never put it in GitHub or the repo.
+3. **Five GitHub repository variables** — repo → Settings → Secrets and variables → Actions → **Variables** →
+   *New repository variable* (secrets with the same names also work, but these are public identifiers — they are
+   compiled into every web bundle):
+
+   | Variable | Value |
+   |---|---|
+   | `FIREBASE_WEB_API_KEY` | `apiKey` |
+   | `FIREBASE_WEB_APP_ID` | `appId` (`1:…:web:…`) |
+   | `FIREBASE_WEB_MESSAGING_SENDER_ID` | `messagingSenderId` |
+   | `FIREBASE_WEB_PROJECT_ID` | `projectId` |
+   | `FIREBASE_WEB_VAPID_KEY` | the VAPID **public** key |
+
+4. **The server credential** (a secret, only on the box): `Notifications__Firebase__CredentialsJson` in
+   `/opt/booksy/.env` (the service-account JSON of the SAME project, on one line), then
+   `docker compose -f docker-compose.prod.yml up -d booksy-api`. Check: `docker logs booksy-api 2>&1 | grep -i
+   firebase` → `Firebase messaging initialised`. Initialising only parses the JSON; it does not prove the box can
+   reach Google (see *Reachability*).
+5. In Google Cloud console for the same project, *Firebase Cloud Messaging API (V1)* must be enabled (Project
+   settings → Cloud Messaging shows it). If the browser API key is restricted, allow the referrers
+   `https://customer.nahalkmi.ir/*` and `https://provider.nahalkmi.ir/*` and the APIs *Firebase Installations
+   API* and *FCM Registration API*.
+6. Push to `master`. Each web build job then says `::notice::… web push is configured (project …)`; without the
+   variables it says `web push is OFF`.
+
+**How it behaves.** The browser is asked for permission only from a tap: «فعال‌سازی اعلان‌ها» in the customer's
+Profile and the salon's More page, and a one-time card (after a booking; on the salon's Home). Signing in never
+prompts in a browser; it re-registers a browser that was allowed before. The token is registered with platform
+`Web`. A tap on a notification opens the booking (customer: the appointment; salon: the calendar on it), through
+sign-in if needed; a push that arrives while the app is on screen shows as a snackbar. The service worker is
+`web/push/firebase-messaging-sw.js` (scope `/push/`, served `no-cache` by the existing vhost rule for `.js`).
+
+**Check on a phone.** Chrome on Android → sign in → Profile/More → «فعال‌سازی اعلان‌ها» → Allow. The row must say
+«اعلان‌ها روی این دستگاه فعال است» (if it says «اعلان‌ها هنوز به این دستگاه نمی‌رسد», the phone could not reach
+Google's registration endpoints). On the box (values from `/opt/booksy/.env`) a `Web` row must appear:
+
+```bash
+docker exec -i booksy-postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
+  'select "Platform", "RegisteredAt" from "ServiceCatalog"."DeviceTokens" where "RevokedAt" is null order by "RegisteredAt" desc limit 5;'
+```
+
+Then book as a customer: the salon's phone shows the new-booking notice, and confirming it notifies the customer.
+
+**Reachability — read before promising anything to users.** Every hop of FCM web push is Google:
+
+| Hop | Who connects | Host |
+|---|---|---|
+| Firebase JS SDK (page and service worker) | the phone | `www.gstatic.com` |
+| token: installation + push registration | the phone | `firebaseinstallations.googleapis.com`, `fcmregistrations.googleapis.com` |
+| delivery to the phone | Chrome via Google Play services | `fcm.googleapis.com`, `mtalk.google.com:5228` |
+| send | the API, from the box | `oauth2.googleapis.com`, `fcm.googleapis.com` |
+
+From Iran these are often unreachable without a VPN: some are filtered, and Google does not offer Firebase / Google
+Cloud in Iran (US sanctions) and refuses some of their APIs to Iranian IP addresses — likely the same reason Google
+Maven 404s from the workstation. Nothing here could be measured from an Iranian address during development (the
+workstation's traffic left through a foreign VPN exit).
+
+This box is on an Iranian network (FOLLOW-UPS #59), so **the send hop itself may fail** even when everything else
+is right. Check from the box before relying on it — any HTTP code means reachable, `000` or a timeout means not:
+
+```bash
+for u in https://oauth2.googleapis.com/token https://fcm.googleapis.com/; do
+  curl -s -o /dev/null -m 15 -w "%{http_code} $u\n" "$u"
+done
+```
+
+What each failure does: the page cannot load Firebase → push stays off for that visit (bounded, the app is unaffected); the phone
+cannot get a token → the row says «…نمی‌رسد» and a tap retries; the box cannot send → the delivery log records a
+push failure and the notification's other channels (in-app, and SMS for critical notices) still go out. A salon's
+new-booking request has **no SMS**, so for salons push and the in-app inbox are the only channels.
+
+Alternatives, not implemented: an Iranian push provider with its own delivery network (e.g. Pushe, Najva, Chabok)
+— they sit beside or replace FCM and need their own SDK and account; standard Web Push with our own VAPID keys (the
+`WebPush` protocol, no Firebase project) removes the Firebase-API hops but Chrome still delivers through
+`fcm.googleapis.com`; Firefox's push service is Mozilla's. SMS remains the only channel that reliably reaches an
+Iranian phone today, and it is reserved for critical notices by decision (2026-09-19).
 
 ### Gotchas learned the hard way
 

@@ -1,4 +1,4 @@
-Status: ACTIVE
+Status: STOPPED(blocked)
 Verify: FAST
 
 QA 2026-09-23: both apps run in production as Flutter WEB on Android Chrome (customer.nahalkmi.ir,
@@ -52,11 +52,13 @@ salon confirms. Push was a deliberate no-op on web. User decision: web push NOW.
 - [x] Customer: tap while open (SW message bridge) + foreground snackbar (tests)
 - [x] Customer: profile row + one-time card on booking success (cubit + widget tests)
 - [x] Provider: mirror all of the above (More row, Home card); push opens the calendar ON the booking
-- [ ] CI: pass FIREBASE_WEB_* dart-defines from vars/secrets; builds without them unchanged
-- [ ] Runbook: what the user must create (Firebase Web app, VAPID key, GitHub vars) + reachability
-- [ ] flutter analyze + flutter test in both apps; dotnet build + affected tests
-- [ ] flutter build web --release of each app outside the repo, with and without the defines
+- [x] CI: pass FIREBASE_WEB_* dart-defines from vars/secrets; builds without them unchanged
+- [x] Runbook: what the user must create (Firebase Web app, VAPID key, GitHub vars) + reachability
+- [x] flutter analyze + flutter test in both apps; dotnet build + affected tests
+- [x] flutter build web --release of each app outside the repo, with and without the defines
+- [x] Allowed-but-not-registered is shown as «…نمی‌رسد» with a retry, not as "on" (both apps, tests)
 - [-] BLOCKED: a real push on a phone needs the Firebase Web app config + VAPID key (user's console)
+- [-] BLOCKED: whether the box and Iranian phones can reach Google's FCM endpoints (runbook › Web push has the check)
 
 ## Decisions
 - Tier 2: the web block rides on every FCM message (FCM applies it to web tokens only) instead of branching on
@@ -76,6 +78,25 @@ salon confirms. Push was a deliberate no-op on web. User decision: web push NOW.
   matching the inbox since QA 2026-09-22; it opened the plain calendar. Test updated to the new destination.
 - Tier 1: provider Home gets a `leading` slot (before the zones) for the card; More gets a notifications section
   only when push is available. The dismissal is kept in secure storage (the app has no other key-value store).
+- Tier 2: new `PushStatus.unreachable` — permission granted but no token/registration; the row says so and a tap
+  retries without re-prompting. The copy does not mention VPNs (a product/legal call left to the owner).
+- Tier 1: CI reads `vars.FIREBASE_WEB_* || secrets.FIREBASE_WEB_*` and always passes the defines (empty = off), so
+  builds without them are unchanged; a step reports on/off and fails only if set values did not reach the bundle.
+- Tier 1: FOLLOW-UPS #68 extended for web rather than a new number (parallel qa23b branches may add #71).
 - Tier 1: service-worker behaviour is tested in Node (`tool/push_sw_test.mjs`, node:test + vm) — no JS test infra
   exists in the Flutter apps; it also guards the tap-message literal shared with Dart.
 ## Log
+- 2026-09-23 STOPPED(blocked): everything that needs no credential is done. Remaining: the user creates the Firebase
+  Web app + VAPID key and sets five GitHub variables, puts the service-account JSON in /opt/booksy/.env, and checks
+  from the box that oauth2/fcm.googleapis.com answer (runbook › Web push). Then: a real phone, both directions.
+- 2026-09-23 Verified: backend Booksy.sln builds (0 errors); Infrastructure.UnitTests 23/23 (9 new, incl. Firebase's
+  own pre-send validation on every message shape). Customer app: analyze clean, 719 tests; provider app: analyze
+  clean, 683 (+1 pre-existing skip); service worker 8/8 in Node, each app. `flutter build web --release` of both
+  apps outside the repo, with and without the defines: config compiled in only when given. Real Chrome (headless,
+  Playwright, production API blocked): without defines no gstatic/firebasejs request and no service worker; with
+  them Firebase loads, the worker installs at scope /push/ from gstatic's compat SDK and survives a reload next to
+  Flutter's loader; a cold start at #/push-open?bookingId=b1 lands on sign-in with the booking as return target
+  (customer: /appointments/b1; salon: /push-open, mapped after sign-in to the calendar on the booking).
+  Not measured: anything from an Iranian address (this workstation's traffic exits through a foreign VPN).
+- 2026-09-23 Found while building: allowed-but-unregistered was shown as "on". From Iran the token fetch is the hop
+  most likely to fail, so enable() now reports `unreachable` and the row offers a retry (red first, both apps).
