@@ -14,7 +14,7 @@ _Root causes, with evidence (file:line at 6912ca13)._
   parts, twice.** `GetProviderStaffQueryHandler.cs:74-76`: `FullName = RealOrNull(first, last) ??
   StaffProfile.DisplayName ?? ""`. The owner's membership is created by `OrganizationMembership.CreateOwner`
   with no display name, so FullName = "" — while `FirstName`/`LastName` still carry «ارائه‌دهنده» / «9123135143»
-  (lines 79-80). Then `ProvidersController.cs:1260-1262` (GET /Providers/{id}?includeStaff=true) rebuilds
+  (lines 80-81). Then `ProvidersController.cs:1260-1262` (GET /Providers/{id}?includeStaff=true) rebuilds
   `FullName = $"{FirstName} {LastName}"` whenever FullName is blank — the placeholder, verbatim. The customer
   app's `parseStaff` (`booking_repository_impl.dart:201-211`) would have done the same join client-side.
 - **Why the confirm step shows it and not the (fixed) slot name.** A salon with one bookable member skips the
@@ -28,10 +28,11 @@ _Root causes, with evidence (file:line at 6912ca13)._
   139-143` stores the raw placeholder as a notification's RecipientName; `AvailabilityService.cs:525` trusts a
   salon-typed display name even when it is a phone.
 - **Salon app header shows the phone.** `ProviderUser.displayName` (`provider_session.dart:22`) falls back to
-  `phoneNumber` when the name is empty — and a restored session (`auth_repository_impl.dart:193-198`, every cold
+  `phoneNumber` when the name is empty — and a restored session (`auth_repository_impl.dart:199-203`, every cold
   start) never carries a name, so the Home account sheet and the More header print «09123135143». After OTP the
   name is the token's placeholder, printed as is. The team list (`more_sub_pages.dart:857-859`) also falls back
-  to the phone, and a pending invitation without a name is titled with its phone (`more_models.dart:88-89`).
+  to the phone, a pending invitation without a name is titled with its phone (`more_models.dart:88-89`), and the
+  booking composer's staff picker offers a nameless member by their phone (`home_repository_impl.dart:864-869`).
 - Not paths: provider bookings (`GET /Bookings/provider/{id}`) carry no person names at all; review authors are
   «Customer <8 hex>» (no phone — noted, out of scope); booking notifications already go through RealOrNull.
 
@@ -64,6 +65,7 @@ _Root causes, with evidence (file:line at 6912ca13)._
 - [x] T7 Salon app: name restored from the token on cold start and after a rename (tests first)
 - [x] T8 Salon app: complete-name page after OTP for an established account with a placeholder name (tests first)
 - [x] T9 Vue web: check the same displays; fix what reads the raw parts
+- [x] T9b Admin: the users list names a person by their real name or «بدون نام», never «مشتری <digits>»
 - [ ] T10 Verify: build + unit projects + affected integration classes; flutter analyze/test in both apps
 
 ## Decisions
@@ -91,6 +93,10 @@ _Root causes, with evidence (file:line at 6912ca13)._
 
 ## Log
 
+- 2026-09-23 T9b Admin (`booksy-admin`): the users list printed `firstName lastName` — «مشتری 9384444636» for a
+  phone sign-up. It now shows the real name or a muted «بدون نام» (`user.noName`, fa + en); the phone keeps its
+  own column and the edit form still shows what is stored. The spec was written before the util but could not be
+  run RED at the time (no node_modules in the worktree yet); vitest 80/80, vue-tsc clean.
 - 2026-09-23 T1-T4 RED `PersonNameTests` (16 new cases failing on the 3.4 rule) and 7 integration tests reproducing
   the production shape (owner signed up by provider OTP, no name): GET /providers/{id}?includeStaff returned
   `fullName: "ارائه‌دهنده 9129418152"`, qualified-staff the same, members and the client book the placeholder,

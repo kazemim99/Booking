@@ -105,6 +105,7 @@
     "userDetails": "جزئیات کاربر",
     "firstName": "نام",
     "lastName": "نام خانوادگی",
+    "noName": "بدون نام",
     "email": "ایمیل",
     "phoneNumber": "شماره تلفن",
     "phone": "تلفن",

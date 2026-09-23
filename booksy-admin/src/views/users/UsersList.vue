@@ -68,7 +68,12 @@
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'name'">
             <div>
-              <div>{{ record.firstName }} {{ record.lastName }}</div>
+              <!-- The real name only: a phone sign-up that gave none is stored as «مشتری 9384444636», and the
+                   phone has its own column (production QA 2026-09-23). The edit form still shows what is stored. -->
+              <div v-if="realNameOrNull(record.firstName, record.lastName)">
+                {{ realNameOrNull(record.firstName, record.lastName) }}
+              </div>
+              <div v-else style="color: #999">{{ $t('user.noName') }}</div>
               <div style="font-size: 12px; color: #999">{{ record.email }}</div>
             </div>
           </template>
@@ -169,6 +174,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import { formatPhone } from '../../utils/phone'
+import { realNameOrNull } from '../../utils/person-name'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import {

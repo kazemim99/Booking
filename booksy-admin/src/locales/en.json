@@ -105,6 +105,7 @@
     "userDetails": "User Details",
     "firstName": "First Name",
     "lastName": "Last Name",
+    "noName": "No name",
     "email": "Email",
     "phoneNumber": "Phone Number",
     "phone": "Phone",
