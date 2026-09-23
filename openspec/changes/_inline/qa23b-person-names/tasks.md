@@ -1,4 +1,4 @@
-Status: ACTIVE
+Status: DONE
 Verify: FAST
 
 User report (production QA recording 2026-09-23): the customer app's booking CONFIRM step names the person
@@ -66,7 +66,7 @@ _Root causes, with evidence (file:line at 6912ca13)._
 - [x] T8 Salon app: complete-name page after OTP for an established account with a placeholder name (tests first)
 - [x] T9 Vue web: check the same displays; fix what reads the raw parts
 - [x] T9b Admin: the users list names a person by their real name or «بدون نام», never «مشتری <digits>»
-- [ ] T10 Verify: build + unit projects + affected integration classes; flutter analyze/test in both apps
+- [x] T10 Verify: build + unit projects + affected integration classes; flutter analyze/test in both apps
 
 ## Decisions
 
@@ -91,8 +91,20 @@ _Root causes, with evidence (file:line at 6912ca13)._
 - D5 (tier 2, flagged) Additive: `staffName` on GET /Bookings/my-bookings items and GET /Bookings/{id}; left out of
   the JSON (null) when the salon itself holds the booking. The Vue web already renders `booking.staffName` when set.
 
+## Open (not decided here)
+
+- Q1 (tier 3, privacy) GET /providers/{id}/hierarchy/members is `[Authorize]` only: any signed-in user can read any
+  salon's member list with phone numbers. Not changed — an authz rule is the business's call.
+- Q2 (data) Accounts already stored as «ارائه‌دهنده/مشتری <digits>» are not rewritten; every surface now hides the
+  placeholder, and the salon owner is asked for a name at the next OTP sign-in. A one-off backfill would need
+  names nobody has.
+- Q3 Review authors are «Customer <8 hex>» (GetProviderReviewsQueryHandler) — no phone, but not a name either.
+
 ## Log
 
+- 2026-09-23 T10 FAST+: `dotnet build Booksy.sln` 0 errors; 9 unit/architecture projects green; the FULL
+  integration suite 817/817 green (Testcontainers). Flutter: analyze clean and all tests green in both apps
+  (customer 671, provider 646 + 1 pre-existing skip). Vue web vitest src 156/156; admin vitest 80/80, vue-tsc clean.
 - 2026-09-23 T9b Admin (`booksy-admin`): the users list printed `firstName lastName` — «مشتری 9384444636» for a
   phone sign-up. It now shows the real name or a muted «بدون نام» (`user.noName`, fa + en); the phone keeps its
   own column and the edit form still shows what is stored. The spec was written before the util but could not be
