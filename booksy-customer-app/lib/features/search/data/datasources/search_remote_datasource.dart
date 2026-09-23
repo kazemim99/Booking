@@ -130,6 +130,23 @@ class SearchRemoteDataSource {
       message: 'Failed to load providers by location',
     );
   }
+  /// How soon each of these salons can be booked: per salon, the first day
+  /// with free times (`date`) and how many there are (`freeSlotCount`).
+  ///
+  /// Neither search endpoint says so, so the cards ask for it separately, one
+  /// request per screenful (the server answers for at most twenty salons).
+  Future<List<Map<String, dynamic>>> getAvailabilitySummary(
+      List<String> providerIds) async {
+    if (providerIds.isEmpty) return const [];
+    final response = await serviceCatalogDio.get(
+      ApiConstants.providerAvailabilitySummary,
+      queryParameters: {'providerIds': providerIds},
+    );
+    final body = response.data;
+    final data = body is Map<String, dynamic> ? body['data'] : body;
+    if (data is! List) return const [];
+    return data.whereType<Map<String, dynamic>>().toList();
+  }
 }
 
 /// A provider as returned by `/Providers/by-location`.
@@ -149,6 +166,10 @@ class ProviderLocationDto {
   final String? city;
   final String? street;
   final double? averageRating;
+
+  /// Published review count. Without it a rated salon would read as
+  /// «هنوز نظری ندارد», because the count decides whether a rating shows.
+  final int? totalReviews;
   final int? serviceCount;
 
   const ProviderLocationDto({
@@ -163,6 +184,7 @@ class ProviderLocationDto {
     this.city,
     this.street,
     this.averageRating,
+    this.totalReviews,
     this.serviceCount,
   });
 
@@ -184,6 +206,7 @@ class ProviderLocationDto {
       city: address is Map<String, dynamic> ? address['city'] as String? : null,
       street: address is Map<String, dynamic> ? address['street'] as String? : null,
       averageRating: asDouble(json['averageRating']),
+      totalReviews: (json['totalReviews'] as num?)?.toInt(),
       serviceCount: (json['serviceCount'] as num?)?.toInt(),
     );
   }

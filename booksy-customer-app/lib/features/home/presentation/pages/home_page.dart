@@ -209,30 +209,40 @@ class _HomePageState extends State<HomePage> {
                             isEmpty: loaded.recentlyVisitedProviders.isEmpty &&
                                 loaded.favoriteProviders.isEmpty,
                             title: AppStrings.recentAndFavoritesTitle,
-                            child: SizedBox(
-                              height: 120,
-                              child: ListView(
-                                scrollDirection: Axis.horizontal,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.md,
+                            // Sized by its cards rather than a fixed height, so a larger text scale grows the row
+                            // instead of overflowing it.
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.md,
+                              ),
+                              child: IntrinsicHeight(
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    ...loaded.recentlyVisitedProviders.map(
+                                      (p) => _MiniProviderCard(
+                                        providerId: p.providerId,
+                                        name: p.providerName,
+                                        logoUrl: p.logoUrl,
+                                        subtitle: p.city,
+                                        rating: p.averageRating,
+                                        reviewCount: p.totalReviews,
+                                        badge: AppStrings.recentBadge,
+                                      ),
+                                    ),
+                                    ...loaded.favoriteProviders.map(
+                                      (p) => _MiniProviderCard(
+                                        providerId: p.providerId,
+                                        name: p.providerName,
+                                        logoUrl: p.logoUrl,
+                                        subtitle: p.city,
+                                        rating: p.averageRating,
+                                        reviewCount: p.totalReviews,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                children: [
-                                  ...loaded.recentlyVisitedProviders.map(
-                                    (p) => _MiniProviderCard(
-                                      name: p.providerName,
-                                      subtitle: p.city,
-                                      rating: p.averageRating,
-                                      badge: AppStrings.recentBadge,
-                                    ),
-                                  ),
-                                  ...loaded.favoriteProviders.map(
-                                    (p) => _MiniProviderCard(
-                                      name: p.providerName,
-                                      subtitle: p.city,
-                                      rating: p.averageRating,
-                                    ),
-                                  ),
-                                ],
                               ),
                             ),
                           ),
@@ -538,18 +548,28 @@ class _Section extends StatelessWidget {
   }
 }
 
+/// A recently visited or favourite salon: its logo, name, city and rating.
+/// The whole card opens the salon, like every other provider card on home.
 class _MiniProviderCard extends StatelessWidget {
+  final String providerId;
   final String name;
+  final String? logoUrl;
   final String? subtitle;
   final double? rating;
+  final int? reviewCount;
   final String? badge;
 
   const _MiniProviderCard({
+    required this.providerId,
     required this.name,
+    this.logoUrl,
     this.subtitle,
     this.rating,
+    this.reviewCount,
     this.badge,
   });
+
+  static const double _logoSize = 40;
 
   @override
   Widget build(BuildContext context) {
@@ -559,21 +579,37 @@ class _MiniProviderCard extends StatelessWidget {
       child: SizedBox(
         width: 160,
         child: AppCard(
+          key: Key('home-mini-provider-$providerId'),
           padding: const EdgeInsets.all(AppSpacing.sm),
+          semanticLabel: name,
+          onTap: () => context.push(Routes.providerDetail(providerId)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.store_outlined,
-                    size: AppIconSize.action,
-                    color: theme.colorScheme.primary,
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    child: ProviderImage(
+                      imageUrl: logoUrl,
+                      width: _logoSize,
+                      height: _logoSize,
+                      placeholderIconSize: AppIconSize.sm,
+                    ),
                   ),
                   const Spacer(),
                   if (badge != null)
-                    Text(badge!, style: theme.textTheme.bodySmall)
+                    Flexible(
+                      flex: 4,
+                      child: Text(
+                        badge!,
+                        style: theme.textTheme.bodySmall,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    )
                   else
                     Icon(
                       Icons.favorite,
@@ -596,8 +632,8 @@ class _MiniProviderCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-              if (rating != null && ProviderRating.hasRating(rating!))
-                ProviderRating(rating: rating!),
+              if (ProviderRating.hasRating(rating ?? 0, reviewCount))
+                ProviderRating(rating: rating ?? 0, reviewCount: reviewCount),
             ],
           ),
         ),

@@ -9,7 +9,7 @@ import '../../domain/entities/provider_summary.dart';
 
 /// Wide provider card for the vertically stacked "nearest" list: square
 /// thumbnail on the leading side, then business name, category subtitle, the
-/// rating / price-band / distance meta line, the address, and an outlined
+/// rating / starting-price / distance meta line, the address, and an outlined
 /// "مشاهده پروفایل" CTA.
 ///
 /// [category] and [addressLine] are accepted but **not currently supplied**:
@@ -37,7 +37,7 @@ class NearbyProviderCard extends StatelessWidget {
     final meta = ProviderMetaLine(
       rating: provider.rating,
       reviewCount: provider.reviewCount,
-      priceBand: PriceBand.fromPrices([provider.startingPrice.toDouble()]),
+      startingPrice: provider.startingPrice,
       distanceKm: provider.distance,
       nextFreeDate: provider.nextFreeDate,
       freeSlotCount: provider.freeSlotCount,

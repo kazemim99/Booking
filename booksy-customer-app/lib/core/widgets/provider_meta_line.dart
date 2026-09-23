@@ -3,14 +3,15 @@ import 'package:flutter/material.dart';
 import '../../config/theme/app_tokens.dart';
 import '../constants/app_strings.dart';
 import '../utils/jalali_formatter.dart';
+import '../utils/price_formatter.dart';
 import 'price_band.dart';
 import 'provider_rating.dart';
 
 /// The one-line provider summary used on cards and on the profile header:
-/// category · rating (review count) · price band · distance.
+/// category · rating (review count) · «از … تومان» · free times · distance.
 ///
 /// Every part is optional because the backend does not yet publish all of them
-/// (there is no price-band field and the search payload carries no distance).
+/// (the search payload's starting price is 0 and it carries no distance).
 /// The rating is the exception: a known zero review count is shown as "no
 /// reviews yet" rather than dropped, because the spec asks for it. A part that has no
 /// value is dropped along with its separator, and when nothing at all can be
@@ -21,7 +22,14 @@ class ProviderMetaLine extends StatelessWidget {
   final String? category;
   final double? rating;
   final int? reviewCount;
+
+  /// The old `$`/`$$`/`$$$` band. No screen passes it any more: in a Toman app
+  /// the glyphs read as dollars, so cards show [startingPrice] instead.
   final PriceBand? priceBand;
+
+  /// The salon's cheapest price, in Toman. Shown as «از ۱۲۰٬۰۰۰ تومان»;
+  /// null or zero (the search payload sends 0) hides it.
+  final int? startingPrice;
 
   /// Distance in kilometres, when the response provided one.
   final double? distanceKm;
@@ -41,6 +49,7 @@ class ProviderMetaLine extends StatelessWidget {
     this.rating,
     this.reviewCount,
     this.priceBand,
+    this.startingPrice,
     this.distanceKm,
     this.nextFreeDate,
     this.freeSlotCount = 0,
@@ -67,8 +76,11 @@ class ProviderMetaLine extends StatelessWidget {
       ProviderRating.hasRating(rating ?? 0, reviewCount) ||
       ProviderRating.isUnrated(reviewCount) ||
       priceBand != null ||
+      _hasStartingPrice ||
       distanceKm != null ||
       freeSlotsLabel(nextFreeDate, freeSlotCount, now ?? DateTime.now()) != null;
+
+  bool get _hasStartingPrice => (startingPrice ?? 0) > 0;
 
   @override
   Widget build(BuildContext context) {
@@ -85,6 +97,15 @@ class ProviderMetaLine extends StatelessWidget {
     }
     if (priceBand != null) {
       parts.add(PriceBandLabel(band: priceBand!));
+    }
+    if (_hasStartingPrice) {
+      parts.add(Text(
+        PriceFormatter.formatFrom(startingPrice!),
+        key: const Key('provider-starting-price'),
+        style: theme.textTheme.bodySmall,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ));
     }
     final freeSlots =
         freeSlotsLabel(nextFreeDate, freeSlotCount, now ?? DateTime.now());
@@ -144,21 +165,34 @@ class ProviderMetaLine extends StatelessWidget {
 
     if (parts.isEmpty) return const SizedBox.shrink();
 
+    // Each separator travels with the part it precedes, so when the Wrap
+    // breaks a line the «·» starts the next line with its part instead of
+    // hanging alone at the end of the previous one.
     return Wrap(
       spacing: AppSpacing.xs,
       runSpacing: AppSpacing.xxs,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        for (var i = 0; i < parts.length; i++) ...[
-          if (i > 0)
-            Text(
-              '·',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+        for (var i = 0; i < parts.length; i++)
+          if (i == 0)
+            parts[i]
+          else
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // A visual separator only; a screen reader should not say it.
+                ExcludeSemantics(
+                  child: Text(
+                    '·',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Flexible(child: parts[i]),
+              ],
             ),
-          parts[i],
-        ],
       ],
     );
   }

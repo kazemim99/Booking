@@ -3,42 +3,58 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../config/routes/app_router.dart';
 import '../../../../config/theme/app_tokens.dart';
+import '../../../../core/widgets/forward_chevron.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../../home/domain/entities/provider_summary.dart';
 
-/// Provider result row used across discovery surfaces (explore search, nearby,
-/// area). Shows image, name, rating, and distance (when the response carries
-/// it); taps through to the provider detail route.
+/// Provider result row on explore: image, name and the same [ProviderMetaLine]
+/// every other provider card uses — rating (or «هنوز نظری ندارد»), the
+/// starting price when known, free times when the availability summary sent
+/// them, and distance when the response carried one. Taps through to the
+/// provider detail route.
 class ProviderResultCard extends StatelessWidget {
   final ProviderSummary provider;
 
-  const ProviderResultCard({super.key, required this.provider});
+  /// Today, for reading the free-slot day as «امروز»/«فردا». Injected by tests.
+  final DateTime? now;
+
+  const ProviderResultCard({super.key, required this.provider, this.now});
+
+  static const double _imageSize = 96;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final meta = ProviderMetaLine(
+      rating: provider.rating,
+      reviewCount: provider.reviewCount,
+      startingPrice: provider.startingPrice,
+      distanceKm: provider.distance,
+      nextFreeDate: provider.nextFreeDate,
+      freeSlotCount: provider.freeSlotCount,
+      now: now,
+    );
+
     return AppCard(
       padding: EdgeInsets.zero,
       semanticLabel: provider.name,
       onTap: () => context.push(Routes.providerDetail(provider.id)),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          SizedBox(
-            width: 96,
-            height: 96,
-            // One widget owns how a salon photo loads (it uses the browser's own
-            // image loading on web, where the cache manager cannot work).
-            child: ProviderImage(
-              imageUrl: provider.imageUrl,
-              width: 96,
-              height: 96,
-            ),
+          // One widget owns how a salon photo loads (it uses the browser's own
+          // image loading on web, where the cache manager cannot work).
+          ProviderImage(
+            imageUrl: provider.imageUrl,
+            width: _imageSize,
+            height: _imageSize,
           ),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.sm),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     provider.name,
@@ -46,46 +62,20 @@ class ProviderResultCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: AppSpacing.xxs),
-                  Row(
-                    children: [
-                      const Icon(Icons.star, size: 14, color: Colors.amber),
-                      const SizedBox(width: AppSpacing.xxs),
-                      Text(
-                        provider.rating.toStringAsFixed(1),
-                        style: theme.textTheme.bodySmall,
-                      ),
-                      const SizedBox(width: AppSpacing.xxs),
-                      Text(
-                        '(${provider.reviewCount})',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                  if (provider.distance != null) ...[
+                  if (meta.hasContent) ...[
                     const SizedBox(height: AppSpacing.xxs),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 14,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: AppSpacing.xxs),
-                        Text(
-                          '${provider.distance!.toStringAsFixed(1)} کیلومتر',
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
+                    meta,
                   ],
                 ],
               ),
             ),
           ),
+          Padding(
+            padding: const EdgeInsetsDirectional.only(end: AppSpacing.xs),
+            child: ForwardChevron(color: theme.colorScheme.onSurfaceVariant),
+          ),
         ],
       ),
     );
   }
-
 }

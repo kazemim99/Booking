@@ -297,11 +297,11 @@ void main() {
       expect(find.byKey(const Key('provider-hero-image')), findsOneWidget);
       expect(find.text('سالن زیبایی رز'), findsWidgets);
 
-      // Meta line: city (standing in for category), rating, derived price band.
+      // Meta line: city (standing in for category), rating, starting price.
       expect(find.text('پارس‌آباد'), findsOneWidget);
       expect(find.text('۴.۶'), findsOneWidget);
       expect(find.text(AppStrings.reviewCountLabel('۱۲')), findsOneWidget);
-      expect(find.byType(PriceBandLabel), findsOneWidget);
+      expect(find.byKey(const Key('provider-starting-price')), findsOneWidget);
 
       // Working hours with the open-now pill and a closed day.
       expect(find.text(AppStrings.workingHoursTitle), findsOneWidget);
@@ -320,15 +320,17 @@ void main() {
       expect(find.byKey(const Key('provider-book-cta')), findsOneWidget);
     });
 
-    testWidgets('derives the price band from this provider\'s own services',
+    // customer-app-ux-review-fixes F.1: the `$$` band read as dollars in a
+    // Toman app; the header now says what the cheapest service costs.
+    testWidgets('shows its cheapest priced service as «از … تومان»',
         (tester) async {
       await tester
           .pumpWidget(_app(_loaded(_fullProvider()), now: _tuesdayNoon));
       await tester.pumpAndSettle();
 
-      // Median of 250k / 850k lands in the middle band — never invented.
-      final label = tester.widget<PriceBandLabel>(find.byType(PriceBandLabel));
-      expect(label.band, PriceBand.mid);
+      expect(find.text(PriceFormatter.formatFrom(250000)), findsOneWidget);
+      expect(find.byType(PriceBandLabel), findsNothing);
+      expect(find.textContaining(r'$'), findsNothing);
     });
 
     testWidgets('lays out right-to-left', (tester) async {
@@ -377,7 +379,7 @@ void main() {
       // instead of vanishing (the count is real now, so zero means zero).
       expect(find.byType(ProviderRating), findsNothing);
       expect(find.textContaining('۰.۰'), findsNothing);
-      expect(find.byType(PriceBandLabel), findsNothing);
+      expect(find.byKey(const Key('provider-starting-price')), findsNothing);
       expect(find.byKey(const Key('provider-no-reviews')), findsOneWidget);
     });
 

@@ -8,10 +8,10 @@ import '../datasources/search_remote_datasource.dart';
 /// the **only** source of coordinates and of a server-computed distance, and it
 /// has no `profileImageUrl` — just `logoUrl`.
 ///
-/// Nothing is invented here. `startingPrice` stays 0 and `reviewCount` stays 0
-/// because the endpoint publishes neither; the shared widgets already hide the
-/// rating and the price band when they have no real value, so a zero must never
-/// be dressed up as data.
+/// Nothing is invented here. `startingPrice` stays 0 because the endpoint does
+/// not publish it, and the shared meta line hides a zero price. `reviewCount`
+/// is the published `totalReviews`: the count decides whether a rating shows,
+/// so dropping it made every rated salon on the map read «هنوز نظری ندارد».
 extension ProviderLocationMapper on ProviderLocationDto {
   ProviderSummary toEntity() {
     final address = [city, street]
@@ -23,7 +23,7 @@ extension ProviderLocationMapper on ProviderLocationDto {
       name: businessName,
       imageUrl: logoUrl,
       rating: averageRating ?? 0,
-      reviewCount: 0,
+      reviewCount: totalReviews ?? 0,
       distance: distanceKm,
       startingPrice: 0,
       // The endpoint only ever returns active providers; open/closed for *today*

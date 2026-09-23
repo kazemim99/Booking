@@ -10,7 +10,10 @@ import 'package:booksy_customer_app/core/errors/failures.dart';
 import 'package:booksy_customer_app/core/location/location_service.dart';
 import 'package:booksy_customer_app/core/storage/secure_storage_service.dart';
 import 'package:booksy_customer_app/core/widgets/widgets.dart';
+import 'package:booksy_customer_app/core/utils/price_formatter.dart';
+import 'package:booksy_customer_app/features/home/domain/entities/favorite_provider.dart';
 import 'package:booksy_customer_app/features/home/domain/entities/provider_summary.dart';
+import 'package:booksy_customer_app/features/home/domain/entities/recently_visited_provider.dart';
 import 'package:booksy_customer_app/features/home/domain/repositories/home_repository.dart';
 import 'package:booksy_customer_app/features/home/domain/usecases/get_home_data.dart';
 import 'package:booksy_customer_app/features/home/presentation/bloc/home_bloc.dart';
@@ -117,13 +120,18 @@ ProviderSummary _provider({
       isOpen: true,
     );
 
-HomeData _homeData({List<ProviderSummary> topProviders = const []}) => HomeData(
+HomeData _homeData({
+  List<ProviderSummary> topProviders = const [],
+  List<RecentlyVisitedProvider> recentlyVisited = const [],
+  List<FavoriteProvider> favorites = const [],
+}) =>
+    HomeData(
       categories: const [],
       upcomingBookings: const [],
       topProviders: topProviders,
       promotions: const [],
-      recentlyVisitedProviders: const [],
-      favoriteProviders: const [],
+      recentlyVisitedProviders: recentlyVisited,
+      favoriteProviders: favorites,
     );
 
 // ---------------------------------------------------------------- harness
@@ -205,8 +213,16 @@ void main() {
 
   setUp(() => nav = _Nav());
 
-  HomeBloc loadedBloc({List<ProviderSummary> topProviders = const []}) =>
-      _StubHomeBloc(HomeLoaded.fromData(_homeData(topProviders: topProviders)));
+  HomeBloc loadedBloc({
+    List<ProviderSummary> topProviders = const [],
+    List<RecentlyVisitedProvider> recentlyVisited = const [],
+    List<FavoriteProvider> favorites = const [],
+  }) =>
+      _StubHomeBloc(HomeLoaded.fromData(_homeData(
+        topProviders: topProviders,
+        recentlyVisited: recentlyVisited,
+        favorites: favorites,
+      )));
 
   group('notifications bell', () {
     testWidgets('a guest sees no bell — they have no inbox to open', (tester) async {
@@ -397,6 +413,25 @@ void main() {
       expect(find.text(AppStrings.distanceKmLabel('۱.۲')), findsOneWidget);
     });
 
+    // customer-app-ux-review-fixes F.1: a starting price reads «از … تومان»,
+    // never a `$` band.
+    testWidgets('shows the starting price in Toman once the data carries one',
+        (tester) async {
+      await tester.pumpWidget(_app(
+        bloc: loadedBloc(topProviders: [_provider(startingPrice: 150000)]),
+        nearby: _StubNearbyCubit(NearbyState(
+          status: NearbyStatus.loaded,
+          providers: [_provider(id: 'p2', startingPrice: 90000)],
+        )),
+        nav: nav,
+      ));
+      await tester.pump();
+
+      expect(find.text(PriceFormatter.formatFrom(150000)), findsOneWidget);
+      expect(find.text(PriceFormatter.formatFrom(90000)), findsOneWidget);
+      expect(find.textContaining(r'$'), findsNothing);
+    });
+
     testWidgets('the book button starts the booking flow', (tester) async {
       await tester.pumpWidget(_app(
         bloc: loadedBloc(topProviders: [_provider()]),
@@ -496,6 +531,98 @@ void main() {
       await tester.pump();
 
       expect(nearby.loadCalls, 1);
+    });
+  });
+
+  // customer-app-ux-review-fixes F.6: the recent and favourite cards carry the
+  // salon's id and logo, and used to do nothing when tapped.
+  group('recent and favourites', () {
+    final recent = RecentlyVisitedProvider(
+      providerId: 'r1',
+      providerName: 'سالن دیده‌شده',
+      logoUrl: 'https://example.test/r1.png',
+      city: 'پارس‌آباد',
+      lastVisitedAt: DateTime(2026, 9, 20),
+      visitCount: 2,
+    );
+    final favourite = FavoriteProvider(
+      providerId: 'f1',
+      providerName: 'سالن محبوب',
+      city: 'پارس‌آباد',
+      averageRating: 4.5,
+      totalReviews: 3,
+      addedAt: DateTime(2026, 9, 1),
+    );
+
+    testWidgets('a recent visit opens its salon', (tester) async {
+      await tester.pumpWidget(_app(
+        bloc: loadedBloc(recentlyVisited: [recent], favorites: [favourite]),
+        nearby: _StubNearbyCubit(const NearbyState(status: NearbyStatus.empty)),
+        nav: nav,
+      ));
+      await tester.pump();
+
+      await tester.scrollUntilVisible(find.text('سالن دیده‌شده'), 200,
+          scrollable: find.byType(Scrollable).first);
+      await tester.tap(find.text('سالن دیده‌شده'));
+      await tester.pumpAndSettle();
+
+      expect(nav.visited, contains('/providers/r1'));
+      expect(find.text('provider-detail'), findsOneWidget);
+    });
+
+    testWidgets('a favourite opens its salon', (tester) async {
+      await tester.pumpWidget(_app(
+        bloc: loadedBloc(recentlyVisited: [recent], favorites: [favourite]),
+        nearby: _StubNearbyCubit(const NearbyState(status: NearbyStatus.empty)),
+        nav: nav,
+      ));
+      await tester.pump();
+
+      await tester.scrollUntilVisible(find.text('سالن محبوب'), 200,
+          scrollable: find.byType(Scrollable).first);
+      await tester.tap(find.text('سالن محبوب'));
+      await tester.pumpAndSettle();
+
+      expect(nav.visited, contains('/providers/f1'));
+    });
+
+    testWidgets('shows each salon logo and names it as a button',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(_app(
+        bloc: loadedBloc(recentlyVisited: [recent], favorites: [favourite]),
+        nearby: _StubNearbyCubit(const NearbyState(status: NearbyStatus.empty)),
+        nav: nav,
+      ));
+      await tester.pump();
+      await tester.scrollUntilVisible(find.text('سالن محبوب'), 200,
+          scrollable: find.byType(Scrollable).first);
+
+      final logos = tester
+          .widgetList<ProviderImage>(find.byType(ProviderImage))
+          .map((image) => image.imageUrl);
+      expect(logos, contains('https://example.test/r1.png'));
+
+      expect(
+        tester.getSemantics(find.byKey(const Key('home-mini-provider-r1'))),
+        isSemantics(label: 'سالن دیده‌شده', isButton: true),
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('survive 1.3x text scale without overflow', (tester) async {
+      await tester.pumpWidget(_app(
+        bloc: loadedBloc(recentlyVisited: [recent], favorites: [favourite]),
+        nearby: _StubNearbyCubit(const NearbyState(status: NearbyStatus.empty)),
+        nav: nav,
+        textScale: 1.3,
+      ));
+      await tester.pump();
+      await tester.scrollUntilVisible(find.text('سالن محبوب'), 200,
+          scrollable: find.byType(Scrollable).first);
+
+      expect(tester.takeException(), isNull);
     });
   });
 

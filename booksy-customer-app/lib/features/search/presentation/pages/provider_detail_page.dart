@@ -253,12 +253,15 @@ class _ProviderContent extends StatelessWidget {
     // The meta line's first slot is the category — which `ProviderDetail` does
     // not carry (the payload's `type` is dropped by the parser), so the city
     // stands in for it. Rating hides itself while the provider is unrated, and
-    // the price band is derived from this provider's own service prices.
+    // the starting price is this provider's cheapest priced service.
     final meta = ProviderMetaLine(
       category: provider.city,
       rating: provider.averageRating,
       reviewCount: provider.totalReviews,
-      priceBand: PriceBand.fromPrices(provider.services.map((s) => s.price)),
+      startingPrice: provider.services
+          .map((s) => s.price.round())
+          .where((price) => price > 0)
+          .fold<int?>(null, (min, p) => min == null || p < min ? p : min),
     );
 
     final contact = ContactLocationSection(

@@ -11,8 +11,8 @@ import '../../domain/entities/provider_summary.dart';
 /// business name, the one-line meta summary, and a filled "رزرو" CTA.
 ///
 /// The meta line self-censors: rating is hidden while the provider is unrated,
-/// the price band is hidden because `startingPrice` is not populated by the
-/// search payload, and distance is hidden unless the response carried one. The
+/// the starting price is hidden because `startingPrice` is 0 in the search
+/// payload, and distance is hidden unless the response carried one. The
 /// card therefore degrades to image + name + CTA on today's data instead of
 /// showing zeros.
 class FeaturedProviderCard extends StatelessWidget {
@@ -30,7 +30,7 @@ class FeaturedProviderCard extends StatelessWidget {
     final meta = ProviderMetaLine(
       rating: provider.rating,
       reviewCount: provider.reviewCount,
-      priceBand: PriceBand.fromPrices([provider.startingPrice.toDouble()]),
+      startingPrice: provider.startingPrice,
       distanceKm: provider.distance,
       nextFreeDate: provider.nextFreeDate,
       freeSlotCount: provider.freeSlotCount,
