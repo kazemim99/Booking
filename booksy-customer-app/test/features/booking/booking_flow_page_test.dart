@@ -66,8 +66,13 @@ class _Repo implements BookingRepository {
   final Map<int, DaySlots> slotsByDay;
   final List<BusinessHour> hours;
   var createCalls = 0;
+  final List<StaffMember> staff;
 
-  _Repo({this.slotsByDay = const {}, this.hours = const []});
+  _Repo({
+    this.slotsByDay = const {},
+    this.hours = const [],
+    this.staff = const [_staff],
+  });
 
   @override
   Future<Either<Failure, ProviderDetail>> getProviderDetail(String id) async =>
@@ -79,7 +84,7 @@ class _Repo implements BookingRepository {
         maxAdvanceBookingDays: 7,
         businessHours: hours,
         services: const [_cut, _colour],
-        staff: const [_staff],
+        staff: staff,
       ));
 
   @override
@@ -377,6 +382,44 @@ void main() {
       expect(find.text(AppStrings.bookingWhatNextBody), findsOneWidget);
       expect(AppStrings.bookingWhatNextBody, contains(AppStrings.statusPending));
       expect(find.text(AppStrings.bookingConfirmCta), findsOneWidget);
+    });
+
+    testWidgets('names the person who does it', (tester) async {
+      await atConfirm(tester);
+
+      expect(find.text(AppStrings.bookingStaff), findsOneWidget);
+      expect(find.text('مریم احمدی'), findsOneWidget);
+    });
+
+    // Production QA 2026-09-23: the row read «ارائه‌دهنده 9123135143» — the owner's sign-in placeholder. The
+    // parsers already refuse it; this is the last line: whatever reaches the screen, the number never shows.
+    testWidgets('never names anyone by a placeholder or a phone: the salon stands in',
+        (tester) async {
+      const placeholder = 'ارائه‌دهنده 9123135143';
+      final slot = TimeSlot(
+        startTime: DateTime(2026, 9, 23, 16),
+        endTime: DateTime(2026, 9, 23, 16, 45),
+        durationMinutes: 45,
+        isAvailable: true,
+        staffId: 'st1',
+        staffName: placeholder,
+      );
+      final bloc = await pumpFlow(
+        tester,
+        serviceId: 's1',
+        repo: _Repo(
+          staff: const [StaffMember(id: 'st1', name: placeholder, isActive: true)],
+          slotsByDay: {23: DaySlots(slots: [slot])},
+        ),
+      );
+      bloc.add(BookingSlotSelected(slot));
+      await _settle(tester);
+
+      expect(find.text(AppStrings.bookingConfirmCta), findsOneWidget);
+      expect(find.textContaining('9123135143'), findsNothing);
+      expect(find.text(placeholder), findsNothing);
+      expect(find.text('سالن نمونه'), findsNWidgets(2),
+          reason: 'the salon row, and the salon standing in for the nameless person');
     });
 
     testWidgets('fits a 360x640 screen at 1.3x text', (tester) async {

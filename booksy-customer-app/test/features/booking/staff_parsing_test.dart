@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:booksy_customer_app/features/booking/data/repositories/booking_repository_impl.dart';
+import 'package:booksy_customer_app/features/booking/domain/entities/booking_entities.dart';
 
 /// The staff list drives the "choose a team member" step: the bloc shows that step
 /// only when more than one active member comes back, and each entry's name is what
@@ -65,6 +66,44 @@ void main() {
       // activeStaff filters on this, so defaulting to false would silently hide
       // every member and skip the selection step.
       expect(staff.single.isActive, isTrue);
+    });
+
+    // Production QA 2026-09-23: the confirm step named the salon's owner «ارائه‌دهنده 9123135143». A single-member
+    // salon skips the staff step and uses this entry's name, so it must never be a placeholder or a phone.
+    test('a placeholder or a phone is never a member name: the salon name stands in', () {
+      final staff = BookingRepositoryImpl.parseStaff([
+        {'id': 'a', 'firstName': 'ارائه‌دهنده', 'lastName': '9123135143', 'fullName': ''},
+        {'id': 'b', 'fullName': 'ارائه‌دهنده 9123135143'},
+        {'id': 'c', 'fullName': '09123135143'},
+        {'id': 'd', 'firstName': 'مشتری', 'lastName': '9384444636'},
+      ], fallbackName: 'سالن نهال');
+
+      expect(staff.map((s) => s.name), everyElement('سالن نهال'));
+      expect(staff.map((s) => s.name).join(), isNot(contains('9123135143')));
+    });
+
+    test('a real name next to a phone keeps the name only', () {
+      final staff = BookingRepositoryImpl.parseStaff([
+        {'id': 'a', 'firstName': 'سارا', 'lastName': '9123135143'},
+      ], fallbackName: 'سالن نهال');
+
+      expect(staff.single.name, 'سارا');
+    });
+
+    test("a slot's staff name that is a placeholder or a phone is no name", () {
+      TimeSlot slotNamed(String? name) => BookingRepositoryImpl.parseSlot({
+            'startTime': '2026-09-24T10:00:00Z',
+            'endTime': '2026-09-24T10:45:00Z',
+            'durationMinutes': 45,
+            'isAvailable': true,
+            'availableStaffId': 'st1',
+            'availableStaffName': name,
+          });
+
+      expect(slotNamed('ارائه‌دهنده 9123135143').staffName, isNull);
+      expect(slotNamed('09123135143').staffName, isNull);
+      expect(slotNamed('مریم احمدی').staffName, 'مریم احمدی');
+      expect(slotNamed(null).staffName, isNull);
     });
 
     test('a missing or malformed staff list is empty, not a crash', () {

@@ -64,4 +64,49 @@ void main() {
       expect(realFullNameOrNull('0912 313 5143'), isNull);
     });
   });
+
+  // Production QA 2026-09-23: the confirm step read «ارائه‌دهنده 9123135143» — "the number must never be written
+  // anywhere". Mirrors PersonName on the server.
+  test('a phone in any spelling is never a surname', () {
+    expect(realNameOrNull('سارا', '+989123135143'), 'سارا');
+    expect(realNameOrNull('سارا', '0912 313 5143'), 'سارا');
+    expect(realNameOrNull('سارا', '۰۹۱۲۳۱۳۵۱۴۳'), 'سارا');
+  });
+
+  test('a phone, or the whole placeholder, in the first-name field is no name', () {
+    expect(realNameOrNull('09123135143', null), isNull);
+    expect(realNameOrNull('+98 912 313 5143', ''), isNull);
+    expect(realNameOrNull('ارائه‌دهنده 9123135143', null), isNull);
+    expect(realNameOrNull('مشتری', '۹۳۸۴۴۴۴۶۳۶'), isNull);
+  });
+
+  test('a one-string name that is a placeholder or a phone is no name', () {
+    for (final name in [
+      'ارائه‌دهنده 9123135143',
+      'ارائه دهنده 9123135143',
+      'مشتری 9384444636',
+      'ارائه‌دهنده',
+      '09123135143',
+      '+98 912 313 5143',
+      '   ',
+      null,
+    ]) {
+      expect(personNameOrNull(name), isNull, reason: '$name');
+    }
+  });
+
+  test('a real one-string name keeps everything but a phone number', () {
+    expect(personNameOrNull('مریم'), 'مریم');
+    expect(personNameOrNull(' مریم رضایی '), 'مریم رضایی');
+    // Short numbers are part of names people choose; seven digits or more is a phone number.
+    expect(personNameOrNull('سالن ۲۴ ساعته'), 'سالن ۲۴ ساعته');
+    expect(personNameOrNull('مریم 09123135143'), 'مریم');
+  });
+
+  test('the parts of a placeholder are blank, so an edit form never shows the number', () {
+    expect(realNameParts('ارائه‌دهنده', '9123135143'), (first: '', last: ''));
+    expect(realNameParts('مشتری', '9384444636'), (first: '', last: ''));
+    expect(realNameParts('سارا', '9123135143'), (first: 'سارا', last: ''));
+    expect(realNameParts(' سارا ', ' احمدی '), (first: 'سارا', last: 'احمدی'));
+  });
 }

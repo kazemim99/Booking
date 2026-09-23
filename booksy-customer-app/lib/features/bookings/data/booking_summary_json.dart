@@ -100,8 +100,8 @@ class BookingSummaryJson {
       serviceName: serviceName as String? ?? '',
       staffId:
           staff == null || staff.isEmpty || staff == _emptyGuid ? null : staff,
-      // Optional on the wire: an API without it, or a booking with nobody named, has no staff name.
-      staffName: staffName is String ? realFullNameOrNull(staffName) : null,
+      // Optional and additive (production QA 2026-09-23); a placeholder or a phone is never kept as a name.
+      staffName: personNameOrNull(staffName is String ? staffName : null),
       startTime: start,
       durationMinutes: (durationMinutes as num?)?.toInt() ?? 0,
       price: (price as num?)?.toDouble() ?? 0,

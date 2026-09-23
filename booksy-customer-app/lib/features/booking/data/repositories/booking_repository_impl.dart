@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/errors/dio_failure_mapper.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../../core/utils/person_name.dart';
 import '../../domain/entities/booking_entities.dart';
 import '../../domain/repositories/booking_repository.dart';
 import '../datasources/booking_remote_datasource.dart';
@@ -49,7 +50,7 @@ class BookingRepositoryImpl implements BookingRepository {
       );
       final slots = (json['slots'] as List<dynamic>? ?? [])
           .whereType<Map<String, dynamic>>()
-          .map(_parseSlot)
+          .map(parseSlot)
           .where((s) => s.isAvailable)
           .toList();
       // The server says WHY a day is empty; without it the customer only sees "no free time".
@@ -140,11 +141,13 @@ class BookingRepositoryImpl implements BookingRepository {
                 imageUrl: s['imageUrl'] as String?,
               ))
           .toList(),
-      staff: parseStaff(json['staff']),
+      // A member with no real name is named by the salon, as the server does.
+      staff: parseStaff(json['staff'], fallbackName: json['businessName'] as String? ?? ''),
     );
   }
 
-  TimeSlot _parseSlot(Map<String, dynamic> json) {
+  @visibleForTesting
+  static TimeSlot parseSlot(Map<String, dynamic> json) {
     return TimeSlot(
       // Slots are the salon's wall clock: the digits are the time, whatever zone the server wrote.
       startTime: parseWallClock(json['startTime'] as String),
@@ -152,7 +155,8 @@ class BookingRepositoryImpl implements BookingRepository {
       durationMinutes: (json['durationMinutes'] as num?)?.toInt() ?? 0,
       isAvailable: json['isAvailable'] as bool? ?? false,
       staffId: json['availableStaffId']?.toString(),
-      staffName: json['availableStaffName'] as String?,
+      // Never a placeholder or a phone (production QA 2026-09-23); the confirm step then names the salon.
+      staffName: personNameOrNull(json['availableStaffName'] as String?),
     );
   }
 
@@ -188,8 +192,13 @@ class BookingRepositoryImpl implements BookingRepository {
   ///
   /// The backend sends this list already filtered to bookable members, so anyone
   /// here can be selected and will have availability.
+  ///
+  /// A name is never the sign-in placeholder or a phone number: a salon's owner
+  /// who never gave a name reached the confirm step as «ارائه‌دهنده 9123135143»
+  /// (production QA 2026-09-23). Such a member is named [fallbackName] — the
+  /// salon — exactly as the server names them.
   @visibleForTesting
-  static List<StaffMember> parseStaff(dynamic raw) {
+  static List<StaffMember> parseStaff(dynamic raw, {String fallbackName = ''}) {
     if (raw is! List) return const [];
 
     return raw.whereType<Map<String, dynamic>>().map((s) {
@@ -197,16 +206,13 @@ class BookingRepositoryImpl implements BookingRepository {
       // account yet has no first/last name — only the salon-provided display
       // name — so joining the parts produced an empty label and the picker
       // showed a blank, unidentifiable row.
-      final fullName = (s['fullName'] as String?)?.trim();
-      final joined = [s['firstName'], s['lastName']]
-          .whereType<String>()
-          .map((p) => p.trim())
-          .where((p) => p.isNotEmpty)
-          .join(' ');
+      final name = personNameOrNull(s['fullName'] as String?) ??
+          realNameOrNull(s['firstName'] as String?, s['lastName'] as String?) ??
+          fallbackName;
 
       return StaffMember(
         id: s['id'].toString(),
-        name: (fullName != null && fullName.isNotEmpty) ? fullName : joined,
+        name: name,
         role: s['role'] as String?,
         isActive: s['isActive'] as bool? ?? true,
       );

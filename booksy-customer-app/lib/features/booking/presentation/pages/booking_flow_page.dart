@@ -6,6 +6,7 @@ import '../../../../config/feature_flags.dart';
 import '../../../../config/routes/app_router.dart';
 import '../../../../config/theme/app_colors.dart';
 import '../../../../config/theme/app_tokens.dart';
+import '../../../../core/utils/person_name.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/network/connectivity_service.dart';
@@ -344,6 +345,15 @@ class _SummaryRows extends StatelessWidget {
   }
 }
 
+/// Who does the visit, as the confirm step names them: the chosen member, else the one the slot is held by, else
+/// "anyone". Never a placeholder or a phone number — production QA 2026-09-23 found the salon's owner named
+/// «ارائه‌دهنده 9123135143» here — so a person with no real name is named by the salon, as the server does.
+String _staffLabel(BookingState state, TimeSlot slot) {
+  final named = state.staff?.name ?? slot.staffName;
+  if (named == null) return AppStrings.bookingAnyStaff;
+  return personNameOrNull(named) ?? state.provider?.businessName ?? AppStrings.bookingAnyStaff;
+}
+
 /// Salon, service(s), date and time of a visit — the part of the summary both the confirm and success screens show.
 List<(String, String)> _visitRows(BookingState state, TimeSlot slot) => [
       (AppStrings.bookingProvider, state.provider?.businessName ?? ''),
@@ -454,10 +464,7 @@ class _ConfirmStep extends StatelessWidget {
 
     final rows = <(String, String)>[
       ..._visitRows(state, slot),
-      (
-        AppStrings.bookingStaff,
-        state.staff?.name ?? slot.staffName ?? AppStrings.bookingAnyStaff,
-      ),
+      (AppStrings.bookingStaff, _staffLabel(state, slot)),
       (
         AppStrings.bookingDuration,
         JalaliFormatter.toPersianDigits(

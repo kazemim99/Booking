@@ -59,7 +59,7 @@ _Root causes, with evidence (file:line at 6912ca13)._
 - [x] T2 RED integration tests S1-S4 reproducing the production shape (owner signed up by provider OTP, no name)
 - [x] T3 Fix PersonName + provider-detail staff, /staff, qualified-staff, members, availability, client book, outbox
 - [x] T4 RED integration tests S5 (staffName on my-bookings and booking details) → implement additively
-- [ ] T5 Customer app: person-name guard in staff parsing + confirm step; BookingSummary.staffName (tests first)
+- [x] T5 Customer app: person-name guard in staff parsing + confirm step; BookingSummary.staffName (tests first)
 - [ ] T6 Salon app: never a phone as a name (header, account sheet, More, team list, invitations) — tests first
 - [ ] T7 Salon app: name restored from the token on cold start and after a rename (tests first)
 - [ ] T8 Salon app: complete-name page after OTP for an established account with a placeholder name (tests first)

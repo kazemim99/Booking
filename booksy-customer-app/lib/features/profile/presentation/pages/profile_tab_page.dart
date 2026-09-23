@@ -6,6 +6,7 @@ import '../../../../config/routes/app_router.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/utils/person_name.dart';
 import '../../../../core/widgets/forward_chevron.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../../auth/domain/entities/user.dart';
@@ -44,12 +45,15 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // A skipped name prompt leaves «مشتری 9384444636»: neither the card nor the edit form may offer it back as a
+    // name ("the number must never be written anywhere", production QA 2026-09-23).
+    final name = realNameParts(user.firstName, user.lastName);
     return BlocProvider(
       create: (_) => ProfileCubit(
         remoteDataSource: getIt(),
         storageService: getIt(),
-        initialFirstName: user.firstName,
-        initialLastName: user.lastName,
+        initialFirstName: name.first,
+        initialLastName: name.last,
       ),
       child: BlocListener<ProfileCubit, ProfileState>(
         listenWhen: (prev, next) => prev.editStatus != next.editStatus,
@@ -171,10 +175,8 @@ class _ProfileView extends StatelessWidget {
       appBar: AppBar(title: const Text(AppStrings.profileTitle)),
       body: BlocBuilder<ProfileCubit, ProfileState>(
         builder: (context, state) {
-          final displayName = [state.firstName, state.lastName]
-              .whereType<String>()
-              .where((p) => p.isNotEmpty)
-              .join(' ');
+          final displayName =
+              realNameOrNull(state.firstName, state.lastName) ?? '';
 
           return ListView(
             padding: const EdgeInsets.all(AppSpacing.md),
