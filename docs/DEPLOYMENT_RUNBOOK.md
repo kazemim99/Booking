@@ -233,13 +233,27 @@ white page for seconds: `main.dart.<hash>.js` (3.9 MB) went out **uncompressed**
   fallback are unchanged.
 
 **One-time root step to install the vhost** (the deploy user has no root; the deploy job only copies
-files, so until this runs the `.gz` files sit unused and nothing breaks). From a checkout on the box, as root:
+files, so until this runs the `.gz` files sit unused and nothing breaks).
+
+The box has no checkout of this repository to copy from. The runner's workspace
+(`/home/booksy/actions-runner/_work/...`) is not one either: the deploy job sparse-checks out only
+`docker-compose.prod.yml` and the two smoke scripts, so `deployment/nginx/` never lands there. Upload the
+repo copy from your own checkout, at a commit that contains this change, to the deploy user's home (not
+`/tmp`, as in the manual deploy):
 
 ```bash
-# certbot may have edited the live file: compare first, and carry any server-only line into the repo copy
-diff /etc/nginx/sites-available/booksy-customer.conf deployment/nginx/booksy-customer.conf
+scp -i <deploy-key> deployment/nginx/booksy-customer.conf booksy@194.1.155.230:booksy-customer.conf
+```
+
+Then on the box, as root:
+
+```bash
+new=/home/booksy/booksy-customer.conf
+# certbot may have edited the live file: compare first, carry any server-only line into $new (and back
+# into deployment/nginx/booksy-customer.conf in the repo, so the next install does not drop it)
+diff /etc/nginx/sites-available/booksy-customer.conf "$new"
 cp /etc/nginx/sites-available/booksy-customer.conf /root/booksy-customer.conf.bak-$(date +%F)
-cp deployment/nginx/booksy-customer.conf /etc/nginx/sites-available/booksy-customer.conf
+cp "$new" /etc/nginx/sites-available/booksy-customer.conf
 nginx -t && systemctl reload nginx    # a failed -t changes nothing; the other sites stay up
 ```
 
