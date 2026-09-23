@@ -68,14 +68,22 @@ class SlotPicker extends StatelessWidget {
 
     // The strip is as tall as its two lines at the reader's text size (a fixed height overflowed at 1.3x), and never
     // shorter than a touch target.
+    // Each painter is disposed once measured: the picker rebuilds on every change of the bloc driving it.
     final scaler = MediaQuery.textScalerOf(context);
-    double lineHeight(TextStyle? style) => (TextPainter(
-          text: TextSpan(text: 'ی۲', style: style),
-          textDirection: TextDirection.rtl,
-          textScaler: scaler,
-          maxLines: 1,
-        )..layout())
-            .height;
+    double lineHeight(TextStyle? style) {
+      final painter = TextPainter(
+        text: TextSpan(text: 'ی۲', style: style),
+        textDirection: TextDirection.rtl,
+        textScaler: scaler,
+        maxLines: 1,
+      )..layout();
+      try {
+        return painter.height;
+      } finally {
+        painter.dispose();
+      }
+    }
+
     final chipHeight = math.max(
       AppTouchTarget.min,
       lineHeight(theme.textTheme.bodySmall) +

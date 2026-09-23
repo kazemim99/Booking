@@ -3,6 +3,7 @@ import 'package:booksy_customer_app/core/constants/app_strings.dart';
 import 'package:booksy_customer_app/core/utils/jalali_formatter.dart';
 import 'package:booksy_customer_app/features/booking/domain/entities/booking_entities.dart';
 import 'package:booksy_customer_app/features/booking/presentation/widgets/slot_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -136,6 +137,24 @@ void main() {
     );
 
     expect(find.text(AppStrings.bookingMovedFromToday), findsOneWidget);
+  });
+
+  // The strip measures its two lines with text painters on every build, and the picker rebuilds on every bloc change
+  // in both the booking and the reschedule flow: each painter must be disposed, or every build leaks its layout.
+  testWidgets('measuring the day strip leaves no text painter undisposed', (tester) async {
+    final live = <Object>{};
+    void track(ObjectEvent event) {
+      if (event is ObjectCreated && event.object is TextPainter) live.add(event.object);
+      if (event is ObjectDisposed) live.remove(event.object);
+    }
+
+    FlutterMemoryAllocations.instance.addListener(track);
+    addTearDown(() => FlutterMemoryAllocations.instance.removeListener(track));
+
+    await pumpPicker(tester, closedWeekdays: {DateTime.thursday});
+    await tester.pumpWidget(const SizedBox());
+
+    expect(live, isEmpty);
   });
 
   testWidgets('fits a 360x640 screen at 1.3x text with a notice and an empty day', (tester) async {
