@@ -93,6 +93,7 @@ wall-clock booking times (`wallClockIso`), the 7-day customer booking window, To
 - [ ] G.6 The booking flow's no-services state says the salon has no services (not "no results")
 
 ### I Production data (#1)
+- [ ] I.0 Public listings (search, by-location) return Active salons only, as the specification's own comment says
 - [ ] I.1 deployment/sql/deactivate-test-salons.sql: idempotent, two ids only, integration-tested on the real schema
 - [ ] I.2 Run the script on production and flush the provider cache
 - [ ] I.3 Apply the customer vhost change on the box (root) and reload nginx
@@ -112,9 +113,17 @@ wall-clock booking times (`wallClockIso`), the 7-day customer booking window, To
 - T1 "Note to the salon" is out of scope: the salon's app never shows `customerNotes`, so the note would go unread.
 - T1 Account deletion is not wired to `DELETE /Customers/{id}`: that endpoint is a stub that returns success and does
   nothing, and a button that claims to delete an account while keeping it is worse than no button.
-- T2 The two test salons are deactivated with SQL, not an admin endpoint: `Provider.Deactivate` has no endpoint and
+- T2 The two test salons are taken out with SQL, not an admin endpoint: `Provider.Deactivate` has no endpoint and
   production is 97 commits behind; its only side effect (`ProviderCacheInvalidationEventHandler`) is replaced by a cache
-  flush. «تجهیزات پزشکی آسان مدیکال» stays active until its owner is asked (the approved recommendation).
+  flush. They are set to **Archived**, not Inactive: the search that production runs hides only Archived
+  (`Status != Archived`), so Inactive would change nothing until a deploy; Drafted «سالن تست خودکار» cannot be
+  Deactivated by the domain anyway. Reversible (the script carries the reverse statement), nothing deleted.
+- T2 Public listings are Active-only (I.0). `SearchProvidersSpecification` says "default to active providers only" but
+  filters `!= Archived`, so Drafted and PendingVerification salons reach customers; category counts already use Active
+  and the admin panel has an activation step. Consequence to flag: a newly registered salon is invisible to customers
+  until an admin activates it — which is what the verification step is for. «تجهیزات پزشکی آسان مدیکال»
+  (PendingVerification) disappears through this, not through the script; its owner still needs asking.
+- T1 Slice G.6 (service-step empty copy) is done in slice D, which owns the booking feature's files.
 
 ## Log
 
