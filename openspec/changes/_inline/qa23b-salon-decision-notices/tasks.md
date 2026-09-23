@@ -40,11 +40,9 @@ accepts, declines, cancels or moves their appointment.
 - [x] 1.3 Verify FAST + filtered integration.
 
 ## Open (not fixed here)
-- SECURITY: POST /bookings/{id}/confirm is authorized only by the ProviderOrAdmin policy — no ownership check in
-  the controller, no `IResourceOwnershipResolver<ConfirmBookingCommand>`. Probed: another salon's owner confirms a
-  booking → 200. Since this change the customer is also told «تأیید شد» for it. Complete and no-show have the same
-  shape (read, not probed). Who may confirm (owner only, or members with ManageBookings via `CanManageProvider`)
-  is a security decision.
+- ~~SECURITY: confirm had no ownership check~~ — FIXED in f5b23cf9 (qa-walkthrough-2026-09-23b): confirm, complete,
+  no-show and assign-staff now require CanManageProvider on the booking's salon (the rule the salon's booking list
+  uses); another salon gets 403. Tests: OnlyTheSalonActsOnItsBookingsTests.
 - A deposit-paid booking confirmed by `ConfirmBookingOnDepositVerifiedHandler` gets no notice and no reminders.
   Deposits are parked (FOLLOW-UPS #64), so left alone.
 - The dispatcher marks the whole notification Failed when any channel fails, and the inbox hides Failed rows: a
