@@ -20,7 +20,7 @@ import 'package:booksy_customer_app/features/reviews/domain/entities/review.dart
 import 'package:booksy_customer_app/features/reviews/domain/repositories/review_repository.dart';
 
 import 'bookings_fakes.dart';
-import 'day_strip_overflow.dart';
+import 'vazir_font.dart';
 
 /// The appointment detail screen (UX review 2026-09-23): the home "next booking" card and notifications open it,
 /// so it carries the same actions as the list cards (E.1), a past visit can be booked again (E.4), and its
@@ -107,6 +107,9 @@ Finder _sheetButton(String label) =>
     find.descendant(of: find.byType(BottomSheet), matching: find.widgetWithText(AppButton, label));
 
 void main() {
+  // The 1.3x checks and the reschedule day strip are measured with the real font.
+  setUpAll(loadVazir);
+
   setUp(() {
     _bookings = FakeBookings();
     _slots = FakeSlots();
@@ -193,34 +196,32 @@ void main() {
       expect(find.byKey(const Key('appointment-cancel')), findsOneWidget);
     });
 
-    testWidgets(
-        'reschedule opens the slot picker and the detail shows the new time',
-        (tester) => ignoringDayStripOverflow(() async {
-              final newStart = DateTime(2030, 1, 6, 11, 15);
-              _bookings.upcoming = [upcoming];
-              _slots.day = DaySlots(slots: [
-                TimeSlot(
-                  startTime: newStart,
-                  endTime: newStart.add(const Duration(minutes: 45)),
-                  durationMinutes: 45,
-                  isAvailable: true,
-                ),
-              ]);
-              await _open(tester, 'b1');
+    testWidgets('reschedule opens the slot picker and the detail shows the new time', (tester) async {
+      final newStart = DateTime(2030, 1, 6, 11, 15);
+      _bookings.upcoming = [upcoming];
+      _slots.day = DaySlots(slots: [
+        TimeSlot(
+          startTime: newStart,
+          endTime: newStart.add(const Duration(minutes: 45)),
+          durationMinutes: 45,
+          isAvailable: true,
+        ),
+      ]);
+      await _open(tester, 'b1');
 
-              await tester.tap(find.byKey(const Key('appointment-reschedule')));
-              await _settle(tester);
-              expect(find.byType(ReschedulePage), findsOneWidget);
+      await tester.tap(find.byKey(const Key('appointment-reschedule')));
+      await _settle(tester);
+      expect(find.byType(ReschedulePage), findsOneWidget);
 
-              await tester.tap(find.text(JalaliFormatter.formatTime(newStart)));
-              await _settle(tester);
-              await tester.tap(find.byKey(const Key('reschedule-submit')));
-              await _settle(tester);
+      await tester.tap(find.text(JalaliFormatter.formatTime(newStart)));
+      await _settle(tester);
+      await tester.tap(find.byKey(const Key('reschedule-submit')));
+      await _settle(tester);
 
-              expect(find.byType(ReschedulePage), findsNothing);
-              expect(find.text(JalaliFormatter.formatTime(newStart)), findsOneWidget);
-              expect(find.text(JalaliFormatter.formatDate(newStart)), findsOneWidget);
-            }));
+      expect(find.byType(ReschedulePage), findsNothing);
+      expect(find.text(JalaliFormatter.formatTime(newStart)), findsOneWidget);
+      expect(find.text(JalaliFormatter.formatDate(newStart)), findsOneWidget);
+    });
   });
 
   group('a past visit', () {

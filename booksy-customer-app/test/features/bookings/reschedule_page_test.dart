@@ -11,13 +11,16 @@ import 'package:booksy_customer_app/features/bookings/domain/repositories/bookin
 import 'package:booksy_customer_app/features/bookings/presentation/pages/reschedule_page.dart';
 
 import 'bookings_fakes.dart';
-import 'day_strip_overflow.dart';
+import 'vazir_font.dart';
 
 /// The reschedule screen (UX review 2026-09-23, E.5): it says when the visit is now, offers the salon's booking
 /// window rather than two weeks, and says why a day has no times.
 void main() {
   late FakeSlots slots;
   final booking = fakeBooking('b1', start: DateTime(2030, 1, 5, 16, 30));
+
+  // The 1.3x check measures the day strip and times with the real font.
+  setUpAll(loadVazir);
 
   setUp(() {
     slots = FakeSlots(maxAdvanceBookingDays: 5, day: const DaySlots(reason: 'مجموعه در این روز تعطیل است.'));
@@ -45,36 +48,27 @@ void main() {
     }
   }
 
-  // Every test draws the day strip, so each runs under [ignoringDayStripOverflow].
-  testWidgets(
-      'the header says when the visit is now',
-      (tester) => ignoringDayStripOverflow(() async {
-            await open(tester);
+  testWidgets('the header says when the visit is now', (tester) async {
+    await open(tester);
 
-            expect(find.textContaining(JalaliFormatter.formatDateTime(booking.startTime)), findsOneWidget);
-          }));
+    expect(find.textContaining(JalaliFormatter.formatDateTime(booking.startTime)), findsOneWidget);
+  });
 
-  testWidgets(
-      "the day strip is today plus the salon's window",
-      (tester) => ignoringDayStripOverflow(() async {
-            await open(tester);
+  testWidgets("the day strip is today plus the salon's window", (tester) async {
+    await open(tester);
 
-            expect(tester.widget<SlotPicker>(find.byType(SlotPicker)).daysToShow, 6);
-          }));
+    expect(tester.widget<SlotPicker>(find.byType(SlotPicker)).daysToShow, 6);
+  });
 
-  testWidgets(
-      "an empty day shows the salon's reason",
-      (tester) => ignoringDayStripOverflow(() async {
-            await open(tester);
+  testWidgets("an empty day shows the salon's reason", (tester) async {
+    await open(tester);
 
-            expect(find.text('مجموعه در این روز تعطیل است.'), findsOneWidget);
-          }));
+    expect(find.text('مجموعه در این روز تعطیل است.'), findsOneWidget);
+  });
 
-  testWidgets(
-      'fits a 360x640 phone at 1.3x text',
-      (tester) => ignoringDayStripOverflow(() async {
-            await open(tester, textScale: 1.3);
+  testWidgets('fits a 360x640 phone at 1.3x text', (tester) async {
+    await open(tester, textScale: 1.3);
 
-            expect(tester.takeException(), isNull);
-          }));
+    expect(tester.takeException(), isNull);
+  });
 }
