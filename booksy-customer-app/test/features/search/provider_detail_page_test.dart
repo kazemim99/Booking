@@ -178,6 +178,37 @@ ProviderDetail _addresslessProvider() => const ProviderDetail(
       staff: [],
     );
 
+/// A salon with both a street address and a pin: the usual case.
+ProviderDetail _locatedProvider() => const ProviderDetail(
+      id: 'p5',
+      businessName: 'سالن نهال',
+      city: 'پارس‌آباد',
+      addressLine: 'شهرک پناهی، کوچه بلور ۳',
+      averageRating: 0,
+      totalReviews: 0,
+      latitude: 39.643089,
+      longitude: 47.897802,
+      businessHours: [],
+      services: [],
+      staff: [],
+    );
+
+/// An address the catalogue has not pinned yet.
+ProviderDetail _unpinnedProvider() => const ProviderDetail(
+      id: 'p6',
+      businessName: 'سالن بی‌نقشه',
+      city: 'پارس‌آباد',
+      addressLine: 'خیابان امام، پلاک ۱۲',
+      averageRating: 0,
+      totalReviews: 0,
+      businessHours: [],
+      services: [],
+      staff: [],
+    );
+
+/// The heading the map used to carry as a section of its own, under the same address again.
+const _removedMapHeading = 'موقعیت روی نقشه';
+
 const _oneReview = ProviderReviews(
   averageRating: 4,
   totalReviews: 1,
@@ -279,6 +310,12 @@ _StubProviderDetailCubit _loaded(ProviderDetail provider,
       provider: provider,
       reviews: reviews,
     ));
+
+/// [key] inside the «تماس و موقعیت» section.
+Finder _inContact(Key key) => find.descendant(
+      of: find.byKey(const Key('provider-contact-location')),
+      matching: find.byKey(key),
+    );
 
 /// A phone-sized surface, so layout findings match what a customer sees.
 void _phone(WidgetTester tester, {double width = 360, double height = 640}) {
@@ -468,10 +505,78 @@ void main() {
 
       expect(find.byKey(const Key('provider-reviews-section')), findsOneWidget);
       expect(find.byKey(const Key('review-r1')), findsOneWidget);
-      expect(find.byKey(const Key('provider-location-card')), findsOneWidget);
-      // Nothing to put under "contact": the section itself stays hidden.
-      expect(find.text(AppStrings.contactAndLocationTitle), findsNothing);
+      // QA 2026-09-23 #7 changed where the map lives: it is part of «تماس و موقعیت» now, so a salon known only by
+      // its pin gets that section (heading + map), just without an address row. It used to stay hidden here
+      // because the map was a section of its own.
+      expect(find.text(AppStrings.contactAndLocationTitle), findsOneWidget);
+      expect(_inContact(const Key('provider-location-card')), findsOneWidget);
+      expect(find.byKey(const Key('provider-address-row')), findsNothing);
     });
+  });
+
+  // QA recording 2026-09-23 #7: «تماس و موقعیت» showed the address, and «موقعیت روی نقشه» further down repeated
+  // it above the map. One section now: address row, map, directions.
+  group('one «تماس و موقعیت» section', () {
+    testWidgets('holds the address once, then the map and directions',
+        (tester) async {
+      await tester.pumpWidget(_app(_loaded(_locatedProvider())));
+      await tester.pumpAndSettle();
+
+      expect(find.text(AppStrings.contactAndLocationTitle), findsOneWidget);
+      expect(find.text(_removedMapHeading), findsNothing);
+      expect(find.textContaining('شهرک پناهی، کوچه بلور ۳'), findsOneWidget,
+          reason: 'the address is said once');
+
+      final addressRow = _inContact(const Key('provider-address-row'));
+      final map = _inContact(const Key('provider-location-card'));
+      final directions = _inContact(const Key('provider-directions'));
+      expect(addressRow, findsOneWidget);
+      expect(map, findsOneWidget);
+      expect(directions, findsOneWidget);
+      // Address, then map, then directions, down the page.
+      expect(tester.getTopLeft(addressRow).dy,
+          lessThan(tester.getTopLeft(map).dy));
+      expect(tester.getTopLeft(map).dy,
+          lessThan(tester.getTopLeft(directions).dy));
+    });
+
+    testWidgets('an address without a pin is the section without a map',
+        (tester) async {
+      await tester.pumpWidget(_app(_loaded(_unpinnedProvider())));
+      await tester.pumpAndSettle();
+
+      expect(find.text(AppStrings.contactAndLocationTitle), findsOneWidget);
+      expect(_inContact(const Key('provider-address-row')), findsOneWidget);
+      expect(find.byKey(const Key('provider-location-card')), findsNothing);
+      expect(find.byKey(const Key('provider-directions')), findsNothing);
+    });
+
+    testWidgets('neither an address nor a pin: no section at all',
+        (tester) async {
+      await tester.pumpWidget(_app(_loaded(_bareProvider())));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('provider-contact-location')), findsNothing);
+      expect(find.byKey(const Key('provider-location-card')), findsNothing);
+    });
+
+    for (final scale in [1.0, 1.3]) {
+      testWidgets('fits a 360x640 phone at ${scale}x text', (tester) async {
+        _phone(tester);
+        await tester.pumpWidget(
+          _app(_loaded(_locatedProvider()), textScale: scale),
+        );
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.byKey(const Key('provider-directions')));
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(
+          tester.getSize(find.byKey(const Key('provider-directions'))).height,
+          greaterThanOrEqualTo(48),
+        );
+      });
+    }
   });
 
   group('service prices (C.3)', () {

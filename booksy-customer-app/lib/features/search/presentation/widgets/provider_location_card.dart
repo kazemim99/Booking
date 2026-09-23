@@ -7,16 +7,17 @@ import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../pages/map_discovery_page.dart';
 
-/// Where the salon is, on the profile: its street address and a small map,
-/// with one tap to hand the point to a navigation app
-/// (openspec/changes/customer-app-discovery-pass).
+/// Where the salon is, on the profile: a small map with one tap to hand the
+/// point to a navigation app (openspec/changes/customer-app-discovery-pass).
+///
+/// It sits inside «تماس و موقعیت» (`ContactLocationSection`), under the address
+/// row, so it has no heading or address of its own (QA recording 2026-09-23 #7).
 ///
 /// Renders nothing without coordinates — a map of nowhere is worse than no map.
 /// The map here is deliberately not interactive: it is a picture of the place,
 /// and every gesture on it belongs to the page that scrolls underneath.
 class ProviderLocationCard extends StatelessWidget {
   final String businessName;
-  final String? address;
   final double? latitude;
   final double? longitude;
 
@@ -26,7 +27,6 @@ class ProviderLocationCard extends StatelessWidget {
   const ProviderLocationCard({
     super.key,
     required this.businessName,
-    this.address,
     this.latitude,
     this.longitude,
     this.openUrl,
@@ -61,12 +61,6 @@ class ProviderLocationCard extends StatelessWidget {
       key: const Key('provider-location-card'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(AppStrings.locationOnMapTitle, style: theme.textTheme.titleLarge),
-        const SizedBox(height: AppSpacing.xs),
-        if (address != null && address!.isNotEmpty) ...[
-          Text(address!, style: theme.textTheme.bodyMedium),
-          const SizedBox(height: AppSpacing.sm),
-        ],
         ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.lg),
           child: SizedBox(

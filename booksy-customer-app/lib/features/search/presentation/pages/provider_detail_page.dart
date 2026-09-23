@@ -16,15 +16,15 @@ import '../widgets/contact_location_section.dart';
 import '../widgets/services_grid.dart';
 import '../widgets/working_hours_section.dart';
 import '../widgets/provider_gallery.dart';
-import '../widgets/provider_location_card.dart';
 import '../../../reviews/presentation/widgets/provider_reviews_section.dart';
 import '../../../reviews/domain/entities/review.dart';
 
 /// Provider profile (deep-linkable at `/providers/:id`).
 ///
 /// Hero cover → name + meta line → working hours (with an "open now" pill) →
-/// services grid → about → contact & location, with the booking CTA pinned to
-/// the bottom so it is reachable without scrolling.
+/// services grid → about → contact & location (address, map, directions) →
+/// reviews, with the booking CTA pinned to the bottom so it is reachable without
+/// scrolling.
 ///
 /// For a signed-in customer the opening is recorded as a visit (home's
 /// "recently visited") and the app bar carries a favourite heart.
@@ -271,8 +271,13 @@ class _ProviderContent extends StatelessWidget {
           .fold<int?>(null, (min, p) => min == null || p < min ? p : min),
     );
 
+    // Address, map and directions in one section (QA recording 2026-09-23 #7); a salon known only by its pin still
+    // gets the map, one with only an address the address row.
     final contact = ContactLocationSection(
       address: address.isEmpty ? null : address,
+      businessName: provider.businessName,
+      latitude: provider.latitude,
+      longitude: provider.longitude,
     );
 
     return ListView(
@@ -322,24 +327,15 @@ class _ProviderContent extends StatelessWidget {
                 const SizedBox(height: AppSpacing.lg),
                 contact,
               ],
-              // Reviews and the map stand on their own: a salon the catalogue
-              // knows only by its pin used to lose both, because they sat
-              // inside the address-only contact block (UX review #12).
+              // Reviews stand on their own: a salon the catalogue knows only by
+              // its pin used to lose them, because they sat inside the
+              // address-only contact block (UX review #12).
               const SizedBox(height: AppSpacing.lg),
               ProviderReviewsSection(
                 reviews: reviews,
                 loading: reviewsLoading,
                 onVote: (review, helpful) => _vote(context, review, helpful),
               ),
-              if (provider.latitude != null && provider.longitude != null) ...[
-                const SizedBox(height: AppSpacing.lg),
-                ProviderLocationCard(
-                  businessName: provider.businessName,
-                  address: address.isEmpty ? null : address,
-                  latitude: provider.latitude,
-                  longitude: provider.longitude,
-                ),
-              ],
             ],
           ),
         ),

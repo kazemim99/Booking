@@ -287,7 +287,6 @@ class AppStrings {
   static const String tomorrow = 'فردا';
   static String freeSlotsOn(String when, int count) =>
       '$when ${PersianFormatter.formatNumber(count)} وقت خالی';
-  static const String locationOnMapTitle = 'موقعیت روی نقشه';
   static const String directionsAction = 'مسیریابی';
   static const String directionsSheetTitle = 'با کدام برنامه مسیریابی شود؟';
   static const String directionsNeshan = 'نشان';

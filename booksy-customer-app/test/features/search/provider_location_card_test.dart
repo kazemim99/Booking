@@ -4,14 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Getting there is part of choosing a salon
-/// (openspec/changes/customer-app-discovery-pass): the profile shows the street
-/// address, not only the city, and offers to hand the point to a navigation app.
+/// (openspec/changes/customer-app-discovery-pass): the profile offers to hand
+/// the point to a navigation app.
+///
+/// Since the QA recording of 2026-09-23 (#7) the card is only the map and the
+/// directions: it sits inside «تماس و موقعیت», whose address row already says
+/// where the salon is, so it carries no heading or address of its own.
 void main() {
   Future<void> pump(
     WidgetTester tester, {
     double? latitude,
     double? longitude,
-    String? address,
     List<String> opened = const [],
   }) async {
     await tester.pumpWidget(
@@ -21,7 +24,6 @@ void main() {
           child: Scaffold(
             body: ProviderLocationCard(
               businessName: 'سالن نهال',
-              address: address,
               latitude: latitude,
               longitude: longitude,
               openUrl: (url) async => opened.add(url),
@@ -35,21 +37,21 @@ void main() {
 
   testWidgets('a salon with no coordinates shows nothing of the map',
       (tester) async {
-    await pump(tester, address: 'شهرک پناهی، کوچه بلور ۳');
+    await pump(tester);
     expect(find.byKey(const Key('provider-location-card')), findsNothing);
   });
 
-  testWidgets('the card names the place and offers directions', (tester) async {
-    await pump(
-      tester,
-      address: 'شهرک پناهی، کوچه بلور ۳',
-      latitude: 39.643089,
-      longitude: 47.897802,
-    );
+  // Was 'the card names the place and offers directions', which also expected the address inside the card. The
+  // requirement changed (#7): the address belongs to the section's address row, once, and the card under it is
+  // only the map and the directions.
+  testWidgets('the card is the map and the directions, with no heading of its own',
+      (tester) async {
+    await pump(tester, latitude: 39.643089, longitude: 47.897802);
 
     expect(find.byKey(const Key('provider-location-card')), findsOneWidget);
-    expect(find.text('شهرک پناهی، کوچه بلور ۳'), findsOneWidget);
+    expect(find.byKey(const Key('provider-location-map')), findsOneWidget);
     expect(find.byKey(const Key('provider-directions')), findsOneWidget);
+    expect(find.text('موقعیت روی نقشه'), findsNothing);
   });
 
   testWidgets('directions offer the apps people here actually use',
