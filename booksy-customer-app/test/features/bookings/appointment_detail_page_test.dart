@@ -284,9 +284,9 @@ void main() {
 
     testWidgets('after a review is saved, the review action goes away', (tester) async {
       _bookings.past = [completed];
-      // A 412-wide phone: the review dialog's own star row (five 48-dp buttons, reviews feature) does not fit
-      // the 232-dp dialog body of a 360-wide one. That is outside this screen; see the change's open issues.
-      await _open(tester, 'b0', width: 412);
+      // The 360-wide phone every screen here is checked on: the review dialog's insetPadding (16/24) leaves room
+      // for its row of five 48-dp stars.
+      await _open(tester, 'b0');
 
       await tester.tap(find.byKey(const Key('appointment-write-review')));
       await _settle(tester);
