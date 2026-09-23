@@ -53,6 +53,8 @@ class _PushEnableTileState extends State<PushEnableTile> {
         AppSnackbar.success(context, AppStrings.pushEnabledSnack);
       case PushStatus.blocked:
         AppSnackbar.info(context, AppStrings.pushBlockedHint);
+      case PushStatus.unreachable:
+        AppSnackbar.info(context, AppStrings.pushUnreachableHint);
       case PushStatus.notAsked:
       case PushStatus.unavailable:
         break;
@@ -76,9 +78,16 @@ class _PushEnableTileState extends State<PushEnableTile> {
               AppStrings.pushBlockedTitle,
               AppStrings.pushBlockedHint,
             ),
+          PushStatus.unreachable => (
+              Icons.cloud_off_outlined,
+              AppStrings.pushUnreachableTitle,
+              AppStrings.pushUnreachableHint,
+            ),
           _ => (Icons.notifications_outlined, AppStrings.pushEnableAction, AppStrings.pushEnableSubtitle),
         };
-        final actionable = state.status == PushStatus.notAsked && !state.busy;
+        // Never asked, or allowed but not connected (a tap tries again without asking again).
+        final actionable =
+            (state.status == PushStatus.notAsked || state.status == PushStatus.unreachable) && !state.busy;
 
         final row = InkWell(
           key: const Key('push-enable-tile'),

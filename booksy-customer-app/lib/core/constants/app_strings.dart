@@ -231,6 +231,9 @@ class AppStrings {
   static const String pushPromptTitle = 'از تأیید نوبت باخبر شوید';
   static const String pushPromptBody = 'وقتی سالن نوبت شما را تأیید کرد، روی همین دستگاه خبرتان می‌کنیم.';
   static const String pushPromptLater = 'بعداً';
+  static const String pushUnreachableTitle = 'اعلان‌ها هنوز به این دستگاه نمی‌رسد';
+  static const String pushUnreachableHint =
+      'اتصال به سرویس اعلان برقرار نشد. برای تلاش دوباره بزنید.';
 
   /// The action on a push that arrives while the app is open.
   static const String pushNoticeOpen = 'مشاهده';

@@ -25,6 +25,9 @@ class _FakeSource implements PushTokenSource {
 
   int prompts = 0;
   String? token = 'token-1';
+
+  /// The messaging service cannot be reached (Google's endpoints, from a network that blocks them).
+  Object? tokenFails;
   int deleted = 0;
   final refreshes = StreamController<String>.broadcast();
 
@@ -45,7 +48,10 @@ class _FakeSource implements PushTokenSource {
   }
 
   @override
-  Future<String?> getToken() async => token;
+  Future<String?> getToken() async {
+    if (tokenFails != null) throw tokenFails!;
+    return token;
+  }
 
   @override
   Stream<String> get onTokenRefresh => refreshes.stream;
@@ -266,6 +272,35 @@ void main() {
       api.failWith = Exception('offline');
 
       await expectLater(push.enable(), completes);
+    });
+
+    // From Iran, Google's messaging endpoints are often unreachable without a VPN. Allowed-but-not-connected must not
+    // be shown as "on": the person would wait for notifications that cannot arrive.
+    test('allowed, but the messaging service cannot be reached: reported as unreachable, not as on', () async {
+      await push.onSignedIn();
+      source.tokenFails = Exception('firebaseinstallations.googleapis.com unreachable');
+
+      expect(await push.enable(), PushStatus.unreachable);
+      expect(api.registered, isEmpty);
+    });
+
+    test('allowed, but the server did not take the device: unreachable too', () async {
+      await push.onSignedIn();
+      api.failWith = Exception('offline');
+
+      expect(await push.enable(), PushStatus.unreachable);
+    });
+
+    test('trying again once the network allows it registers, without asking again', () async {
+      await push.onSignedIn();
+      source.tokenFails = Exception('unreachable');
+      await push.enable();
+
+      source.tokenFails = null;
+      expect(await push.enable(), PushStatus.enabled);
+
+      expect(api.registered, ['token-1@Web']);
+      expect(source.current, PushPermission.granted);
     });
   });
 

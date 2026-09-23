@@ -24,6 +24,11 @@ enum PushStatus {
 
   /// Declined. Only the browser's or phone's own settings can undo it; asking again shows nothing.
   blocked,
+
+  /// Allowed, but this device could not be connected: the messaging service (Google's, for FCM) or our server could
+  /// not be reached. Nothing can arrive until it is; trying again does not ask again. Only [PushSettings.enable]
+  /// reports it — after a restart the next sign-in retries silently.
+  unreachable,
 }
 
 /// What the notifications screen can do: read the status, and turn notifications on from a tap.
@@ -120,8 +125,9 @@ class PushRegistration implements PushLifecycle, PushSettings {
       // First thing after the tap: a browser only shows the prompt while the tap's activation is fresh.
       if (!await _source.requestPermission()) return await status();
 
-      if (_signedIn) await _registerCurrentToken();
-      return PushStatus.enabled;
+      // Signed out: the next sign-in registers the allowed device.
+      if (!_signedIn) return PushStatus.enabled;
+      return await _registerCurrentToken() ? PushStatus.enabled : PushStatus.unreachable;
     } catch (e) {
       debugPrint('[Push] enabling failed: $e');
       return await status();
@@ -154,22 +160,32 @@ class PushRegistration implements PushLifecycle, PushSettings {
     }
   }
 
-  Future<void> _registerCurrentToken() async {
-    final token = await _source.getToken();
-    if (token == null || token.isEmpty) return;
+  /// True when this device is now registered with the server.
+  Future<bool> _registerCurrentToken() async {
+    final String? token;
+    try {
+      token = await _source.getToken();
+    } catch (e) {
+      debugPrint('[Push] no token (messaging service unreachable?), will retry on next sign-in: $e');
+      return false;
+    }
+    if (token == null || token.isEmpty) return false;
 
-    await _register(token);
+    final registered = await _register(token);
 
     // Once per session, however many times sign-in is resolved (OTP, app restart, status refresh).
     _refreshes ??= _source.onTokenRefresh.listen((next) => _register(next));
+    return registered;
   }
 
-  Future<void> _register(String token) async {
+  Future<bool> _register(String token) async {
     try {
       await _api.register(token, _source.platform);
       _registered = token;
+      return true;
     } catch (e) {
       debugPrint('[Push] register failed, will retry on next sign-in: $e');
+      return false;
     }
   }
 }

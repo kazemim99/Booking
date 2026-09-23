@@ -154,6 +154,23 @@ void main() {
       expect(settings.enables, 0);
     });
 
+    testWidgets('allowed but not connected: the row says so and a tap tries again', (tester) async {
+      final settings = _FakeSettings(PushStatus.notAsked, answer: PushStatus.unreachable);
+      await pump(tester, (c) => PushEnableTile(cubit: c), settings);
+
+      await tester.tap(find.byKey(const Key('push-enable-tile')));
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.pushUnreachableTitle), findsOneWidget);
+      expect(find.text(AppStrings.pushEnabledTitle), findsNothing, reason: 'nothing can arrive yet');
+
+      settings.answer = PushStatus.enabled;
+      await tester.tap(find.byKey(const Key('push-enable-tile')));
+      await tester.pumpAndSettle();
+
+      expect(settings.enables, 2);
+      expect(find.text(AppStrings.pushEnabledTitle), findsWidgets);
+    });
+
     testWidgets('blocked: the browser will not ask again, so the row explains instead of offering a dead tap',
         (tester) async {
       final settings = _FakeSettings(PushStatus.blocked);
