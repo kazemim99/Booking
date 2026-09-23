@@ -17,8 +17,11 @@ import 'web_push_config.dart';
 /// existed. The Firebase JS SDK is fetched from www.gstatic.com and an unreachable host would hang initialisation
 /// forever, so it is bounded — push is then off for the session and the app is unaffected.
 class FirebasePushTokenSource implements PushTokenSource {
-  final WebPushConfig _web;
-  final bool _isWeb;
+  /// The Firebase Web app's config this build was given (none, unless CI passed it).
+  final WebPushConfig web;
+
+  /// Whether this is the browser build.
+  final bool isWeb;
 
   bool? _available;
 
@@ -28,22 +31,20 @@ class FirebasePushTokenSource implements PushTokenSource {
 
   static const _initTimeout = Duration(seconds: 20);
 
-  FirebasePushTokenSource({WebPushConfig web = WebPushConfig.fromEnvironment, bool isWeb = kIsWeb})
-      : _web = web,
-        _isWeb = isWeb;
+  FirebasePushTokenSource({this.web = WebPushConfig.fromEnvironment, this.isWeb = kIsWeb});
 
   @override
   Future<bool> isAvailable() async {
     if (_available != null) return _available!;
-    if (_isWeb && !_web.isComplete) return _available = false;
+    if (isWeb && !web.isComplete) return _available = false;
 
     try {
       if (Firebase.apps.isEmpty) {
-        await (_isWeb ? Firebase.initializeApp(options: _web.toFirebaseOptions()) : Firebase.initializeApp())
+        await (isWeb ? Firebase.initializeApp(options: web.toFirebaseOptions()) : Firebase.initializeApp())
             .timeout(_initTimeout);
       }
       // Browsers without the Push API (Safari outside an installed web app, some in-app browsers).
-      if (_isWeb && !await FirebaseMessaging.instance.isSupported()) return _available = false;
+      if (isWeb && !await FirebaseMessaging.instance.isSupported()) return _available = false;
       return _available = true;
     } catch (e) {
       debugPrint('[Push] Firebase not available on this build; push disabled: $e');
@@ -52,7 +53,7 @@ class FirebasePushTokenSource implements PushTokenSource {
   }
 
   @override
-  bool get promptNeedsUserAction => _isWeb;
+  bool get promptNeedsUserAction => isWeb;
 
   @override
   Future<PushPermission> permissionStatus() async {
@@ -73,11 +74,11 @@ class FirebasePushTokenSource implements PushTokenSource {
 
   @override
   Future<String?> getToken() async {
-    if (!_isWeb) return FirebaseMessaging.instance.getToken();
+    if (!isWeb) return FirebaseMessaging.instance.getToken();
 
     final token = await FirebaseMessaging.instance.getToken(
-      vapidKey: _web.vapidKey,
-      serviceWorkerScriptPath: _web.serviceWorkerPath,
+      vapidKey: web.vapidKey,
+      serviceWorkerScriptPath: web.serviceWorkerPath,
     );
     _webTokenFetched = true;
     return token;
@@ -89,14 +90,14 @@ class FirebasePushTokenSource implements PushTokenSource {
   @override
   Future<void> deleteToken() async {
     if (!await isAvailable()) return;
-    if (_isWeb && !_webTokenFetched) return;
+    if (isWeb && !_webTokenFetched) return;
     await FirebaseMessaging.instance.deleteToken();
     _webTokenFetched = false;
   }
 
   @override
   String get platform {
-    if (_isWeb) return 'Web';
+    if (isWeb) return 'Web';
     return defaultTargetPlatform == TargetPlatform.iOS ? 'Ios' : 'Android';
   }
 }

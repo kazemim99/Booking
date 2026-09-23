@@ -30,6 +30,15 @@ class _PushSoftPromptState extends State<PushSoftPrompt> {
   }
 
   @override
+  void didUpdateWidget(covariant PushSoftPrompt oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.cubit != null && widget.cubit != oldWidget.cubit) {
+      _cubit = widget.cubit;
+      _cubit!.load();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final cubit = _cubit;
     if (cubit == null) return const SizedBox.shrink();

@@ -33,6 +33,15 @@ class _PushEnableTileState extends State<PushEnableTile> {
     _cubit?.load();
   }
 
+  @override
+  void didUpdateWidget(covariant PushEnableTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.cubit != null && widget.cubit != oldWidget.cubit) {
+      _cubit = widget.cubit;
+      _cubit!.load();
+    }
+  }
+
   Future<void> _enable(BuildContext context, PushPermissionCubit cubit) async {
     final status = await cubit.enable();
     if (!context.mounted) return;
