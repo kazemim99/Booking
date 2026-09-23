@@ -107,6 +107,13 @@ _Root causes land here as they are confirmed, with evidence._
 
 ## Decisions
 
+- USER (3.2), 2026-09-23: no gap between appointments — the buffer stays at zero, as implemented.
+- USER (3.0), 2026-09-23 ("go with your recommendation and best UX"): bookings already stored 3h30 early are NOT
+  rewritten, because no record says which app made them and a blanket +3h30 would move correct ones. Instead
+  `deployment/sql/suspect-shifted-bookings.sql` (read-only, integration-tested against the real schema) lists
+  every upcoming candidate with its likely intended time and the customer's contact, and the runbook has the salon
+  confirm by phone and reschedule from its own app — so the customer gets the normal in-app change notice.
+
 - T2 (6.1) Seeded votes are real `ReviewVotes` rows, not counters written by hand. The seeder previously seeded
   none at all, on the grounds that inventing voters is fabrication; a demo needs the control to show something,
   and rows with matching counters are how a real vote is recorded. The salon is seeded with the phone number it
@@ -129,9 +136,16 @@ _Root causes land here as they are confirmed, with evidence._
   issuing the session's capacity in the refresh token, which would need the refresh to know which app asked.
 - T1 (3.0) Existing customer-app bookings stored 3h30 early are NOT rewritten: which rows came from the Flutter app
   (vs Vue, provider app, walk-in) is not recorded on the booking, and a wrong guess moves a correct booking. Listed
-  as an open question for the user.
+  as an open question for the user — resolved 2026-09-23, see the USER decision above.
 
 ## Log
+
+- 2026-09-23 deadlock ROOT CAUSE, found once `IncludeErrorDetail` printed it: "Process A waits for
+  AccessExclusiveLock on relation …; blocked by process B. Process B waits for AccessShareLock …; blocked by A".
+  The failing statement was `DatabaseReset`'s between-test TRUNCATE, colliding with the host's timer-driven services
+  (outbox sweep, payment reconciliation, ledger maintenance) that keep querying during tests — not the two
+  collections, and not any of this change's code. Fixed with `DatabaseReset.RetryingDeadlocksAsync` (40P01 only, at
+  most 5 re-runs, anything else surfaces at once); 3 self-tests RED first, 4/4 green.
 
 - 2026-09-23 deadlock follow-up: the exception said only "40P01: deadlock detected — DETAIL redacted", which names
   nothing to act on, so `IncludeErrorDetail` is now on for the throwaway test container. Two full integration runs

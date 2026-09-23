@@ -128,8 +128,7 @@ sed -i 's#booksy-api:latest#booksy-api:<sha>#' docker-compose.prod.yml
 docker compose -f docker-compose.prod.yml pull booksy-api
 docker compose -f docker-compose.prod.yml up -d booksy-api
 docker inspect -f '{{.Config.Image}} {{.State.Health.Status}}' booksy-api   # expect :<sha> healthy
-curl -s -o /dev/null -w '%{http_code}
-' https://back.nahalkmi.ir/health        # expect 200
+curl -s -o /dev/null -w '%{http_code}\n' https://back.nahalkmi.ir/health        # expect 200
 # and from any checkout: BASE=https://back.nahalkmi.ir bash tests/e2e/review-read-smoke.sh
 ```
 
@@ -142,6 +141,21 @@ Migrations run at host startup and a rollback does **not** undo them. That is on
 migration is backward compatible — the older image must run on the newer schema. Say so, per
 migration, in the section that introduces it (as below). `dotnet ef database update <previous>`
 against production is a protected operation and a last resort: it drops what `Down` drops.
+
+### After deploying the QA fixes of 2026-09-22: bookings that may be 3h30 early
+
+Until commit `4363d268` the customer app sent the chosen slot as UTC, so in Tehran a "14:00" booking was stored as
+10:30 (and conflict-checked there, leaving the real 14:00 open). A booking does not record which app made it, and
+the web app and the salon app always sent the right time — so nothing is rewritten automatically. Instead:
+
+1. Once the fixed customer-app build is live, list the candidates (read-only; set the deploy time):
+   ```bash
+   docker exec -i booksy-postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"      -v fix_deployed_at="'<deploy time, e.g. 2026-09-23 12:00:00+03:30>'" < deployment/sql/suspect-shifted-bookings.sql
+   ```
+   Each row is an upcoming online booking made before the fix, with the stored time and `likely_intended_start`
+   (+3h30), the customer's name and phone. The query itself is covered by `SuspectShiftedBookingsQueryTests`.
+2. The salon calls each customer and, where the time is wrong, reschedules it from its own app — which sends the
+   customer the normal "زمان نوبت تغییر کرد" notification, so the customer hears it from the salon, in the app.
 
 ### Deploying provider-reviews-and-ratings (migration `AddReviewModerationAndVoting`)
 
