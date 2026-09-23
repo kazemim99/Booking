@@ -77,6 +77,9 @@ class RescheduleCubit extends Cubit<RescheduleState> {
   final BookingSummary booking;
   int _requestId = 0;
 
+  /// The first day of the strip (the clock's day when the screen opened).
+  late final DateTime _today;
+
   /// The customer booking window, used until the salon's own arrives.
   static const int defaultBookingWindowDays = 7;
 
@@ -89,7 +92,8 @@ class RescheduleCubit extends Cubit<RescheduleState> {
           status: RescheduleStatus.loadingSlots,
           selectedDate: _dayOf((now ?? DateTime.now)()),
         )) {
-    loadSlots(state.selectedDate);
+    _today = state.selectedDate;
+    loadSlots(_today);
     _loadBookingWindow();
   }
 
@@ -98,16 +102,22 @@ class RescheduleCubit extends Cubit<RescheduleState> {
   /// The salon's booking window, from the same profile the booking flow
   /// reads. A failure keeps the default: the server still enforces the
   /// real window on submit.
+  ///
+  /// A day the customer picked from the default strip before the window
+  /// arrived may lie past it; the strip no longer shows that day, so the
+  /// selection goes back to today and today's times are loaded.
   Future<void> _loadBookingWindow() async {
     final result = await bookingRepository.getProviderDetail(booking.providerId);
     if (isClosed) return;
-    result.fold(
-      (_) {},
-      (provider) => emit(state.copyWith(
-        maxAdvanceBookingDays: provider.maxAdvanceBookingDays,
-        errorMessage: state.errorMessage,
-      )),
-    );
+    final days = result.fold((_) => null, (p) => p.maxAdvanceBookingDays);
+    if (days == null) return;
+
+    emit(state.copyWith(
+      maxAdvanceBookingDays: days,
+      errorMessage: state.errorMessage,
+    ));
+    final lastDay = DateTime(_today.year, _today.month, _today.day + days);
+    if (state.selectedDate.isAfter(lastDay)) await loadSlots(_today);
   }
 
   Future<void> loadSlots(DateTime date) async {

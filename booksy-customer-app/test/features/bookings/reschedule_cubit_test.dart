@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:booksy_customer_app/core/errors/failures.dart';
@@ -42,6 +44,38 @@ void main() {
     final state = await settled(cubit);
 
     expect(state.maxAdvanceBookingDays, 5);
+    await cubit.close();
+  });
+
+  test('a day picked before the window arrived that lies outside it goes back to today, with its times', () async {
+    final slots = FakeSlots(maxAdvanceBookingDays: 2)..providerGate = Completer<void>();
+    final cubit = cubitOver(slots);
+    await settled(cubit);
+
+    // The seven-day default strip is still up: the customer taps the sixth day.
+    await cubit.loadSlots(DateTime(2026, 9, 28));
+    slots.providerGate!.complete();
+    final state = await settled(cubit);
+
+    expect(state.maxAdvanceBookingDays, 2);
+    expect(state.selectedDate, DateTime(2026, 9, 23));
+    expect(slots.slotRequests.last, DateTime(2026, 9, 23));
+    expect(state.status, RescheduleStatus.pickingSlots);
+    await cubit.close();
+  });
+
+  test('a day picked before the window arrived that lies inside it is kept', () async {
+    final slots = FakeSlots(maxAdvanceBookingDays: 2)..providerGate = Completer<void>();
+    final cubit = cubitOver(slots);
+    await settled(cubit);
+
+    // The last day the salon takes: today plus two.
+    await cubit.loadSlots(DateTime(2026, 9, 25));
+    slots.providerGate!.complete();
+    final state = await settled(cubit);
+
+    expect(state.selectedDate, DateTime(2026, 9, 25));
+    expect(slots.slotRequests, [DateTime(2026, 9, 23), DateTime(2026, 9, 25)]);
     await cubit.close();
   });
 

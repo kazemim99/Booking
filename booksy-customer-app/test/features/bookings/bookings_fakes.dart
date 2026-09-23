@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dartz/dartz.dart';
 
 import 'package:booksy_customer_app/core/errors/failures.dart';
@@ -125,6 +127,9 @@ class FakeSlots implements BookingRepository {
   DaySlots day;
   final slotRequests = <DateTime>[];
 
+  /// When set, the provider detail arrives only once this completes (a slow profile).
+  Completer<void>? providerGate;
+
   FakeSlots({
     int maxAdvanceBookingDays = 7,
     this.day = const DaySlots(),
@@ -143,7 +148,10 @@ class FakeSlots implements BookingRepository {
               ));
 
   @override
-  Future<Either<Failure, ProviderDetail>> getProviderDetail(String providerId) async => provider;
+  Future<Either<Failure, ProviderDetail>> getProviderDetail(String providerId) async {
+    await providerGate?.future;
+    return provider;
+  }
 
   @override
   Future<Either<Failure, DaySlots>> getAvailableSlots({
