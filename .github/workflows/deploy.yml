@@ -198,6 +198,9 @@ jobs:
     - name: Review read smoke (the same script the deploy runs against production)
       run: BASE=http://localhost:5050 bash tests/e2e/review-read-smoke.sh
 
+    - name: Media URL smoke (the same script the deploy runs against production)
+      run: BASE=http://localhost:5050 bash tests/e2e/media-url-smoke.sh
+
     - name: Dump host log on failure
       if: failure()
       run: tail -n 300 host.log || true
@@ -499,6 +502,7 @@ jobs:
         sparse-checkout: |
           docker-compose.prod.yml
           tests/e2e/review-read-smoke.sh
+          tests/e2e/media-url-smoke.sh
         sparse-checkout-cone-mode: false
 
     - name: Install compose file
@@ -615,6 +619,15 @@ jobs:
       # the listing while /health stays 200). Anonymous and read-only. The script is sparse-
       # checked-out alongside the compose file.
       run: BASE=https://back.nahalkmi.ir bash tests/e2e/review-read-smoke.sh
+
+    - name: Media URL smoke (public)
+      # Every check above was green on 2026-09-22 while no salon photo loaded: the API sent them as
+      # relative paths, which the Flutter apps resolve against their own host (index.html). This
+      # asserts photo URLs are absolute https, and that an upload is an image carrying the CORS
+      # header and Vary: Origin (openspec/changes/_inline/salon-images-load). Anonymous, read-only.
+      run: >-
+        BASE=https://back.nahalkmi.ir REQUIRE_HTTPS=1 ORIGIN=https://customer.nahalkmi.ir
+        bash tests/e2e/media-url-smoke.sh
 
     - name: Remove dangling images
       if: always()

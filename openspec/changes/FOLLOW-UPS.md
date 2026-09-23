@@ -207,3 +207,19 @@ fails, the apps fall back to "no push" by design, and the backend records push a
 delivery (checked on production 2026-09-21). add-notification-clients stays STOPPED(blocked) on 2.6 and 4.3
 until the files arrive and a build on a real device shows a notification. Android also cannot be built on this
 workstation (Google Maven unreachable), so that check needs a machine or CI runner that can.
+
+## #69 Registration step 3 can reach an active salon
+`ProviderWriteRepository.GetDraftProviderByOwnerIdAsync` has no status filter, so `SaveStep3LocationCommand`
+(and `CreateProviderDraftCommand`, which then throws "Can only update draft providers") load an ACTIVE provider
+by owner and overwrite its address, contact info and registration step. Found by salon-images-load (2026-09-23),
+where it also wiped the gallery; that part is fixed (the profile is edited in place). Not fixed here: filtering to
+`Drafted` would send an active owner down the "create a new draft" path — a second provider — so the right answer
+(refuse, or redirect to the profile editor) is a registration-flow decision.
+
+## #70 Check whether a Redis-cached provider can be read back at all
+`CachedProviderReadRepository` stores the `Provider` aggregate through `RedisCacheService`, which uses
+System.Text.Json. `Provider` has only a private constructor and private setters (and its gallery is a private
+list), so deserialization most likely throws — caught and counted as a Redis failure, which opens the cache
+circuit breaker for everything. Unverified (salon-images-load, 2026-09-23): production may not be using Redis for
+this at all (`Cache:RedisConnectionString` defaults to localhost; compose sets only `ConnectionStrings__Redis`).
+Check the API log on the box for "Error during cache get for key Provider:" before changing anything.
