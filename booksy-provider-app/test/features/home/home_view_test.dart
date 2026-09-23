@@ -391,4 +391,33 @@ void main() {
           findsOneWidget);
     });
   });
+
+  // Production QA 2026-09-23: the salon app showed «09123135143» as the owner's name.
+  group('never a phone number as the name', () {
+    ProviderSession placeholder(String fullName) => ProviderSession(
+          accessToken: 'a',
+          refreshToken: 'r',
+          expiresIn: 900,
+          user: ProviderUser(id: 'u-1', phoneNumber: '09123135143', fullName: fullName),
+          providerId: 'p-1',
+          providerStatus: ProviderStatus.active,
+          isNewProvider: false,
+          requiresOnboarding: false,
+        );
+
+    for (final fullName in ['', 'ارائه‌دهنده 9123135143']) {
+      testWidgets('masthead and account sheet — name "$fullName"', (tester) async {
+        whenListen(authBloc, const Stream<AuthState>.empty(),
+            initialState: Authenticated(placeholder(fullName)));
+        await pump(tester, ctx());
+
+        expect(find.textContaining('9123135143'), findsNothing, reason: 'the masthead');
+
+        await tester.tap(find.byKey(const Key('home-avatar')));
+        await tester.pumpAndSettle();
+        expect(find.text(AppStrings.ownNameMissing), findsOneWidget);
+        expect(find.textContaining('9123135143'), findsNothing, reason: 'the account sheet');
+      });
+    }
+  });
 }

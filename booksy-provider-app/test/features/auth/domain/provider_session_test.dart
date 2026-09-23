@@ -58,4 +58,40 @@ void main() {
       );
     });
   });
+
+  // Production QA 2026-09-23: the header showed «09123135143» as the owner's name. The phone is not a name.
+  group('ProviderUser.realName', () {
+    test('a real name from the parts or the full name', () {
+      expect(
+        const ProviderUser(id: 'u', phoneNumber: '09123135143', firstName: 'مصطفی', lastName: 'کاظمی', fullName: '')
+            .realName,
+        'مصطفی کاظمی',
+      );
+      expect(
+        const ProviderUser(id: 'u', phoneNumber: '09123135143', fullName: 'مصطفی کاظمی').realName,
+        'مصطفی کاظمی',
+      );
+    });
+
+    test('no name is null — never the phone number', () {
+      expect(const ProviderUser(id: 'u', phoneNumber: '09123135143', fullName: '').realName, isNull);
+    });
+
+    test('the sign-in placeholder is no name', () {
+      expect(
+        const ProviderUser(
+          id: 'u',
+          phoneNumber: '09123135143',
+          firstName: 'ارائه‌دهنده',
+          lastName: '9123135143',
+          fullName: 'ارائه‌دهنده 9123135143',
+        ).realName,
+        isNull,
+      );
+      expect(
+        const ProviderUser(id: 'u', phoneNumber: '09123135143', fullName: 'ارائه‌دهنده 9123135143').realName,
+        isNull,
+      );
+    });
+  });
 }

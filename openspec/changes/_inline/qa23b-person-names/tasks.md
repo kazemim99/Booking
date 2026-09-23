@@ -60,9 +60,9 @@ _Root causes, with evidence (file:line at 6912ca13)._
 - [x] T3 Fix PersonName + provider-detail staff, /staff, qualified-staff, members, availability, client book, outbox
 - [x] T4 RED integration tests S5 (staffName on my-bookings and booking details) → implement additively
 - [x] T5 Customer app: person-name guard in staff parsing + confirm step; BookingSummary.staffName (tests first)
-- [ ] T6 Salon app: never a phone as a name (header, account sheet, More, team list, invitations) — tests first
-- [ ] T7 Salon app: name restored from the token on cold start and after a rename (tests first)
-- [ ] T8 Salon app: complete-name page after OTP for an established account with a placeholder name (tests first)
+- [x] T6 Salon app: never a phone as a name (header, account sheet, More, team list, invitations) — tests first
+- [x] T7 Salon app: name restored from the token on cold start and after a rename (tests first)
+- [x] T8 Salon app: complete-name page after OTP for an established account with a placeholder name (tests first)
 - [ ] T9 Vue web: check the same displays; fix what reads the raw parts
 - [ ] T10 Verify: build + unit projects + affected integration classes; flutter analyze/test in both apps
 
@@ -78,6 +78,14 @@ _Root causes, with evidence (file:line at 6912ca13)._
   On the salon's own team list the salon's name would read as if the member were the salon.
 - D4 (tier 1) The person's OWN account (auth responses, token claims, GET /Users/{id}) still carries the stored
   placeholder: it is the signal both apps use to ask for a real name. Every place that DISPLAYS it guards it.
+- D6 (tier 1) Salon app neutral labels: «نام شما ثبت نشده» for the signed-in person, «بدون نام» for a member or an
+  invitation; the phone appears only labelled («موبایل 0912 313 5143»). The composer's staff picker, which fell
+  back to the member's phone, shows «بدون نام · موبایل …».
+- D7 (tier 1) The salon app asks for the name the way the customer app does: once per OTP sign-in, only on the
+  way out of the auth screens (a pure `redirectFor(nameMissing:)` decision, not an imperative push that races the
+  router), skippable, never at a cold start; not during onboarding, whose wizard asks for the owner's name.
+- D8 (tier 1) The session takes the person's name from the token (the API writes the ClaimTypes URIs): on a cold
+  start (it carried none, so the header fell back to the phone) and on every refresh (so a rename shows at once).
 - D5 (tier 2, flagged) Additive: `staffName` on GET /Bookings/my-bookings items and GET /Bookings/{id}; left out of
   the JSON (null) when the salon itself holds the booking. The Vue web already renders `booking.staffName` when set.
 

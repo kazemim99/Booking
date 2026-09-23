@@ -453,13 +453,27 @@ class AppStrings {
   static const String phoneCopied = 'شماره کپی شد';
 
   // ==================== Customer book ====================
-  /// The name phone sign-in hands out until the person names themselves.
-  static const String providerPlaceholderName = 'ارائه‌دهنده';
   static const String moreMyName = 'نام شما';
   static const String myNameTitle = 'نام و نام خانوادگی شما';
   static const String myNameHint =
       'این نامی است که همکاران و مشتریان شما می‌بینند';
   static const String myNameSaved = 'نام شما ذخیره شد';
+
+  // A person with no real name — phone sign-in leaves «ارائه‌دهنده <digits>». The number is never shown as a
+  // name (production QA 2026-09-23); these stand in, and the phone appears only labelled as the phone.
+  static const String ownNameMissing = 'نام شما ثبت نشده';
+  static const String memberNameMissing = 'بدون نام';
+  static String phoneLabeled(String phone) => 'موبایل $phone';
+  static String unnamedWithPhone(String phone) =>
+      '$memberNameMissing · ${phoneLabeled(phone)}';
+
+  // Asked once, right after OTP, when the account has no real name.
+  static const String completeNameTitle = 'نام شما';
+  static const String completeNameSubtitle =
+      'نام و نام خانوادگی خود را وارد کنید تا مشتریان و همکاران شما را با نام بشناسند، نه با شماره موبایل.';
+  static const String completeNameSkip = 'بعداً';
+  static const String completeNameSaveFailed =
+      'ذخیره نام ناموفق بود. دوباره تلاش کنید.';
 
   static const String customerAdd = 'افزودن مشتری';
   static const String customerEdit = 'ویرایش مشتری';

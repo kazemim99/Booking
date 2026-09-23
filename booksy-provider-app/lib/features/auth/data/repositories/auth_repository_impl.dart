@@ -101,6 +101,8 @@ class AuthRepositoryImpl implements AuthRepository {
               accessToken: data.accessToken,
               refreshToken: data.refreshToken,
               expiresIn: data.expiresIn,
+              // The new token carries the current name (e.g. right after a rename), so the header follows it.
+              user: _userFrom(data.accessToken, session.user),
             );
             _cachedSession = refreshed;
             return Right(refreshed);
@@ -196,10 +198,11 @@ class AuthRepositoryImpl implements AuthRepository {
         accessToken: accessToken,
         refreshToken: refreshToken,
         expiresIn: 0,
-        user: ProviderUser(
-          id: userId,
-          phoneNumber: phoneNumber,
-          fullName: '',
+        // The name lives in the token. A restored session used to carry none, and the header then fell back to
+        // the phone number (production QA 2026-09-23).
+        user: _userFrom(
+          accessToken,
+          ProviderUser(id: userId, phoneNumber: phoneNumber, fullName: ''),
         ),
         providerId: providerId,
         providerStatus: status,
@@ -283,6 +286,24 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   // ==================== Helpers ====================
+
+  /// [user] with the name [accessToken] carries; unchanged when the token has none.
+  static ProviderUser _userFrom(String accessToken, ProviderUser user) {
+    final claims = JwtDecoder.decode(accessToken);
+    if (claims == null ||
+        (claims.firstName == null && claims.lastName == null && claims.fullName == null)) {
+      return user;
+    }
+    return ProviderUser(
+      id: user.id,
+      phoneNumber: user.phoneNumber,
+      email: user.email,
+      firstName: claims.firstName,
+      lastName: claims.lastName,
+      fullName: claims.fullName ??
+          [claims.firstName, claims.lastName].whereType<String>().join(' '),
+    );
+  }
 
   Future<void> _persist(ProviderSession session, String phoneNumber) async {
     await _storage.saveSession(

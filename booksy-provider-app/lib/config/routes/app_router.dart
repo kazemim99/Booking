@@ -9,6 +9,7 @@ import '../../features/auth/domain/entities/provider_status.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
 import '../../features/auth/presentation/pages/account_blocked_page.dart';
+import '../../features/auth/presentation/pages/complete_name_page.dart';
 import '../../features/auth/presentation/pages/otp_verification_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_wizard_page.dart';
 import '../../features/auth/presentation/pages/provider_login_page.dart';
@@ -72,6 +73,13 @@ class Routes {
       '$newBooking?date=${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   static const String onboarding = '/onboarding';
   static const String blocked = '/blocked';
+
+  /// Asked once, right after OTP, when the account has no real name.
+  static const String completeName = '/profile/name';
+
+  /// [completeName], then on to [target].
+  static String completeNameThen(String target) =>
+      '$completeName?redirect=${Uri.encodeComponent(target)}';
 }
 
 /// Resolved auth flow status for routing.
@@ -82,6 +90,7 @@ class AuthNotifier extends ChangeNotifier {
   AuthFlowStatus _status = AuthFlowStatus.unresolved;
   ProviderStatus? _blockedStatus;
   String? _phoneNumber;
+  bool _nameMissing = false;
   StreamSubscription<AuthState>? _sub;
 
   AuthFlowStatus get status => _status;
@@ -90,6 +99,9 @@ class AuthNotifier extends ChangeNotifier {
   /// Owner phone from the resolved session (pre-fills onboarding step 1).
   String? get phoneNumber => _phoneNumber;
   bool get sessionResolved => _status != AuthFlowStatus.unresolved;
+
+  /// The signed-in account has no real name yet — only the sign-in placeholder, or nothing.
+  bool get nameMissing => _nameMissing;
 
   AuthNotifier(AuthBloc bloc) {
     apply(bloc.state);
@@ -108,6 +120,7 @@ class AuthNotifier extends ChangeNotifier {
       _status = AuthFlowStatus.authenticated;
       _blockedStatus = null;
       _phoneNumber = state.session.user.phoneNumber;
+      _nameMissing = state.session.user.realName == null;
     } else if (state is NeedsOnboarding) {
       _status = AuthFlowStatus.needsOnboarding;
       _blockedStatus = null;
@@ -150,6 +163,7 @@ class AppRouter {
     required String location,
     required Uri uri,
     required AuthFlowStatus status,
+    bool nameMissing = false,
   }) {
     // Hold on splash until the stored session resolves.
     if (status == AuthFlowStatus.unresolved) {
@@ -178,9 +192,13 @@ class AppRouter {
         }
         if (_isAuthScreen(location)) {
           final target = uri.queryParameters['redirect'];
-          return (target != null && target.isNotEmpty)
+          final destination = (target != null && target.isNotEmpty)
               ? Uri.decodeComponent(target)
               : Routes.dashboard;
+          // Phone sign-in leaves «ارائه‌دهنده <digits>» as the name, and nothing ever asked for a real one — so
+          // the app showed the owner as their number (production QA 2026-09-23). Asked here, once: only on the
+          // way out of the auth screens, never at a cold start or mid-app, and a skip is not undone.
+          return nameMissing ? Routes.completeNameThen(destination) : destination;
         }
         return null;
 
@@ -198,6 +216,7 @@ class AppRouter {
         location: state.matchedLocation,
         uri: state.uri,
         status: auth.status,
+        nameMissing: auth.nameMissing,
       ),
       routes: [
         GoRoute(
@@ -309,6 +328,11 @@ class AppRouter {
           path: Routes.onboarding,
           builder: (_, _) =>
               OnboardingWizardPage(phoneNumber: auth.phoneNumber),
+        ),
+        GoRoute(
+          path: Routes.completeName,
+          builder: (_, state) =>
+              CompleteNamePage(redirect: state.uri.queryParameters['redirect']),
         ),
         GoRoute(
           path: Routes.blocked,

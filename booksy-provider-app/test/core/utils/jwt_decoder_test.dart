@@ -64,4 +64,28 @@ void main() {
       expect(JwtDecoder.decode('onlyonepart'), isNull);
     });
   });
+
+  group('JwtDecoder name claims', () {
+    test('reads the ClaimTypes URIs the API writes', () {
+      final claims = JwtDecoder.decode(_makeToken({
+        'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname': 'مصطفی',
+        'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname': 'کاظمی',
+        'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name': 'مصطفی کاظمی',
+      }))!;
+      expect(claims.firstName, 'مصطفی');
+      expect(claims.lastName, 'کاظمی');
+      expect(claims.fullName, 'مصطفی کاظمی');
+    });
+
+    test('and the short spellings', () {
+      final claims = JwtDecoder.decode(_makeToken({
+        'given_name': 'مصطفی',
+        'family_name': 'کاظمی',
+        'unique_name': 'مصطفی کاظمی',
+      }))!;
+      expect(claims.firstName, 'مصطفی');
+      expect(claims.lastName, 'کاظمی');
+      expect(claims.fullName, 'مصطفی کاظمی');
+    });
+  });
 }

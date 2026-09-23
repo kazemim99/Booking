@@ -38,6 +38,24 @@ class _MockAuthBloc extends MockBloc<AuthEvent, AuthState>
 
 class _MockAuthRepository extends Mock implements AuthRepository {}
 
+/// The production owner (QA 2026-09-23): signed up with nothing but a phone.
+ProviderSession _sessionNamed(String fullName, {String? firstName, String? lastName}) => ProviderSession(
+      accessToken: 'a',
+      refreshToken: 'r',
+      expiresIn: 900,
+      user: ProviderUser(
+        id: 'u-1',
+        phoneNumber: '09123135143',
+        firstName: firstName,
+        lastName: lastName,
+        fullName: fullName,
+      ),
+      providerId: 'p-1',
+      providerStatus: ProviderStatus.active,
+      isNewProvider: false,
+      requiresOnboarding: false,
+    );
+
 ProviderSession get _session => ProviderSession(
       accessToken: 'a',
       refreshToken: 'r',
@@ -1669,6 +1687,132 @@ void main() {
       expect(find.text(AppStrings.fieldRequired), findsOneWidget);
       verifyNever(() => authRepository.updateMyName(
           firstName: any(named: 'firstName'), lastName: any(named: 'lastName')));
+    });
+  });
+
+  // Production QA 2026-09-23: the salon app's profile showed «09123135143» as the owner's name. "The number must
+  // never be written anywhere" — as a name. It may appear as the phone it is.
+  group('Never a phone number as a name', () {
+    late _MockAuthBloc authBloc;
+
+    Future<void> pumpMore(WidgetTester tester, ProviderSession session) async {
+      authBloc = _MockAuthBloc();
+      whenListen(authBloc, const Stream<AuthState>.empty(), initialState: Authenticated(session));
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          builder: (context, child) => Directionality(
+            textDirection: TextDirection.rtl,
+            child: child ?? const SizedBox.shrink(),
+          ),
+          home: BlocProvider<AuthBloc>.value(value: authBloc, child: const MorePage()),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('the More header does not name the owner by the sign-in placeholder', (tester) async {
+      await pumpMore(tester, _sessionNamed('ارائه‌دهنده 9123135143',
+          firstName: 'ارائه‌دهنده', lastName: '9123135143'));
+
+      final header = tester.widget<ProfileHeader>(find.byType(ProfileHeader));
+      expect(header.name, AppStrings.ownNameMissing);
+      expect(find.textContaining('ارائه‌دهنده 9123135143'), findsNothing);
+    });
+
+    testWidgets('a restored session without a name is not named by its phone', (tester) async {
+      // A cold start used to carry no name at all, and the header fell back to the phone.
+      await pumpMore(tester, _sessionNamed(''));
+
+      final header = tester.widget<ProfileHeader>(find.byType(ProfileHeader));
+      expect(header.name, AppStrings.ownNameMissing);
+      expect(header.name, isNot(contains('9123135143')));
+    });
+
+    testWidgets('the name form opens empty rather than on the placeholder', (tester) async {
+      final repo = _MockAuthRepository();
+      if (getIt.isRegistered<AuthRepository>()) getIt.unregister<AuthRepository>();
+      getIt.registerSingleton<AuthRepository>(repo);
+      addTearDown(() => getIt.unregister<AuthRepository>());
+      await pumpMore(tester, _sessionNamed('ارائه‌دهنده 9123135143',
+          firstName: 'ارائه‌دهنده', lastName: '9123135143'));
+
+      await tester.scrollUntilVisible(find.byKey(const Key('more-my-name')), 200,
+          scrollable: find.byType(Scrollable).last);
+      await tester.tap(find.byKey(const Key('more-my-name')));
+      await tester.pumpAndSettle();
+
+      final fields = tester.widgetList<EditableText>(find.byType(EditableText)).map((f) => f.controller.text);
+      expect(fields.join(), isEmpty);
+    });
+
+    Future<void> pumpTeam(WidgetTester tester, List<OrgMember> members,
+        {List<PendingInvitation> invitations = const []}) async {
+      when(() => repository.fetchOrgMembers()).thenAnswer((_) async => Right(members));
+      when(() => repository.fetchPendingInvitations()).thenAnswer((_) async => Right(invitations));
+      final cubit = StaffCubit(repository);
+      final pendingCubit = PendingInvitationsCubit(repository);
+      addTearDown(cubit.close);
+      addTearDown(pendingCubit.close);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          builder: (context, child) => Directionality(
+            textDirection: TextDirection.rtl,
+            child: child ?? const SizedBox.shrink(),
+          ),
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider<StaffCubit>.value(value: cubit..load()),
+              BlocProvider<PendingInvitationsCubit>.value(value: pendingCubit..load()),
+            ],
+            child: const StaffView(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a team member with no real name is labelled, and the number is only their phone', (tester) async {
+      await pumpTeam(tester, const [
+        OrgMember(
+          membershipId: 'mem-owner',
+          name: '',
+          phone: '09123135143',
+          roles: ['Owner', 'StaffProvider'],
+          status: 'Active',
+          isOwner: true,
+          providesServices: true,
+        ),
+        OrgMember(
+          membershipId: 'mem-2',
+          name: 'ارائه‌دهنده 9121112233',
+          phone: '09121112233',
+          roles: ['StaffProvider'],
+          status: 'Active',
+          providesServices: true,
+        ),
+      ]);
+
+      for (final id in ['mem-owner', 'mem-2']) {
+        final row = find.byKey(Key('member-row-$id'));
+        expect(tester.widget<ListTile>(row).title, isA<Text>());
+        expect((tester.widget<ListTile>(row).title as Text).data, AppStrings.memberNameMissing);
+      }
+      expect(find.text('09123135143'), findsNothing, reason: 'never as the title');
+      expect(find.textContaining('ارائه‌دهنده 9121112233'), findsNothing);
+      expect(find.textContaining(AppStrings.phoneLabeled('0912 313 5143')), findsOneWidget,
+          reason: 'the phone is still there, labelled as the phone');
+    });
+
+    testWidgets('an invitation sent without a name is labelled, not titled with its phone', (tester) async {
+      await pumpTeam(tester, const [], invitations: const [
+        PendingInvitation(invitationId: 'inv-9', phone: '09121110022'),
+      ]);
+
+      final row = find.byKey(const Key('invitation-row-inv-9'));
+      expect((tester.widget<ListTile>(row).title as Text).data, AppStrings.memberNameMissing);
+      expect(find.textContaining(AppStrings.phoneLabeled('0912 111 0022')), findsOneWidget);
     });
   });
 }

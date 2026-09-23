@@ -122,7 +122,7 @@ class HomeView extends StatelessWidget {
     final ctx = context.watch<HomeCubit>().state;
     final businessName = ctx.identity.businessName.trim().isNotEmpty
         ? ctx.identity.businessName
-        : (session?.user.displayName ?? '');
+        : (session?.user.realName ?? '');
     final initial =
         businessName.isNotEmpty ? businessName.characters.first : '؟';
 
@@ -399,7 +399,10 @@ class HomeView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    session?.user.displayName ?? AppStrings.homeAccountTitle,
+                    session == null
+                        ? AppStrings.homeAccountTitle
+                        // Never the phone, never «ارائه‌دهنده <digits>» (production QA 2026-09-23).
+                        : session.user.realName ?? AppStrings.ownNameMissing,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,

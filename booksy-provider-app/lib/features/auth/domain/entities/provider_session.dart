@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../../core/utils/person_name.dart';
 import 'provider_status.dart';
 
 /// Authenticated provider user (domain entity).
@@ -19,7 +20,11 @@ class ProviderUser extends Equatable {
     required this.fullName,
   });
 
-  String get displayName => fullName.trim().isNotEmpty ? fullName : phoneNumber;
+  /// The person's real name, or null when they have none — never the sign-in placeholder «ارائه‌دهنده ۹۱۲…»
+  /// and never the phone number (production QA 2026-09-23: the header showed «09123135143» as the owner's name,
+  /// because this used to fall back to [phoneNumber]). Callers show their own neutral label for null.
+  String? get realName =>
+      PersonName.realOrNull(firstName, lastName) ?? PersonName.sanitize(fullName);
 
   @override
   List<Object?> get props => [id, phoneNumber, email, firstName, lastName, fullName];
@@ -69,6 +74,7 @@ class ProviderSession extends Equatable {
   bool get isBlocked => providerStatus?.isBlocked ?? false;
 
   ProviderSession copyWith({
+    ProviderUser? user,
     String? accessToken,
     String? refreshToken,
     int? expiresIn,
@@ -79,7 +85,7 @@ class ProviderSession extends Equatable {
       accessToken: accessToken ?? this.accessToken,
       refreshToken: refreshToken ?? this.refreshToken,
       expiresIn: expiresIn ?? this.expiresIn,
-      user: user,
+      user: user ?? this.user,
       providerId: providerId ?? this.providerId,
       providerStatus: providerStatus ?? this.providerStatus,
       isNewProvider: isNewProvider,

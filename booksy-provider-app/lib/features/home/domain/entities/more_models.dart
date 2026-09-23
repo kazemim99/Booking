@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../../core/utils/person_name.dart';
+
 /// A team member row on the More → Staff screen.
 class ProviderStaffMember extends Equatable {
   final String id;
@@ -83,10 +85,10 @@ class PendingInvitation extends Equatable {
     this.expiresAt,
   });
 
-  /// What to show for the invitee: their name when the owner typed one, else
-  /// the phone the invitation went to.
-  String get displayName =>
-      (inviteeName != null && inviteeName!.isNotEmpty) ? inviteeName! : phone;
+  /// The invitee's name when the owner typed one; empty otherwise. Never the
+  /// phone the invitation went to — that is shown as the phone, labelled
+  /// (production QA 2026-09-23).
+  String get displayName => PersonName.sanitize(inviteeName) ?? '';
 
   @override
   List<Object?> get props => [invitationId, phone, inviteeName, sentAt, expiresAt];

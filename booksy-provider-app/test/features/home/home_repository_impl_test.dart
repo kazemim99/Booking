@@ -1,3 +1,4 @@
+import 'package:booksy_provider_app/core/constants/app_strings.dart';
 import 'package:booksy_provider_app/core/errors/failures.dart';
 import 'package:booksy_provider_app/features/auth/domain/entities/provider_session.dart';
 import 'package:booksy_provider_app/features/auth/domain/entities/provider_status.dart';
@@ -119,6 +120,35 @@ void main() {
       result.fold((_) => fail('expected a catalog'), (catalog) {
         expect(catalog.staff.map((s) => s.id), ['mem-1']);
       });
+    });
+
+    // Production QA 2026-09-23: a member with no real name was offered by their phone number, as if it were
+    // their name. The server now sends no name for them; the phone may show — labelled, as the phone.
+    test('a member with no real name is never offered by their number as the name', () async {
+      when(() => api.getOrganizationMembers(any())).thenAnswer((_) async => [
+            {
+              'membershipId': 'mem-1',
+              'name': '',
+              'phoneNumber': '09123135143',
+              'status': 'Active',
+              'providesServices': true,
+            },
+            {
+              'membershipId': 'mem-2',
+              'name': 'ارائه‌دهنده 9121112233',
+              'phoneNumber': '09121112233',
+              'status': 'Active',
+              'providesServices': true,
+            },
+          ]);
+
+      final catalog = (await build().fetchComposerCatalog())
+          .getOrElse(() => throw StateError('expected Right'));
+
+      expect(catalog.staff.map((s) => s.name), [
+        AppStrings.unnamedWithPhone('0912 313 5143'),
+        AppStrings.unnamedWithPhone('0912 111 2233'),
+      ]);
     });
   });
 

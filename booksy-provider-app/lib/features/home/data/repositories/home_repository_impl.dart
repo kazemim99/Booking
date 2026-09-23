@@ -1,6 +1,8 @@
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 
+import '../../../../core/constants/app_strings.dart';
+import '../../../../core/utils/person_name.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/utils/phone_number.dart';
 import '../../../auth/domain/entities/provider_status.dart';
@@ -861,12 +863,17 @@ class HomeRepositoryImpl implements HomeRepository {
                 HomeApiService.readString(m, const ['status']) == 'Active' &&
                 m['providesServices'] == true)
             .map((m) {
-              final name = HomeApiService.readString(m, const ['name']);
+              // A member with no real name is never offered by their number as if it were the name
+              // (production QA 2026-09-23); the phone identifies them, labelled as the phone.
+              final name = PersonName.sanitize(
+                  HomeApiService.readString(m, const ['name']));
+              final phone = HomeApiService.readString(m, const ['phoneNumber']);
               return ComposerStaff(
                 id: HomeApiService.readString(m, const ['membershipId']),
-                name: name.isEmpty
-                    ? HomeApiService.readString(m, const ['phoneNumber'])
-                    : name,
+                name: name ??
+                    (phone.isEmpty
+                        ? AppStrings.memberNameMissing
+                        : AppStrings.unnamedWithPhone(PhoneNumber.display(phone))),
               );
             })
             .where((s) => s.id.isNotEmpty)

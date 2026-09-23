@@ -59,4 +59,47 @@ void main() {
       expect(PersonName.join('', ''), '');
     });
   });
+
+  // Production QA 2026-09-23: the salon app showed «09123135143» as the owner's name — "the number must never be
+  // written anywhere". Mirrors PersonName on the server.
+  group('PersonName.realOrNull — what counts as a real name', () {
+    test('first and last together; half a name is a name', () {
+      expect(PersonName.realOrNull('مصطفی', 'کاظمی'), 'مصطفی کاظمی');
+      expect(PersonName.realOrNull(' مصطفی ', null), 'مصطفی');
+    });
+
+    test('the sign-in placeholder and any phone number are no name', () {
+      expect(PersonName.realOrNull('ارائه‌دهنده', '9123135143'), isNull);
+      expect(PersonName.realOrNull('مشتری', '۹۳۸۴۴۴۴۶۳۶'), isNull);
+      expect(PersonName.realOrNull('09123135143', null), isNull);
+      expect(PersonName.realOrNull('ارائه‌دهنده 9123135143', null), isNull);
+      expect(PersonName.realOrNull(null, null), isNull);
+    });
+
+    test('a number is never a surname', () {
+      expect(PersonName.realOrNull('مصطفی', '+989123135143'), 'مصطفی');
+      expect(PersonName.realOrNull('مصطفی', '0912 313 5143'), 'مصطفی');
+    });
+  });
+
+  group('PersonName.sanitize — a one-string name', () {
+    test('a placeholder or a phone is no name', () {
+      for (final name in [
+        'ارائه‌دهنده 9123135143',
+        'ارائه‌دهنده',
+        '09123135143',
+        '+98 912 313 5143',
+        '  ',
+        null,
+      ]) {
+        expect(PersonName.sanitize(name), isNull, reason: '$name');
+      }
+    });
+
+    test('a real name keeps everything but a phone number', () {
+      expect(PersonName.sanitize('سالن رُز'), 'سالن رُز');
+      expect(PersonName.sanitize('سالن ۲۴ ساعته'), 'سالن ۲۴ ساعته');
+      expect(PersonName.sanitize('مریم 09123135143'), 'مریم');
+    });
+  });
 }

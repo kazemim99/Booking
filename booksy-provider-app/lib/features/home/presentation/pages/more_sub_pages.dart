@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../config/routes/app_router.dart';
 
 import '../../../../config/theme/app_tokens.dart';
+import '../../../../core/utils/phone_number.dart';
+import '../../../../core/utils/person_name.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/utils/persian_digits.dart';
 import '../../../../core/di/injection.dart';
@@ -825,16 +827,17 @@ class StaffView extends StatelessWidget {
                           ),
                         ),
                         title: Text(
-                          inv.displayName,
+                          inv.displayName.isEmpty
+                              ? AppStrings.memberNameMissing
+                              : inv.displayName,
                           style: const TextStyle(
                             fontSize: 15,
                             color: AppColors.muted,
                           ),
                         ),
+                        // The number the invitation went to — as the phone, labelled, never as the title.
                         subtitle: Text(
-                          inv.inviteeName == null
-                              ? AppStrings.staffInvitePending
-                              : '${inv.phone} · ${AppStrings.staffInvitePending}',
+                          '${AppStrings.phoneLabeled(PhoneNumber.display(inv.phone))} · ${AppStrings.staffInvitePending}',
                           style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.muted,
@@ -854,16 +857,16 @@ class StaffView extends StatelessWidget {
                       );
                     }
                     final m = members[i - 1 - pendingRows];
-                    final display = m.name.isNotEmpty
-                        ? m.name
-                        : (m.phone ?? '؟');
+                    // Never the phone, and never «ارائه‌دهنده <digits>», as the name (production QA 2026-09-23).
+                    final realName = PersonName.sanitize(m.name);
+                    final display = realName ?? AppStrings.memberNameMissing;
                     return ListTile(
                       key: Key('member-row-${m.membershipId}'),
                       contentPadding: EdgeInsets.zero,
                       leading: CircleAvatar(
                         backgroundColor: AppColors.primarySoft,
                         child: Text(
-                          display.isNotEmpty ? display.characters.first : '؟',
+                          realName != null ? realName.characters.first : '؟',
                           style: const TextStyle(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w700,
@@ -923,7 +926,9 @@ class StaffView extends StatelessWidget {
       builder: (dialogContext) => AlertDialog(
         title: const Text(AppStrings.staffInvitationCancelConfirmTitle),
         content: Text(
-          AppStrings.staffInvitationCancelConfirmBody(inv.displayName),
+          AppStrings.staffInvitationCancelConfirmBody(inv.displayName.isEmpty
+              ? AppStrings.unnamedWithPhone(PhoneNumber.display(inv.phone))
+              : inv.displayName),
         ),
         actions: [
           TextButton(
@@ -953,6 +958,9 @@ class StaffView extends StatelessWidget {
 
   static String _subtitle(OrgMember m) {
     final parts = <String>[
+      // A nameless member is told apart by their phone — labelled as the phone.
+      if (PersonName.sanitize(m.name) == null && (m.phone ?? '').isNotEmpty)
+        AppStrings.phoneLabeled(PhoneNumber.display(m.phone!)),
       if (m.isOwner) AppStrings.membershipOwner,
       if (m.providesServices) AppStrings.membershipProvidesServices,
       if (!m.isActive)
@@ -965,7 +973,10 @@ class StaffView extends StatelessWidget {
 
   Future<void> _confirmRemove(BuildContext context, OrgMember m) async {
     final cubit = context.read<StaffCubit>();
-    final label = m.name.isNotEmpty ? m.name : (m.phone ?? '');
+    final label = PersonName.sanitize(m.name) ??
+        ((m.phone ?? '').isEmpty
+            ? AppStrings.memberNameMissing
+            : AppStrings.unnamedWithPhone(PhoneNumber.display(m.phone!)));
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(

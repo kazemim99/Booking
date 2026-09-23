@@ -16,6 +16,12 @@ class JwtClaims {
   final String? customerId;
   final DateTime? expiresAt;
 
+  /// The person's name as the token carries it — the API writes the ClaimTypes URIs. Raw: may be the sign-in
+  /// placeholder; `ProviderUser.realName` decides what counts as a name.
+  final String? firstName;
+  final String? lastName;
+  final String? fullName;
+
   const JwtClaims({
     this.userId,
     this.email,
@@ -25,6 +31,9 @@ class JwtClaims {
     this.providerStatus,
     this.customerId,
     this.expiresAt,
+    this.firstName,
+    this.lastName,
+    this.fullName,
   });
 
   bool get isProvider =>
@@ -78,6 +87,19 @@ class JwtDecoder {
         ),
         customerId: _firstString(payload, const ['customerId', 'customer_id']),
         expiresAt: expiresAt,
+        firstName: _firstString(payload, const [
+          'given_name',
+          'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname',
+        ]),
+        lastName: _firstString(payload, const [
+          'family_name',
+          'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname',
+        ]),
+        fullName: _firstString(payload, const [
+          'name',
+          'unique_name',
+          'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name',
+        ]),
       );
     } catch (_) {
       return null;

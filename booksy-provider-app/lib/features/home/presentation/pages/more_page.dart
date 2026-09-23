@@ -40,7 +40,11 @@ class MorePage extends StatelessWidget {
       body: Column(
         children: [
           ProfileHeader(
-            name: session?.user.displayName ?? AppStrings.moreTitle,
+            // Never the phone and never «ارائه‌دهنده <digits>» as the name (production QA 2026-09-23); the
+            // phone stays in the subtitle, as the phone.
+            name: session == null
+                ? AppStrings.moreTitle
+                : session.user.realName ?? AppStrings.ownNameMissing,
             subtitle: session == null
                 ? null
                 : [
@@ -190,9 +194,10 @@ class MorePage extends StatelessWidget {
   /// Lets the person replace the placeholder name phone sign-in gave them
   /// («ارائه‌دهنده ۹۱۲…») — the name their colleagues and customers see.
   Future<void> _editMyName(BuildContext context, ProviderSession? session) async {
-    final names = (session?.user.fullName ?? '').trim();
+    // Opens on the real name only: the placeholder, or a number, is never offered back as a name.
+    final names = session?.user.realName ?? '';
     final space = names.indexOf(' ');
-    final placeholder = names.isEmpty || names.startsWith(AppStrings.providerPlaceholderName);
+    final placeholder = names.isEmpty;
     final draft = await showCustomerForm(
       context,
       title: AppStrings.myNameTitle,

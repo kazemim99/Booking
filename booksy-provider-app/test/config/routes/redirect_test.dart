@@ -1,4 +1,7 @@
 import 'package:booksy_provider_app/config/routes/app_router.dart';
+import 'package:booksy_provider_app/features/auth/domain/entities/provider_session.dart';
+import 'package:booksy_provider_app/features/auth/domain/entities/provider_status.dart';
+import 'package:booksy_provider_app/features/auth/presentation/bloc/auth_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 String? redirect(String location, AuthFlowStatus status, {String? query}) {
@@ -77,6 +80,67 @@ void main() {
       test('stays on blocked', () {
         expect(redirect('/blocked', AuthFlowStatus.blocked), isNull);
       });
+    });
+  });
+
+  // Production QA 2026-09-23: nothing ever asked the salon owner for a name, so the app showed the number.
+  // Like the customer app: asked once, right after OTP; skippable; never at a cold start or mid-app.
+  group('the name, right after OTP', () {
+    String? after(String location, {String? query}) {
+      final full = query == null ? location : '$location?$query';
+      return AppRouter.redirectFor(
+        location: location,
+        uri: Uri.parse(full),
+        status: AuthFlowStatus.authenticated,
+        nameMissing: true,
+      );
+    }
+
+    test('leaving OTP without a real name goes to the name page, then to the destination', () {
+      expect(after('/otp'), '/profile/name?redirect=${Uri.encodeComponent('/dashboard')}');
+      final target = Uri.encodeComponent('/calendar');
+      expect(after('/login', query: 'redirect=$target'),
+          '/profile/name?redirect=${Uri.encodeComponent('/calendar')}');
+    });
+
+    test('never anywhere else — a skip is not undone, a restart does not ask', () {
+      expect(after('/profile/name'), isNull);
+      expect(after('/dashboard'), isNull);
+      expect(after('/splash'), '/dashboard');
+    });
+
+    test('a named account goes straight on', () {
+      expect(redirect('/otp', AuthFlowStatus.authenticated), '/dashboard');
+    });
+
+    test('onboarding asks for the owner name itself, so it is never interrupted', () {
+      expect(
+        AppRouter.redirectFor(
+          location: '/otp',
+          uri: Uri.parse('/otp'),
+          status: AuthFlowStatus.needsOnboarding,
+          nameMissing: true,
+        ),
+        '/onboarding',
+      );
+    });
+
+    test('the notifier latches it from the signed-in session', () {
+      ProviderSession session(String fullName) => ProviderSession(
+            accessToken: 'a',
+            refreshToken: 'r',
+            expiresIn: 1,
+            user: ProviderUser(id: 'u', phoneNumber: '09123135143', fullName: fullName),
+            providerId: 'p',
+            providerStatus: ProviderStatus.active,
+            isNewProvider: false,
+            requiresOnboarding: false,
+          );
+
+      final notifier = AuthNotifier.detached()..apply(Authenticated(session('ارائه‌دهنده 9123135143')));
+      expect(notifier.nameMissing, isTrue);
+      notifier.apply(Authenticated(session('مصطفی کاظمی')));
+      expect(notifier.nameMissing, isFalse);
     });
   });
 }

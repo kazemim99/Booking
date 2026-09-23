@@ -4,8 +4,21 @@ import 'package:booksy_provider_app/features/auth/data/datasources/auth_api_serv
 import 'package:booksy_provider_app/features/auth/data/models/auth_models.dart';
 import 'package:booksy_provider_app/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:booksy_provider_app/features/auth/domain/entities/provider_status.dart';
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+
+/// An unsigned JWT carrying [payload] — the app only reads claims.
+String _token(Map<String, dynamic> payload) {
+  String seg(Map<String, dynamic> m) =>
+      base64Url.encode(utf8.encode(jsonEncode(m))).replaceAll('=', '');
+  return '${seg({'alg': 'HS256', 'typ': 'JWT'})}.${seg(payload)}.sig';
+}
+
+const _givenName = 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname';
+const _surname = 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname';
+const _name = 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name';
 
 class MockAuthApiService extends Mock implements AuthApiService {}
 
@@ -38,6 +51,7 @@ void main() {
     registerFallbackValue(
       const CompleteProviderAuthRequest(phoneNumber: '0', code: '0'),
     );
+    registerFallbackValue(const RefreshTokenRequest(refreshToken: '0'));
   });
 
   setUp(() {
@@ -165,6 +179,57 @@ void main() {
       final session = current.getOrElse(() => throw StateError('expected Right'));
       expect(session!.providerId, 'p-1');
       verifyNever(() => storage.getAccessToken());
+    });
+  });
+
+  // Production QA 2026-09-23: after a restart the header read «09123135143» — a restored session carried no name,
+  // and the display fell back to the phone. The token has the name; the session takes it from there.
+  group('the name comes from the token', () {
+    void storedSession(String accessToken) {
+      when(() => storage.getAccessToken()).thenAnswer((_) async => accessToken);
+      when(() => storage.getRefreshToken()).thenAnswer((_) async => 'refresh');
+      when(() => storage.getUserId()).thenAnswer((_) async => 'u-1');
+      when(() => storage.getPhoneNumber()).thenAnswer((_) async => '09123135143');
+      when(() => storage.getProviderStatus()).thenAnswer((_) async => 'Active');
+      when(() => storage.getProviderId()).thenAnswer((_) async => 'p-1');
+    }
+
+    test('a cold start restores the real name', () async {
+      storedSession(_token({_givenName: 'مصطفی', _surname: 'کاظمی', _name: 'مصطفی کاظمی'}));
+
+      final session = (await repo.getCurrentSession())
+          .getOrElse(() => throw StateError('expected Right'))!;
+
+      expect(session.user.realName, 'مصطفی کاظمی');
+    });
+
+    test('a cold start with the placeholder has no name, and never the phone', () async {
+      storedSession(_token({_givenName: 'ارائه‌دهنده', _surname: '9123135143', _name: 'ارائه‌دهنده 9123135143'}));
+
+      final session = (await repo.getCurrentSession())
+          .getOrElse(() => throw StateError('expected Right'))!;
+
+      expect(session.user.realName, isNull);
+    });
+
+    test('a refreshed token after a rename carries the new name into the session', () async {
+      when(() => api.completeProviderAuth(any())).thenAnswer((_) async => authOk());
+      await repo.completeProviderAuthentication(phoneNumber: '09123135143', code: '123456');
+
+      final renamed = _token({_givenName: 'مصطفی', _surname: 'کاظمی', _name: 'مصطفی کاظمی'});
+      when(() => storage.getRefreshToken()).thenAnswer((_) async => 'refresh');
+      when(() => storage.saveAccessToken(any())).thenAnswer((_) async {});
+      when(() => storage.saveRefreshToken(any())).thenAnswer((_) async {});
+      when(() => api.refreshToken(any())).thenAnswer((_) async => ApiResponse<RefreshTokenResponse>(
+            success: true,
+            data: RefreshTokenResponse(accessToken: renamed, refreshToken: 'refresh-2', expiresIn: 86400),
+          ));
+
+      final refreshed = (await repo.refreshToken()).getOrElse(() => throw StateError('expected Right'));
+      expect(refreshed.user.realName, 'مصطفی کاظمی');
+
+      final current = (await repo.getCurrentSession()).getOrElse(() => throw StateError('expected Right'))!;
+      expect(current.user.realName, 'مصطفی کاظمی', reason: 'the header re-reads this session');
     });
   });
 }
