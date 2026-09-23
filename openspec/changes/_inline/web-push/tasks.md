@@ -44,13 +44,13 @@ salon confirms. Push was a deliberate no-op on web. User decision: web push NOW.
 
 ## Tasks
 - [x] Backend: FcmMessageFactory with webpush block; gateway uses it; unit tests red first
-- [ ] Customer: WebPushConfig from dart-defines (unit tests)
-- [ ] Customer: PushRegistration never prompts on web at sign-in; enable()/status() (unit tests)
-- [ ] Customer: web token source (init with options + timeout, VAPID, SW path, platform Web)
-- [ ] Customer: service worker web/push/firebase-messaging-sw.js (config from query, tap routing)
-- [ ] Customer: /push-open route survives cold start via splash (router tests)
-- [ ] Customer: tap while open (SW message bridge) + foreground snackbar (tests)
-- [ ] Customer: profile row + one-time card on booking success (cubit + widget tests)
+- [x] Customer: WebPushConfig from dart-defines (unit tests)
+- [x] Customer: PushRegistration never prompts on web at sign-in; enable()/status() (unit tests)
+- [x] Customer: web token source (init with options + timeout, VAPID, SW path, platform Web)
+- [x] Customer: service worker web/push/firebase-messaging-sw.js (config from query, tap routing)
+- [x] Customer: /push-open route survives cold start via splash (router tests)
+- [x] Customer: tap while open (SW message bridge) + foreground snackbar (tests)
+- [x] Customer: profile row + one-time card on booking success (cubit + widget tests)
 - [ ] Provider: mirror all of the above (More row, Home card); push opens the calendar ON the booking
 - [ ] CI: pass FIREBASE_WEB_* dart-defines from vars/secrets; builds without them unchanged
 - [ ] Runbook: what the user must create (Firebase Web app, VAPID key, GitHub vars) + reachability
@@ -59,4 +59,19 @@ salon confirms. Push was a deliberate no-op on web. User decision: web push NOW.
 - [-] BLOCKED: a real push on a phone needs the Firebase Web app config + VAPID key (user's console)
 
 ## Decisions
+- Tier 2: the web block rides on every FCM message (FCM applies it to web tokens only) instead of branching on
+  `DeviceToken.Platform` — no gateway signature change, and legacy `Unknown` rows are covered.
+- Tier 2: no `webpush.fcm_options.link`. It must be absolute https and the backend cannot tell which site
+  registered a token; the service worker routes the tap from `data` against its own site instead.
+- Tier 1: the service worker is registered by the app at `push/firebase-messaging-sw.js?<config>` (scope `/push/`)
+  via `getToken(serviceWorkerScriptPath:)`; the Firebase Web config reaches it in the query string.
+- Tier 1: Firebase init on web is bounded (20 s); a hang means push off for the session, never a stuck app.
+- Tier 2: in a browser, sign-in never prompts; it registers only an already-granted browser. `enable()` (from a tap)
+  prompts. Android keeps prompting at sign-in, unchanged.
+- Tier 2: foreground pushes show a snackbar with «مشاهده» on every platform (was: badge only). A snackbar does not
+  take the screen, which was the reason for badge-only.
+- Tier 2: cold start through a tapped notification keeps its target through splash (`/push-open` →
+  `/splash?redirect=` → target). Only `/push-open` does this; other cold-start deep links still go home.
+- Tier 1: service-worker behaviour is tested in Node (`tool/push_sw_test.mjs`, node:test + vm) — no JS test infra
+  exists in the Flutter apps; it also guards the tap-message literal shared with Dart.
 ## Log

@@ -14,6 +14,7 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../auth/presentation/pages/login_page.dart';
+import '../../../notifications/presentation/push_enable_tile.dart';
 import '../bloc/profile_cubit.dart';
 
 /// Profile tab: shows the login screen in place for guests and swaps to
@@ -248,6 +249,9 @@ class _ProfileView extends StatelessWidget {
                       trailing: const ForwardChevron(),
                       onTap: () => context.push(Routes.notifications),
                     ),
+                    // Turning notifications on for this device. In a browser the permission prompt may only come
+                    // from a tap, and this row is the one always within reach. Absent on builds without push.
+                    const PushEnableTile(),
                     const Divider(),
                     ListTile(
                       key: const Key('profile-my-reviews'),

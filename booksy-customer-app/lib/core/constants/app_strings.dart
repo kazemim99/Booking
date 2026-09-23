@@ -219,6 +219,21 @@ class AppStrings {
   static const String notificationsLoadFailed = 'اعلان‌ها بارگذاری نشد.';
   static const String notificationsMarkAllRead = 'خواندن همه';
   static const String notificationsMarkFailed = 'علامت‌گذاری اعلان انجام نشد.';
+
+  // Push on this device (the profile row and the one-time card after a booking)
+  static const String pushEnableAction = 'فعال‌سازی اعلان‌ها';
+  static const String pushEnableSubtitle = 'تأیید، تغییر یا لغو نوبت را روی همین دستگاه خبر می‌دهیم.';
+  static const String pushEnabledTitle = 'اعلان‌ها روی این دستگاه فعال است';
+  static const String pushEnabledSnack = 'اعلان‌ها فعال شد.';
+  static const String pushBlockedTitle = 'اعلان‌ها روی این دستگاه مسدود است';
+  static const String pushBlockedHint =
+      'برای دریافت اعلان، از تنظیمات مرورگر یا گوشی اجازهٔ اعلان را برای بوکسی بدهید.';
+  static const String pushPromptTitle = 'از تأیید نوبت باخبر شوید';
+  static const String pushPromptBody = 'وقتی سالن نوبت شما را تأیید کرد، روی همین دستگاه خبرتان می‌کنیم.';
+  static const String pushPromptLater = 'بعداً';
+
+  /// The action on a push that arrives while the app is open.
+  static const String pushNoticeOpen = 'مشاهده';
   static const String nearestTitle = 'نزدیک‌ترین‌ها';
   static const String bookNowShort = 'رزرو';
   static const String viewProfile = 'مشاهده پروفایل';

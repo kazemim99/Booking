@@ -39,14 +39,19 @@ class BooksyCustomerApp extends StatefulWidget {
 class _BooksyCustomerAppState extends State<BooksyCustomerApp> {
   late final GoRouter _router = AppRouter.create(widget.authBloc);
 
+  /// Lets a push that arrives while the app is on screen show a snackbar from outside the widget tree.
+  final _messenger = GlobalKey<ScaffoldMessengerState>();
+
   @override
   void initState() {
     super.initState();
-    // Taps on push notifications route through the same router. A no-op on web and on builds without Firebase.
+    // Taps on push notifications route through the same router. A no-op on builds without Firebase (on the web:
+    // without the Firebase Web app's dart-defines).
     PushMessageRouter.attach(
       source: getIt<FirebasePushTokenSource>(),
       router: _router,
       inbox: getIt<InboxCubit>(),
+      messenger: _messenger,
     );
   }
 
@@ -70,6 +75,7 @@ class _BooksyCustomerAppState extends State<BooksyCustomerApp> {
             BlocProvider(create: (context) => getIt<HomeBloc>()),
           ],
           child: MaterialApp.router(
+            scaffoldMessengerKey: _messenger,
             title: appTitleFor(),
             debugShowCheckedModeBanner: false,
             // RTL Support for Persian/Arabic

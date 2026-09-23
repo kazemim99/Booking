@@ -172,6 +172,59 @@ void main() {
     });
   });
 
+  /// A notification tapped while the app is closed opens it at /push-open with the push's data (the web service
+  /// worker builds that address; see web/push/firebase-messaging-sw.js). Every cold start holds on splash until the
+  /// stored session is restored, and splash used to continue to home — the tap's target was lost on the one path a
+  /// closed app has.
+  group('a tapped notification that opens the app', () {
+    const tapped = '/push-open?bookingId=b1&notificationId=n1';
+
+    String? redirect(String location, String uri, {required bool resolved, bool authed = true}) =>
+        AppRouter.redirectFor(
+          location: location,
+          uri: Uri.parse(uri),
+          sessionResolved: resolved,
+          isAuthenticated: authed,
+        );
+
+    test('waits on splash WITH its target', () {
+      expect(
+        redirect(Routes.pushOpen, tapped, resolved: false),
+        '${Routes.splash}?redirect=${Uri.encodeComponent(tapped)}',
+      );
+    });
+
+    test('continues to its target once the session is restored', () {
+      final splash = '${Routes.splash}?redirect=${Uri.encodeComponent(tapped)}';
+
+      expect(redirect(Routes.splash, splash, resolved: true), tapped);
+    });
+
+    test('opens the appointment it is about', () {
+      expect(redirect(Routes.pushOpen, tapped, resolved: true), Routes.appointmentDetail('b1'));
+    });
+
+    test('a guest is signed in first and then brought to the appointment', () {
+      // The appointment is gated; the redirect runs again on the new location.
+      final next = redirect(Routes.pushOpen, tapped, resolved: true, authed: false)!;
+      expect(next, Routes.appointmentDetail('b1'));
+
+      expect(
+        redirect(next, next, resolved: true, authed: false),
+        '${Routes.login}?redirect=${Uri.encodeComponent(Routes.appointmentDetail('b1'))}',
+      );
+    });
+
+    test('a push about nothing in particular opens the inbox', () {
+      expect(redirect(Routes.pushOpen, '/push-open?notificationId=n1', resolved: true), Routes.notifications);
+    });
+
+    test('other cold starts are unchanged: splash still leads home', () {
+      expect(redirect('/appointments/42', '/appointments/42', resolved: false), Routes.splash);
+      expect(redirect(Routes.splash, Routes.splash, resolved: true), Routes.home);
+    });
+  });
+
   group('AuthNotifier', () {
     test('latches resolution and ignores transient states', () {
       final notifier = AuthNotifier.detached();

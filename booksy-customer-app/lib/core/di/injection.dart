@@ -25,6 +25,7 @@ import '../../features/notifications/data/inbox_repository_impl.dart';
 import '../../features/notifications/data/notifications_remote_datasource.dart';
 import '../../features/notifications/domain/inbox_repository.dart';
 import '../../features/notifications/presentation/inbox_cubit.dart';
+import '../../features/notifications/presentation/push_permission_cubit.dart';
 import '../../features/booking/data/repositories/booking_repository_impl.dart';
 import '../../features/booking/domain/repositories/booking_repository.dart';
 import '../../features/booking/presentation/bloc/booking_bloc.dart';
@@ -65,6 +66,13 @@ Future<void> configureDependencies() async {
     () => PushRegistration(
       getIt<FirebasePushTokenSource>(),
       DioDeviceTokenApi(serviceCatalogDio: getIt<Dio>(instanceName: 'serviceCatalogDio')),
+    ),
+  );
+  // One shared instance, so turning notifications on from the profile row hides the one-time card and vice versa.
+  getIt.registerLazySingleton<PushPermissionCubit>(
+    () => PushPermissionCubit(
+      getIt<PushRegistration>(),
+      SharedPreferencesPushPromptMemory(getIt<SharedPreferences>()),
     ),
   );
 

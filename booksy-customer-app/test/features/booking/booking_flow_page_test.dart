@@ -26,6 +26,26 @@ import 'package:booksy_customer_app/features/profile/presentation/bloc/profile_c
 
 import '../../helpers/fake_auth_bloc.dart';
 
+import 'package:booksy_customer_app/core/di/injection.dart';
+import 'package:booksy_customer_app/core/push/push_registration.dart';
+import 'package:booksy_customer_app/features/notifications/presentation/push_permission_cubit.dart';
+
+class _NeverAskedPush implements PushSettings {
+  @override
+  Future<PushStatus> status() async => PushStatus.notAsked;
+
+  @override
+  Future<PushStatus> enable() async => PushStatus.enabled;
+}
+
+class _NoPromptMemory implements PushPromptMemory {
+  @override
+  Future<bool> wasDismissed() async => false;
+
+  @override
+  Future<void> dismiss() async {}
+}
+
 /// The booking wizard as the customer sees it (UX review 2026-09-23, #4, #9, #17): it can open on a service tapped on
 /// the salon's profile, it opens on a day that has free times and says why, the step bar is readable on the blue app
 /// bar, the confirm step says what happens next, and the success screen recaps the booking and says the salon still
@@ -687,6 +707,24 @@ void main() {
       expect(find.text(JalaliFormatter.formatTime(_at(23, 16).startTime)),
           findsOneWidget);
       expect(find.text(AppStrings.bookingSuccessAwaiting), findsOneWidget);
+    });
+
+    // QA 2026-09-23: the customer waits for the salon's answer — the moment to offer notifications, once.
+    testWidgets("offers to notify the customer of the salon's answer", (tester) async {
+      getIt.registerSingleton<PushPermissionCubit>(
+        PushPermissionCubit(_NeverAskedPush(), _NoPromptMemory()),
+      );
+      addTearDown(() => getIt.unregister<PushPermissionCubit>());
+
+      await submitted(tester);
+
+      expect(find.text(AppStrings.pushPromptTitle), findsOneWidget);
+    });
+
+    testWidgets('a build without push offers nothing', (tester) async {
+      await submitted(tester);
+
+      expect(find.text(AppStrings.pushPromptTitle), findsNothing);
     });
 
     // Review of the merged branch: the hero check was the green accent (2.38:1 on white).

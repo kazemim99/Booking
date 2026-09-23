@@ -140,6 +140,23 @@ void main() {
     expect(find.byType(ProviderDetailPage), findsOneWidget);
   });
 
+  testWidgets('a notification that opens the app lands on its appointment, through the real router', (tester) async {
+    tester.view.physicalSize = const Size(360 * 3, 640 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    // The address the web service worker opens when no tab of the app is open.
+    router.go('${Routes.pushOpen}?bookingId=b9&notificationId=n1');
+    await tester.pumpWidget(BlocProvider<AuthBloc>.value(
+      value: auth,
+      child: MaterialApp.router(theme: AppTheme.light, routerConfig: router),
+    ));
+    await settle(tester);
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(AppointmentDetailPage), findsOneWidget);
+    expect(router.routerDelegate.currentConfiguration.uri.path, '/appointments/b9');
+  });
+
   testWidgets('the booking wizard, above the tabs, still says when the device is offline', (tester) async {
     connectivity = _Connectivity(online: false);
     await openSalon(tester);

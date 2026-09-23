@@ -14,6 +14,7 @@ import '../../../../core/utils/jalali_formatter.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../notifications/presentation/push_soft_prompt.dart';
 import '../../../profile/presentation/bloc/profile_cubit.dart';
 import '../../domain/business_days.dart';
 import '../../domain/entities/booking_entities.dart';
@@ -578,7 +579,10 @@ class _SuccessView extends StatelessWidget {
                   ],
                   // New bookings are created as Requested: nothing is final until the salon accepts.
                   const _InfoNote(body: AppStrings.bookingSuccessAwaiting),
-                  const SizedBox(height: AppSpacing.xl),
+                  const SizedBox(height: AppSpacing.md),
+                  // The salon's answer is what the customer now waits for: the moment to offer notifications, once.
+                  const PushSoftPrompt(),
+                  const SizedBox(height: AppSpacing.md),
                   // Deposit coupling (create-then-pay). The booking already exists and holds the slot; the server
                   // decides whether a deposit is owed, so we simply offer to continue into checkout and let it ask.
                   // Nothing here can confirm a booking — the backend gate does that only on a verified deposit.

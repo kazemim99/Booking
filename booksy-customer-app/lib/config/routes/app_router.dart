@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/di/injection.dart';
 import '../../core/network/connectivity_service.dart';
+import '../../core/push/push_open_route.dart';
 import '../../core/widgets/widgets.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
@@ -73,6 +74,10 @@ class Routes {
           ? '/providers/$providerId/book'
           : '/providers/$providerId/book?service=${Uri.encodeComponent(serviceId)}';
   static String appointmentDetail(String id) => '/appointments/$id';
+
+  /// Where a tapped notification opens the app, with the push's data as query parameters
+  /// (web/push/firebase-messaging-sw.js builds it). Never shown: the redirect sends it on to [pushOpenRoute].
+  static const String pushOpen = '/push-open';
 }
 
 /// Latches the AuthBloc stream into router-friendly flags.
@@ -148,9 +153,19 @@ class AppRouter {
     // Hold on splash until the stored session is restored — never
     // flash login/home prematurely.
     if (!sessionResolved) {
-      return location == Routes.splash ? null : Routes.splash;
+      if (location == Routes.splash) return null;
+      // A tapped notification is the one cold start that must keep its target through splash: it is the only way a
+      // closed app is opened on a booking. Other deep links still start at home, as they always have.
+      if (location == Routes.pushOpen) return '${Routes.splash}?redirect=${Uri.encodeComponent(uri.toString())}';
+      return Routes.splash;
     }
-    if (location == Routes.splash) return Routes.home;
+    if (location == Routes.splash) {
+      final target = uri.queryParameters['redirect'];
+      return target != null && target.isNotEmpty ? target : Routes.home;
+    }
+
+    // The same mapping a tap uses on Android; the redirect runs again on the result, so a guest is signed in first.
+    if (location == Routes.pushOpen) return pushOpenRoute(uri.queryParameters);
 
     if (_requiresAuth(location) && !isAuthenticated) {
       final target = Uri.encodeComponent(uri.toString());
@@ -210,6 +225,11 @@ class AppRouter {
         GoRoute(
           path: Routes.splash,
           builder: (context, state) => const SplashPage(),
+        ),
+        // Matched so a tapped notification's address is a known location; [redirectFor] always moves it on.
+        GoRoute(
+          path: Routes.pushOpen,
+          redirect: (context, state) => pushOpenRoute(state.uri.queryParameters),
         ),
         GoRoute(
           path: Routes.login,
