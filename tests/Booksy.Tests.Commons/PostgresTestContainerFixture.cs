@@ -69,7 +69,12 @@ public sealed class PostgresTestContainerFixture : IAsyncLifetime
 
         ConnectionString = new NpgsqlConnectionStringBuilder(serverConnectionString)
         {
-            Database = _databaseName
+            Database = _databaseName,
+            // Deadlocks between the two parallel collections reported only "40P01: deadlock detected — DETAIL
+            // redacted", which names nothing to fix (four whole FULL runs lost on 2026-09-22/23). This is a
+            // throwaway container holding test data, so the detail is safe to print and is the difference
+            // between a fact and a guess.
+            IncludeErrorDetail = true,
         }.ConnectionString;
     }
 

@@ -37,7 +37,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
 
                 _logger.LogInformation("Starting Iranian providers seeding...");
 
-                var providers = GetIranianProviders();
+                var providers = DemoProviders();
                 await _context.Providers.AddRangeAsync(providers, cancellationToken);
                 await _context.SaveChangesAsync(cancellationToken);
 
@@ -64,11 +64,30 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         /// spread is deliberate: several pairs sit close together to exercise tie-breaking and overlapping pins,
         /// while the outliers sit far enough out to fall outside a small radius.</para>
         /// </summary>
-        private List<Provider> GetIranianProviders()
+        /// <summary>
+        /// The catalogue a fresh environment comes up with. Public so it can be read without a database: what a
+        /// demo depends on is data, and data that only exists in production is data that cannot be restored.
+        /// </summary>
+        public static List<Provider> DemoProviders()
         {
             // Parsabad Moghan town centre is approximately 39.6482 N, 47.9174 E.
             return new List<Provider>
             {
+                // The salon the product is demonstrated with. It existed only as hand-entered production data, so
+                // a new environment came up without it (QA walkthrough 2026-09-22).
+                CreateProvider(
+                    "سالن نهال",
+                    "Nahal Salon",
+                    "خدمات آرایش و زیبایی بانوان؛ کوتاهی، رنگ، احیای مو و آرایش عروس",
+                    ServiceCategory.BeautySalon,
+                    "خیابان شهید بهشتی",
+                    "nahal@booksy.ir",
+                    "09123135143",
+                    "مصطفی",
+                    "کاظمی",
+                    39.6478, 47.9169,
+                    "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&q=80"),
+
                 CreateProvider(
                     "آرایشگاه مردانه شهریار",
                     "Shahriar Barbershop",
@@ -236,7 +255,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
         /// Storefront image. Without one the catalogue rendered as rows of identical grey placeholders, which
         /// made the list impossible to scan and hid whether image loading worked at all.
         /// </param>
-        private Provider CreateProvider(
+        private static Provider CreateProvider(
             string persianName,
             string englishName,
             string description,

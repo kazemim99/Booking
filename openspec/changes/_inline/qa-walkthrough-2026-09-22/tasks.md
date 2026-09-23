@@ -1,5 +1,5 @@
-Status: ACTIVE
-Verify: FAST
+Status: DONE
+Verify: FULL
 
 User report (2026-09-22), an 11:45 screen recording of an end-to-end walk on production (commit 680a67ea,
 `origin/master`): customer app at customer.nahalkmi.ir (Flutter web) — browse, book at «سالن نهال», OTP sign-up,
@@ -91,21 +91,26 @@ _Root causes land here as they are confirmed, with evidence._
 - [x] 4.2 B [01:15–01:27] "نزدیک‌ترین‌ها" lists a salon near Tehran for a user in Pars-Abad; show the distance.
 - [x] 4.3 B [08:00–08:22] A customer registered by OTP is named "ارائه‌دهنده <phone>"; ask for a real name.
 - [x] 4.4 U [07:52] RTL chevrons point the wrong way ("ویرایش پروفایل" and elsewhere).
-- [ ] 4.5 U [07:33–07:44] No visible way to reach notifications outside Home.
-- [ ] 4.6 U [06:23–06:58] OTP success is a plain "ورود موفق" message; use a short animated check.
-- [ ] 4.7 U [01:35–01:50] "مشاهده پروفایل" is a large button on every card; compact affordance, use the room for rating.
-- [ ] 4.8 U [02:23–02:39] Working hours show open/closed but not the break.
-- [ ] 4.9 U [02:00, 02:09] Profile opens slowly; photos should be a carousel at the top.
-- [ ] 4.10 U [00:19–00:27] The map does not load on first open; loads after a few seconds.
+- [x] 4.5 U [07:33–07:44] No visible way to reach notifications outside Home.
+- [x] 4.6 U [06:23–06:58] OTP success is a plain "ورود موفق" message; use a short animated check.
+- [x] 4.7 U [01:35–01:50] "مشاهده پروفایل" is a large button on every card; compact affordance, use the room for rating.
+- [x] 4.8 U [02:23–02:39] Working hours show open/closed but not the break.
+- [x] 4.9 U [02:00, 02:09] Profile opens slowly; photos should be a carousel at the top.
+- [x] 4.10 U [00:19–00:27] The map does not load on first open; loads after a few seconds.
 
 ### Provider app (U)
 - [x] 5.1 [09:30–09:46] The calendar should let the salon look ahead day by day (tomorrow, the day after).
 
 ### Data (D)
-- [ ] 6.1 [00:45, 03:03–03:31] Seed سالن نهال with test reviews (likes/dislikes, a provider reply), and make the
+- [x] 6.1 [00:45, 03:03–03:31] Seed سالن نهال with test reviews (likes/dislikes, a provider reply), and make the
       whole salon part of the seeder so a new server starts with it.
 
 ## Decisions
+
+- T2 (6.1) Seeded votes are real `ReviewVotes` rows, not counters written by hand. The seeder previously seeded
+  none at all, on the grounds that inventing voters is fabrication; a demo needs the control to show something,
+  and rows with matching counters are how a real vote is recorded. The salon is seeded with the phone number it
+  already uses in this repository's tests and runbook, so a fresh environment can be signed into as that salon.
 
 - T2 (3.2) The 15-minute gap after each appointment is now zero, because the tester asked for the next slot to
   start when the previous booking ends ("14:00 for 45 minutes → 14:45"), and the hidden gap also made the offered
@@ -127,6 +132,35 @@ _Root causes land here as they are confirmed, with evidence._
   as an open question for the user.
 
 ## Log
+
+- 2026-09-23 deadlock follow-up: the exception said only "40P01: deadlock detected — DETAIL redacted", which names
+  nothing to act on, so `IncludeErrorDetail` is now on for the throwaway test container. Two full integration runs
+  after that were clean (782/782 twice), so it could not be pinned down in this session; the next occurrence will
+  print the relations. Still recommended as its own piece of work — it has cost four FULL runs.
+
+- 2026-09-23 THIRD deadlock in one day: `NotificationOutboxTests.Two_concurrent_sweeps_process_each_intent_exactly_once`
+  failed a FULL run with `40P01: deadlock detected`. Different test each time (review moderation, review edit + vote,
+  now the outbox sweep), always 40P01, always green alone and on a re-run. The two parallel collections write the
+  same tables in different orders; this costs whole FULL runs and will cost CI runs too. Not investigated here —
+  recommended as its own piece of work.
+
+- 2026-09-23 4.5 the profile tab has a notifications row: the bell lives in the Home chrome only, so from any other
+  tab there was no way into the inbox at all.
+- 2026-09-23 4.6 `SuccessCheck` (self-dismissing tick, own test) replaces the «ورود موفقیت‌آمیز بود» toast after OTP;
+  navigation is not delayed — the mark sits on its own route above the destination and closes itself.
+- 2026-09-23 4.7 the nearby card's full-width «مشاهده پروفایل» button is gone; the card already opens the salon and
+  now ends in a mirroring chevron, leaving the room to the rating and meta line. Home test updated deliberately.
+- 2026-09-23 4.8 RED `working_hours_section_test` → `breakAt` makes a salon on its break NOT "باز است" (it showed
+  open with the door locked), the header says «در زمان استراحت», and an open salon shows today's break.
+- 2026-09-23 4.9 the carousel already existed at the top of the profile — nothing rendered because every image
+  failed (4.1). The profile and its reviews are now requested together instead of one after the other (tested);
+  the server-side cost of `GET /Providers/{id}` was NOT measured, so no claim is made about it.
+- 2026-09-23 4.10 RED `map_discovery_cubit_test` → the map loads the launch city's salons immediately and
+  re-centres when the position arrives, instead of waiting on the permission prompt or IP lookup with an empty
+  screen. A fix coarser than 20 km no longer drags the map to another city.
+- 2026-09-23 6.1 `ProviderSeeder.DemoProviders()` includes سالن نهال (own point in پارس‌آباد), and `ReviewSeeder`
+  seeds helpful/not-helpful votes as ROWS with the counters brought in line, the way a real vote is recorded.
+  6 unit tests cover the catalogue and the vote shape.
 
 - 2026-09-22 FULL verify: one run failed on two review tests with Postgres `40P01: deadlock detected` — the two
   parallel collections deadlocking, not a logic failure (both pass alone, and the re-run was 20/20 PASS, 782

@@ -1,4 +1,5 @@
 using Booksy.Infrastructure.Core.Persistence.Base;
+using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
@@ -145,6 +146,8 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 await _context.Reviews.AddRangeAsync(reviews, cancellationToken);
                 await _context.SaveChangesAsync(cancellationToken);
 
+                await SeedVotesAsync(reviews, cancellationToken);
+
                 _logger.LogInformation(
                     "Successfully seeded {ReviewCount} reviews from {BookingCount} completed bookings ({Percentage:F1}%)",
                     reviews.Count,
@@ -158,6 +161,60 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 _logger.LogError(ex, "Error seeding reviews");
                 throw;
             }
+        }
+
+        /// <summary>At most this many seeded voters on one review — a demo, not a viral post.</summary>
+        public const int MaxSeededVotes = 6;
+
+        /// <summary>
+        /// Who votes on a review of this rating, as a list of helpful/not-helpful. Pure, so the shape of the
+        /// seeded data is testable without a database: a well-liked review collects mostly "helpful", a poor one
+        /// collects dislikes too, and nobody collects an implausible crowd.
+        /// </summary>
+        public static IReadOnlyList<bool> PlanVotes(decimal rating, Random random)
+        {
+            var voters = random.Next(0, MaxSeededVotes + 1);
+            var helpfulChance = rating >= 4.0m ? 85 : rating >= 3.0m ? 60 : 35;
+
+            var votes = new List<bool>(voters);
+            for (var i = 0; i < voters; i++)
+                votes.Add(random.Next(100) < helpfulChance);
+
+            return votes;
+        }
+
+        /// <summary>
+        /// Writes the vote rows and brings each review's live counters in line with them — the same two steps the
+        /// application takes when a real person votes.
+        /// </summary>
+        private async Task SeedVotesAsync(List<Review> reviews, CancellationToken cancellationToken)
+        {
+            var seededVotes = 0;
+            foreach (var review in reviews.Where(r => r.IsPubliclyVisible))
+            {
+                var votes = PlanVotes(review.RatingValue, _random);
+                if (votes.Count == 0) continue;
+
+                foreach (var isHelpful in votes)
+                {
+                    _context.Set<ReviewVote>().Add(
+                        ReviewVote.Cast(review.Id, UserId.From(Guid.NewGuid()), isHelpful, DateTime.UtcNow));
+                }
+
+                var helpful = votes.Count(v => v);
+                await _context.Reviews
+                    .Where(r => r.Id == review.Id)
+                    .ExecuteUpdateAsync(
+                        set => set
+                            .SetProperty(r => r.HelpfulVoteCount, helpful)
+                            .SetProperty(r => r.NotHelpfulVoteCount, votes.Count - helpful),
+                        cancellationToken);
+
+                seededVotes += votes.Count;
+            }
+
+            await _context.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("Seeded {VoteCount} review votes", seededVotes);
         }
 
         private Review? CreateReviewForBooking(Domain.Aggregates.BookingAggregate.Booking booking)
@@ -180,8 +237,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Seeders
                 // publishes. A pending seed would also refuse the provider reply added below.
                 review.Publish("ReviewSeeder");
 
-                // No helpful votes are seeded. A vote is now a row per real user (ReviewVotes); inventing voters
-                // for seed data would be exactly the fabrication the frozen legacy baseline exists to avoid.
+                // Votes are seeded as ROWS, never as counters: the demo needs the helpful control to show
+                // something, and a count without the rows behind it is the fabrication the frozen legacy
+                // baseline exists to avoid. The rows belong to seeded users, like every other seeded actor.
 
                 // Add provider response (30% of reviews, higher for negative reviews)
                 var responseChance = rating < 3.0m ? 70 : 30;
