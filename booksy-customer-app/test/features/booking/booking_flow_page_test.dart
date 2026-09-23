@@ -456,6 +456,18 @@ void main() {
       expect(flow.repo.createCalls, 0);
     });
 
+    // The user (QA 2026-09-23): «نام و نام خانوادگی مشتری … اجباری باید باشد» — first AND last name. The sign-up
+    // page accepts a first name alone (and may be skipped); booking does not.
+    testWidgets('a first name alone is not enough to book', (tester) async {
+      final flow = await atConfirmAs(tester, sessionNamed('سارا', null));
+
+      await tester.tap(confirm());
+      await _settle(tester);
+
+      expect(sheet(), findsOneWidget);
+      expect(flow.repo.createCalls, 0);
+    });
+
     testWidgets('without both names nothing is saved and nothing is booked',
         (tester) async {
       final flow = await atConfirmAs(tester, sessionNamed('مشتری', '9384444636'));

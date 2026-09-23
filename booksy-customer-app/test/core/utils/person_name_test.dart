@@ -10,6 +10,15 @@ void main() {
     expect(isPlaceholderName('سارا', 'احمدی'), isFalse);
   });
 
+  test('a full name needs both parts, and neither may be the placeholder', () {
+    expect(hasFullName('سارا', 'احمدی'), isTrue);
+    expect(hasFullName('سارا', null), isFalse);
+    expect(hasFullName('سارا', ''), isFalse);
+    expect(hasFullName(null, 'احمدی'), isFalse);
+    expect(hasFullName('مشتری', '9384444636'), isFalse);
+    expect(hasFullName('سارا', '9384444636'), isFalse);
+  });
+
   test('half a name is still a name', () {
     expect(realNameOrNull('سارا', null), 'سارا');
     expect(realNameOrNull(null, 'احمدی'), 'احمدی');

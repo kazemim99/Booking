@@ -8,6 +8,18 @@ const _placeholderFirstNames = {'مشتری', 'ارائه‌دهنده', 'ارا
 
 bool isPlaceholderName(String? firstName, String? lastName) => realNameOrNull(firstName, lastName) == null;
 
+/// Both a first and a last name, neither of them the OTP placeholder. Booking requires this: the user (QA 2026-09-23)
+/// wants «نام و نام خانوادگی» before a salon receives a request, while the sign-up page still accepts a first name
+/// alone and may be skipped.
+bool hasFullName(String? firstName, String? lastName) {
+  final first = firstName?.trim() ?? '';
+  final last = lastName?.trim() ?? '';
+  if (first.isEmpty || last.isEmpty) return false;
+  if (_placeholderFirstNames.contains(first)) return false;
+  if (RegExp(r'^\d+$').hasMatch(last)) return false;
+  return true;
+}
+
 /// The person's real name, or null when there is none to show.
 String? realNameOrNull(String? firstName, String? lastName) {
   var first = firstName?.trim() ?? '';

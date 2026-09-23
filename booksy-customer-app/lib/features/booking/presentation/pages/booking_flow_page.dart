@@ -436,7 +436,8 @@ class _ConfirmStep extends StatelessWidget {
     }
     final bookings = context.read<BookingBloc>();
     final user = authState.session.user;
-    if (isPlaceholderName(user.firstName, user.lastName)) {
+    // First AND last name before a salon receives the request (QA 2026-09-23).
+    if (!hasFullName(user.firstName, user.lastName)) {
       final named = await BookingNameSheet.show(context, cubit: profileCubit);
       if (!named) return;
     }
