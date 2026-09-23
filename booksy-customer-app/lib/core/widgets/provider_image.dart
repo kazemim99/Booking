@@ -1,5 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 
 import '../../config/theme/app_tokens.dart';
@@ -27,6 +27,11 @@ class ProviderImage extends StatelessWidget {
     this.placeholderIconSize = AppIconSize.md,
   });
 
+  /// Makes widget tests take the web branch, which `kIsWeb` never does on the
+  /// test VM.
+  @visibleForTesting
+  static bool? debugIsWebOverride;
+
   @override
   Widget build(BuildContext context) {
     final url = imageUrl;
@@ -36,7 +41,7 @@ class ProviderImage extends StatelessWidget {
       height: height,
       child: url == null || url.isEmpty
           ? _placeholder(context)
-          : kIsWeb
+          : (debugIsWebOverride ?? kIsWeb)
               ? Image.network(
                   url,
                   fit: BoxFit.cover,
@@ -45,6 +50,12 @@ class ProviderImage extends StatelessWidget {
                   loadingBuilder: (context, child, progress) =>
                       progress == null ? child : _loading(),
                   errorBuilder: (_, __, ___) => _placeholder(context),
+                  // Photos are cached "public" and every *.nahalkmi.ir app
+                  // shares one browser cache, so a copy an <img> fetched on
+                  // the admin or Vue site (no CORS header) can fail Flutter's
+                  // CORS fetch; an HTML image still shows it
+                  // (salon-images-load, G7).
+                  webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                 )
               : CachedNetworkImage(
                   imageUrl: url,

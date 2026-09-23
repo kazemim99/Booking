@@ -1,4 +1,5 @@
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.ServiceCatalog.Application.Abstractions;
 using Booksy.ServiceCatalog.Application.Abstractions.Identity;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
@@ -13,15 +14,18 @@ public sealed class GetOrganizationMembershipsQueryHandler
     private readonly IOrganizationMembershipRepository _membershipRepository;
     private readonly IPersonDirectory _personDirectory;
     private readonly ILogger<GetOrganizationMembershipsQueryHandler> _logger;
+    private readonly IUrlService _urlService;
 
     public GetOrganizationMembershipsQueryHandler(
         IOrganizationMembershipRepository membershipRepository,
         IPersonDirectory personDirectory,
-        ILogger<GetOrganizationMembershipsQueryHandler> logger)
+        ILogger<GetOrganizationMembershipsQueryHandler> logger,
+        IUrlService urlService)
     {
         _membershipRepository = membershipRepository;
         _personDirectory = personDirectory;
         _logger = logger;
+        _urlService = urlService;
     }
 
     public async Task<GetOrganizationMembershipsResult> Handle(
@@ -73,7 +77,7 @@ public sealed class GetOrganizationMembershipsQueryHandler
                 // Per-salon presentation, so the staff screen can render a member without
                 // a second round-trip, and can tell "no app account yet" from "inactive".
                 BioOverride: m.StaffProfile?.BioOverride,
-                PhotoUrl: m.StaffProfile?.PhotoUrl,
+                PhotoUrl: _urlService.AbsoluteOrNull(m.StaffProfile?.PhotoUrl),
                 IsUnclaimed: m.IsUnclaimed);
         }).ToList();
 

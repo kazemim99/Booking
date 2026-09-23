@@ -1,6 +1,7 @@
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Domain.Exceptions;
+using Booksy.ServiceCatalog.Application.Abstractions;
 using Booksy.ServiceCatalog.Application.DTOs.Provider;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.Services;
@@ -16,15 +17,18 @@ public sealed class UploadGalleryImagesCommandHandler
     private readonly IProviderWriteRepository _providerRepository;
     private readonly IFileStorageService _fileStorageService;
     private readonly IServiceCatalogUnitOfWork _unitOfWork;
+    private readonly IUrlService _urlService;
 
     public UploadGalleryImagesCommandHandler(
         IProviderWriteRepository providerRepository,
         IFileStorageService fileStorageService,
-        IServiceCatalogUnitOfWork unitOfWork)
+        IServiceCatalogUnitOfWork unitOfWork,
+        IUrlService urlService)
     {
         _providerRepository = providerRepository;
         _fileStorageService = fileStorageService;
         _unitOfWork = unitOfWork;
+        _urlService = urlService;
     }
 
     public async Task<List<GalleryImageDto>> Handle(
@@ -63,14 +67,15 @@ public sealed class UploadGalleryImagesCommandHandler
                 storageResult.ThumbnailUrl,
                 storageResult.MediumUrl);
 
-            // Return relative paths as stored - client will use them as-is
-            // URL conversion happens only when fetching images via GetGalleryImagesQuery
+            // Stored relative, answered absolute — the same URLs GET /gallery gives. The Vue gallery view shows this
+            // answer directly, and a relative path resolved under /provider/… came back as index.html
+            // (salon-images-load, G6). Nothing sends these URLs back as input; edits address images by id.
             uploadedImages.Add(new GalleryImageDto
             {
                 Id = galleryImage.Id,
-                ThumbnailUrl = galleryImage.ThumbnailUrl,
-                MediumUrl = galleryImage.MediumUrl,
-                OriginalUrl = galleryImage.ImageUrl,
+                ThumbnailUrl = _urlService.ToAbsoluteUrl(galleryImage.ThumbnailUrl),
+                MediumUrl = _urlService.ToAbsoluteUrl(galleryImage.MediumUrl),
+                OriginalUrl = _urlService.ToAbsoluteUrl(galleryImage.ImageUrl),
                 DisplayOrder = galleryImage.DisplayOrder,
                 Caption = galleryImage.Caption,
                 AltText = galleryImage.AltText,

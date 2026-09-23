@@ -1,4 +1,5 @@
 using Booksy.Core.Application.Abstractions.CQRS;
+using Booksy.ServiceCatalog.Application.Abstractions;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Microsoft.Extensions.Logging;
 
@@ -10,15 +11,18 @@ public sealed class GetInvitationSummaryQueryHandler
     private readonly IProviderInvitationReadRepository _invitationRepository;
     private readonly IProviderReadRepository _providerRepository;
     private readonly ILogger<GetInvitationSummaryQueryHandler> _logger;
+    private readonly IUrlService _urlService;
 
     public GetInvitationSummaryQueryHandler(
         IProviderInvitationReadRepository invitationRepository,
         IProviderReadRepository providerRepository,
-        ILogger<GetInvitationSummaryQueryHandler> logger)
+        ILogger<GetInvitationSummaryQueryHandler> logger,
+        IUrlService urlService)
     {
         _invitationRepository = invitationRepository;
         _providerRepository = providerRepository;
         _logger = logger;
+        _urlService = urlService;
     }
 
     public async Task<InvitationSummaryResult?> Handle(
@@ -35,7 +39,7 @@ public sealed class GetInvitationSummaryQueryHandler
             InvitationId: invitation.Id,
             OrganizationId: invitation.OrganizationId.Value,
             OrganizationName: organization?.Profile.BusinessName ?? string.Empty,
-            OrganizationLogo: organization?.Profile.LogoUrl,
+            OrganizationLogo: _urlService.AbsoluteOrNull(organization?.Profile.DisplayImageUrl),
             InviteeName: invitation.InviteeName,
             MaskedPhone: Mask(invitation.PhoneNumber.Value),
             Status: invitation.Status.ToString(),

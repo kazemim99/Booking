@@ -1,5 +1,6 @@
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.ServiceCatalog.Application.Abstractions;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Microsoft.AspNetCore.Http;
@@ -14,17 +15,20 @@ public sealed class GetMyMembershipsQueryHandler : IQueryHandler<GetMyMembership
     private readonly IProviderReadRepository _providerRepository;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ILogger<GetMyMembershipsQueryHandler> _logger;
+    private readonly IUrlService _urlService;
 
     public GetMyMembershipsQueryHandler(
         IOrganizationMembershipRepository membershipRepository,
         IProviderReadRepository providerRepository,
         IHttpContextAccessor httpContextAccessor,
-        ILogger<GetMyMembershipsQueryHandler> logger)
+        ILogger<GetMyMembershipsQueryHandler> logger,
+        IUrlService urlService)
     {
         _membershipRepository = membershipRepository;
         _providerRepository = providerRepository;
         _httpContextAccessor = httpContextAccessor;
         _logger = logger;
+        _urlService = urlService;
     }
 
     public async Task<GetMyMembershipsResult> Handle(GetMyMembershipsQuery request, CancellationToken cancellationToken)
@@ -49,7 +53,7 @@ public sealed class GetMyMembershipsQueryHandler : IQueryHandler<GetMyMembership
                 MembershipId: membership.Id,
                 OrganizationId: membership.OrganizationId.Value,
                 OrganizationName: organization?.Profile.BusinessName ?? string.Empty,
-                OrganizationLogo: organization?.Profile.LogoUrl,
+                OrganizationLogo: _urlService.AbsoluteOrNull(organization?.Profile.DisplayImageUrl),
                 Roles: membership.Roles.Select(r => r.ToString()).ToList(),
                 Status: membership.Status.ToString(),
                 ProvidesServices: membership.ProvidesServices,

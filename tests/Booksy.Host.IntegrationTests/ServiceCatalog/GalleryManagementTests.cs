@@ -63,6 +63,52 @@ public class GalleryManagementTests : ServiceCatalogIntegrationTestBase
     }
 
     [Fact]
+    public async Task UploadGalleryImages_ReturnsTheSameAbsoluteUrlsTheGalleryListDoes()
+    {
+        // The upload answered with the STORED relative paths ("uploads/providers/…"), while GET /gallery made
+        // them absolute. The Vue gallery view pushes the upload's answer straight into its grid, where a relative
+        // path resolves under /provider/… and nginx answers index.html (salon-images-load, G6).
+        var provider = await CreateAndAuthenticateAsProviderAsync();
+
+        var response = await PostMultipartAsync($"/api/v1/providers/{provider.Id.Value}/gallery", CreateTestImageFiles(1));
+        response.StatusCode.Should().Be(HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+        var uploaded = (await GetResponseAsync<List<GalleryImageResponse>>(response))!.Single();
+
+        var listed = (await GetResponseAsync<List<GalleryImageResponse>>(
+            await Client.GetAsync($"/api/v1/providers/{provider.Id.Value}/gallery")))!.Single();
+
+        uploaded.ThumbnailUrl.Should().StartWith("http").And.Be(listed.ThumbnailUrl);
+        uploaded.MediumUrl.Should().StartWith("http").And.Be(listed.MediumUrl);
+        uploaded.OriginalUrl.Should().StartWith("http").And.Be(listed.OriginalUrl);
+    }
+
+    [Fact]
+    public async Task An_uploaded_photo_is_cached_per_origin_even_when_fetched_without_one()
+    {
+        // Photos are served "public, max-age=30 days" and every *.nahalkmi.ir app shares one browser cache. A plain
+        // <img> (admin, Vue site) sends no Origin, so the copy it caches has no CORS header — and without
+        // "Vary: Origin" the Flutter apps' CORS fetch of the same URL is answered from that copy and fails
+        // (salon-images-load, G7). ASP.NET's CORS adds Vary only when the request carries an Origin.
+        var provider = await CreateAndAuthenticateAsProviderAsync();
+        var response = await PostMultipartAsync($"/api/v1/providers/{provider.Id.Value}/gallery", CreateTestImageFiles(1));
+        response.StatusCode.Should().Be(HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+        var url = (await GetResponseAsync<List<GalleryImageResponse>>(response))!.Single().ThumbnailUrl;
+        var path = Uri.TryCreate(url, UriKind.Absolute, out var absolute) ? absolute.AbsolutePath : "/" + url.TrimStart('/');
+
+        var plain = await Client.GetAsync(path);
+        plain.StatusCode.Should().Be(HttpStatusCode.OK);
+        plain.Content.Headers.ContentType!.MediaType.Should().StartWith("image/");
+        plain.Headers.Vary.Should().Contain("Origin");
+
+        using var cors = new HttpRequestMessage(HttpMethod.Get, path);
+        cors.Headers.Add("Origin", "https://customer.nahalkmi.ir");
+        var withOrigin = await Client.SendAsync(cors);
+        withOrigin.StatusCode.Should().Be(HttpStatusCode.OK);
+        withOrigin.Headers.Vary.Should().Contain("Origin");
+        withOrigin.Headers.Vary.Count(v => v == "Origin").Should().Be(1, "one Vary: Origin, not a duplicate per layer");
+    }
+
+    [Fact]
     public async Task UploadGalleryImages_WithTooManyFiles_ReturnsBadRequest()
     {
         // Arrange

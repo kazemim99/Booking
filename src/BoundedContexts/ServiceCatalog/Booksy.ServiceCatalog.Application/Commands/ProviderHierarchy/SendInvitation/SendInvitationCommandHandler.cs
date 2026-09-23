@@ -3,6 +3,7 @@ using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.ServiceCatalog.Application.Abstractions;
 using Booksy.ServiceCatalog.Application.Abstractions.Identity;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.Enums;
@@ -21,6 +22,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.SendInvit
         private readonly IPersonDirectory _personDirectory;
         private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<SendInvitationCommandHandler> _logger;
+        private readonly IUrlService _urlService;
 
         public SendInvitationCommandHandler(
             IProviderReadRepository providerRepository,
@@ -29,7 +31,8 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.SendInvit
             IOrganizationMembershipRepository membershipRepository,
             IPersonDirectory personDirectory,
             IServiceCatalogUnitOfWork unitOfWork,
-            ILogger<SendInvitationCommandHandler> logger)
+            ILogger<SendInvitationCommandHandler> logger,
+            IUrlService urlService)
         {
             _providerRepository = providerRepository;
             _invitationReadRepository = invitationReadRepository;
@@ -38,6 +41,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.SendInvit
             _personDirectory = personDirectory;
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _urlService = urlService;
         }
 
         public async Task<SendInvitationResult> Handle(SendInvitationCommand request, CancellationToken cancellationToken)
@@ -103,7 +107,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.SendInvit
                 InvitationId: invitation.Id,
                 OrganizationId: organization.Id.Value,
                 OrganizationName: organization.Profile.BusinessName,
-                OrganizationLogo: organization.Profile.LogoUrl,
+                OrganizationLogo: _urlService.AbsoluteOrNull(organization.Profile.DisplayImageUrl),
                 PhoneNumber: request.PhoneNumber,
                 InviteeName: request.InviteeName,
                 Message: request.Message,

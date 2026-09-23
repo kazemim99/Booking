@@ -1,6 +1,7 @@
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.ServiceCatalog.Application.Abstractions;
 using Booksy.ServiceCatalog.Application.Abstractions.Persistence;
 using Booksy.ServiceCatalog.Application.Commands.Membership.UpdateMembership;
 using Booksy.ServiceCatalog.Application.Services.Interfaces;
@@ -68,7 +69,15 @@ public class UpdateMembershipCommandHandlerTests
 
         return new UpdateMembershipCommandHandler(
             _memberships, _audit, _providers, _bookability, _unitOfWork, accessor,
-            Substitute.For<ILogger<UpdateMembershipCommandHandler>>());
+            Substitute.For<ILogger<UpdateMembershipCommandHandler>>(), Urls());
+    }
+
+    /// <summary>Makes a stored path absolute against a known host, like UrlService does.</summary>
+    private static IUrlService Urls()
+    {
+        var urls = Substitute.For<IUrlService>();
+        urls.ToAbsoluteUrl(Arg.Any<string>()).Returns(c => "https://api.test/" + c.Arg<string>().TrimStart('/'));
+        return urls;
     }
 
     private static OrganizationMembership Unclaimed(Provider org) =>
@@ -123,7 +132,9 @@ public class UpdateMembershipCommandHandlerTests
             CancellationToken.None);
 
         result.BioOverride.Should().Be("Senior stylist");
-        result.PhotoUrl.Should().Be("/img/sara.jpg");
+        membership.StaffProfile!.PhotoUrl.Should().Be("/img/sara.jpg", "stored as uploaded");
+        result.PhotoUrl.Should().Be("https://api.test/img/sara.jpg",
+            "answered absolute, so a screen on another host can load it (salon-images-load, G4)");
     }
 
     [Fact]

@@ -366,6 +366,28 @@ void main() {
       expect(find.byIcon(Icons.storefront_outlined), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets(
+        'on the web, a photo the browser will not hand over by CORS still '
+        'shows, as an HTML image (salon-images-load, G7)', (tester) async {
+      // Photos are cached "public" and every *.nahalkmi.ir app shares one
+      // browser cache: a copy an <img> fetched on the admin or Vue site
+      // carries no CORS header, and Flutter's CORS fetch of it fails — the
+      // salon showed the placeholder instead of its photo.
+      ProviderImage.debugIsWebOverride = true;
+      addTearDown(() => ProviderImage.debugIsWebOverride = null);
+
+      await tester.pumpWidget(_wrap(const ProviderImage(
+        imageUrl: 'https://back.nahalkmi.ir/uploads/providers/p/a_medium.webp',
+        width: 96,
+        height: 96,
+      )));
+
+      final photo = tester.widget<Image>(find.byType(Image)).image;
+      expect(photo, isA<NetworkImage>());
+      expect((photo as NetworkImage).webHtmlElementStrategy,
+          WebHtmlElementStrategy.fallback);
+    });
   });
 
   group('AppCircleIconButton', () {

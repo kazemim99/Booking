@@ -1,3 +1,4 @@
+using Booksy.ServiceCatalog.Application.Abstractions;
 using Booksy.ServiceCatalog.Application.Abstractions.Persistence;
 using Booksy.ServiceCatalog.Application.Abstractions.Identity;
 using Booksy.Core.Application.Abstractions.Persistence;
@@ -43,7 +44,8 @@ public class SendInvitationCommandHandlerTests
             _membershipRepository,
             _personDirectory,
             _unitOfWork,
-            _logger);
+            _logger,
+            Substitute.For<IUrlService>());
     }
 
     private static Provider CreateOrganization()

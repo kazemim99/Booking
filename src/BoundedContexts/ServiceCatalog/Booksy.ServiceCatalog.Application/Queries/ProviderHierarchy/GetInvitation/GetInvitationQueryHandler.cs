@@ -1,5 +1,6 @@
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Exceptions;
+using Booksy.ServiceCatalog.Application.Abstractions;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
@@ -11,15 +12,18 @@ namespace Booksy.ServiceCatalog.Application.Queries.ProviderHierarchy.GetInvitat
         private readonly IProviderReadRepository _providerRepository;
         private readonly IProviderInvitationReadRepository _invitationRepository;
         private readonly ILogger<GetInvitationQueryHandler> _logger;
+        private readonly IUrlService _urlService;
 
         public GetInvitationQueryHandler(
             IProviderReadRepository providerRepository,
             IProviderInvitationReadRepository invitationRepository,
-            ILogger<GetInvitationQueryHandler> logger)
+            ILogger<GetInvitationQueryHandler> logger,
+            IUrlService urlService)
         {
             _providerRepository = providerRepository;
             _invitationRepository = invitationRepository;
             _logger = logger;
+            _urlService = urlService;
         }
 
         public async Task<GetInvitationResult> Handle(GetInvitationQuery request, CancellationToken cancellationToken)
@@ -45,7 +49,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.ProviderHierarchy.GetInvitat
 
             // Get organization details for response
             var organizationName = organization.Profile?.BusinessName ?? "سازمان";
-            var organizationLogo = organization.Profile?.LogoUrl;
+            var organizationLogo = _urlService.AbsoluteOrNull(organization.Profile?.DisplayImageUrl);
 
             return new GetInvitationResult(
                 InvitationId: invitation.Id,

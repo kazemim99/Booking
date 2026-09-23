@@ -1,6 +1,7 @@
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.ServiceCatalog.Application.Abstractions;
 using Booksy.ServiceCatalog.Application.Abstractions.Persistence;
 using Booksy.ServiceCatalog.Application.Services.Interfaces;
 using Booksy.ServiceCatalog.Domain.Aggregates.MembershipAuditAggregate;
@@ -28,6 +29,7 @@ public sealed class UpdateMembershipCommandHandler
     private readonly IServiceCatalogUnitOfWork _unitOfWork;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ILogger<UpdateMembershipCommandHandler> _logger;
+    private readonly IUrlService _urlService;
 
     public UpdateMembershipCommandHandler(
         IOrganizationMembershipRepository membershipRepository,
@@ -36,7 +38,8 @@ public sealed class UpdateMembershipCommandHandler
         IMemberBookabilityService memberBookability,
         IServiceCatalogUnitOfWork unitOfWork,
         IHttpContextAccessor httpContextAccessor,
-        ILogger<UpdateMembershipCommandHandler> logger)
+        ILogger<UpdateMembershipCommandHandler> logger,
+        IUrlService urlService)
     {
         _membershipRepository = membershipRepository;
         _auditRepository = auditRepository;
@@ -45,6 +48,7 @@ public sealed class UpdateMembershipCommandHandler
         _unitOfWork = unitOfWork;
         _httpContextAccessor = httpContextAccessor;
         _logger = logger;
+        _urlService = urlService;
     }
 
     public async Task<UpdateMembershipResult> Handle(
@@ -155,7 +159,7 @@ public sealed class UpdateMembershipCommandHandler
             membership.PersonId?.Value,
             membership.StaffProfile?.DisplayName,
             membership.StaffProfile?.BioOverride,
-            membership.StaffProfile?.PhotoUrl,
+            _urlService.AbsoluteOrNull(membership.StaffProfile?.PhotoUrl),
             membership.ProvidesServices,
             membership.Roles.Select(r => r.ToString()).ToList(),
             membership.StaffProfile?.WorkingDays

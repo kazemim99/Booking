@@ -3,6 +3,7 @@
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Exceptions;
+using Booksy.ServiceCatalog.Application.Abstractions;
 using Booksy.ServiceCatalog.Application.Abstractions.Identity;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
@@ -26,19 +27,22 @@ namespace Booksy.ServiceCatalog.Application.Queries.Service.GetQualifiedStaff
         private readonly IOrganizationMembershipRepository _membershipRepository;
         private readonly IPersonDirectory _personDirectory;
         private readonly ILogger<GetQualifiedStaffQueryHandler> _logger;
+        private readonly IUrlService _urlService;
 
         public GetQualifiedStaffQueryHandler(
             IProviderReadRepository providerRepository,
             IServiceReadRepository serviceRepository,
             IOrganizationMembershipRepository membershipRepository,
             IPersonDirectory personDirectory,
-            ILogger<GetQualifiedStaffQueryHandler> logger)
+            ILogger<GetQualifiedStaffQueryHandler> logger,
+            IUrlService urlService)
         {
             _providerRepository = providerRepository;
             _serviceRepository = serviceRepository;
             _membershipRepository = membershipRepository;
             _personDirectory = personDirectory;
             _logger = logger;
+            _urlService = urlService;
         }
 
         public async Task<GetQualifiedStaffResult> Handle(GetQualifiedStaffQuery request, CancellationToken cancellationToken)
@@ -96,7 +100,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Service.GetQualifiedStaff
                     return new StaffMemberDto(
                         m.Id,
                         string.IsNullOrWhiteSpace(name) ? provider.Profile.BusinessName : name,
-                        m.StaffProfile?.PhotoUrl,
+                        _urlService.AbsoluteOrNull(m.StaffProfile?.PhotoUrl),
                         null, // Rating - not modelled per member yet
                         null, // ReviewCount - not modelled per member yet
                         null  // Specialization - not modelled per member yet

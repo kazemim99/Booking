@@ -128,6 +128,7 @@ class MembershipService {
       invitationId: data.invitationId ?? invitationId,
       organizationId: data.organizationId,
       organizationName: data.organizationName ?? '',
+      organizationLogo: data.organizationLogo ?? null,
       maskedPhone: data.maskedPhone ?? '',
       inviteeName: data.inviteeName,
       status: data.status ?? '',

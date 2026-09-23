@@ -29,6 +29,8 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.Mvc.Versioning;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Net.Http.Headers;
 using Serilog;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -233,7 +235,22 @@ app.UseHttpsRedirection();
 app.UseCors("AllowSpecificOrigins");
 
 // Static files (ServiceCatalog serves uploaded images from wwwroot)
-app.UseStaticFiles();
+// The web root holds only the git-ignored uploads folder, so on a fresh checkout it does not exist at startup and
+// ASP.NET would serve no static files at all — it is created here (a no-op in the image, which creates it).
+// Every response varies by Origin: photos are cached "public" for 30 days and all *.nahalkmi.ir apps share one
+// browser cache, so a copy fetched by a plain <img> (no Origin, so no CORS header) could answer the Flutter apps'
+// CORS fetch of the same URL, which then failed. CORS adds "Vary: Origin" itself when the request carries an Origin
+// (openspec/changes/_inline/salon-images-load, G7).
+var webRoot = Directory.CreateDirectory(Path.Combine(app.Environment.ContentRootPath, "wwwroot")).FullName;
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(webRoot),
+    OnPrepareResponse = context =>
+    {
+        if (!context.Context.Request.Headers.ContainsKey(HeaderNames.Origin))
+            context.Context.Response.Headers.Append(HeaderNames.Vary, HeaderNames.Origin);
+    },
+});
 
 app.UseRouting();
 

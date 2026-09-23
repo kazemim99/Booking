@@ -643,6 +643,30 @@ void main() {
       expect(find.byKey(const Key('gallery-primary-g2')), findsNothing);
     });
 
+    testWidgets(
+        'a photo the browser will not hand over by CORS still shows, as an '
+        'HTML image (salon-images-load, G7)', (tester) async {
+      // Photos are cached "public" and every *.nahalkmi.ir app shares one
+      // browser cache: a copy an <img> fetched elsewhere carries no CORS
+      // header, and Flutter's CORS fetch of it fails. Falling back to an
+      // HTML image shows it anyway. (No effect off the web.)
+      await pumpGallery(tester);
+
+      final photos = tester
+          .widgetList<Image>(find.descendant(
+            of: find.byKey(const Key('gallery-grid')),
+            matching: find.byType(Image),
+          ))
+          .map((image) => image.image)
+          .whereType<NetworkImage>()
+          .toList();
+      expect(photos, hasLength(2));
+      expect(
+        photos.map((photo) => photo.webHtmlElementStrategy),
+        everyElement(WebHtmlElementStrategy.fallback),
+      );
+    });
+
     testWidgets('image sheet sets primary (only offered on non-primary)',
         (tester) async {
       await pumpGallery(tester);

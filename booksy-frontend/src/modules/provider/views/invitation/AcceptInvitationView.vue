@@ -46,7 +46,7 @@
         <div class="invitation-header">
           <div class="organization-logo" v-if="invitation?.organizationLogo">
             <img
-              :src="invitation.organizationName"
+              :src="invitation.organizationLogo"
               :alt="invitation.organizationName"
               @error="handleImageError"
               @load="handleImageLoad"
@@ -372,6 +372,7 @@ async function loadInvitation() {
       id: summary.invitationId,
       organizationId: summary.organizationId,
       organizationName: summary.organizationName,
+      organizationLogo: summary.organizationLogo,
       inviteePhoneNumber: summary.maskedPhone,
       inviteeName: summary.inviteeName,
       status: summary.status,

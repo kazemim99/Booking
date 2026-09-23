@@ -155,6 +155,10 @@ class GalleryView extends StatelessWidget {
                     // Degrades to a neutral tile when the URL fails
                     // (also keeps widget tests network-free — design D4).
                     errorBuilder: (_, _, _) => _placeholder(),
+                    // On the web a cached copy another *.nahalkmi.ir app
+                    // fetched without CORS fails Flutter's fetch; an HTML
+                    // image still shows it (salon-images-load, G7).
+                    webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                   ),
           ),
           if (image.isPrimary)

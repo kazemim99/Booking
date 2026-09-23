@@ -50,7 +50,7 @@ export interface ProviderInvitation {
   status: string
   sentAt?: Date
   expiresAt?: Date
-  organizationLogo?: string
+  organizationLogo?: string | null
 }
 
 /** What an invitee is shown before accepting — deliberately minimal (masked phone). */
@@ -58,6 +58,8 @@ export interface InvitationSummary {
   invitationId: string
   organizationId: string
   organizationName: string
+  /** The salon's own photo, absolute; null when it has none. */
+  organizationLogo?: string | null
   maskedPhone: string
   inviteeName?: string
   status: string
