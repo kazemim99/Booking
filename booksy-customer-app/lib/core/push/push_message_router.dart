@@ -1,6 +1,7 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../config/routes/app_router.dart';
 import '../../features/notifications/presentation/inbox_cubit.dart';
 import 'firebase_push_token_source.dart';
 import 'push_open_route.dart';
@@ -21,7 +22,8 @@ class PushMessageRouter {
 
     void open(RemoteMessage message) {
       inbox.refreshCount();
-      router.push(pushOpenRoute(message.data));
+      // Not a plain push: the tap can come while booking or checkout covers the tabs, where a push would crash.
+      AppRouter.open(router, pushOpenRoute(message.data));
     }
 
     // Tapped while the app was in the background.

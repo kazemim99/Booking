@@ -167,6 +167,22 @@ class AppRouter {
     return null;
   }
 
+  /// Opens [location] from code that does not know which screen is on top — a tapped push notification.
+  ///
+  /// On a tab, the location is pushed, so back returns to where the customer was. Above the tab shell (booking,
+  /// checkout, a sign-in pushed over a tab) a push cannot be used: go_router 13 folds a pushed tab route into the shell
+  /// only when the shell is the top of the stack, and otherwise adds a second copy of it whose navigators reuse the
+  /// first one's keys — a duplicate-GlobalKey crash. There the location is opened with go: the tab shell comes back
+  /// with the target on top, and every tab keeps its own stack.
+  static void open(GoRouter router, String location) {
+    final matches = router.routerDelegate.currentConfiguration.matches;
+    if (matches.isNotEmpty && matches.last is ShellRouteMatch) {
+      router.push(location);
+    } else {
+      router.go(location);
+    }
+  }
+
   static GoRouter create(AuthBloc authBloc) {
     final auth = AuthNotifier(authBloc);
     // Routes that must cover the tab bar (single-purpose tasks) are drawn on this navigator, above the shell.
