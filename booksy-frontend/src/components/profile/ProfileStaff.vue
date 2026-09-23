@@ -92,6 +92,7 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Provider, StaffMember } from '@/modules/provider/types/provider.types'
+import { personNameOrNull, realNameOrNull } from '@/core/utils/person-name'
 
 interface Props {
   provider: Provider
@@ -128,13 +129,15 @@ const staffMembers = computed(() =>
 // These used to discriminate at runtime between a StaffMember and a StaffProvider (a team
 // member who was themselves a Provider record). That second shape no longer exists, so each
 // of them collapses to the StaffMember branch.
+//
+// The name is the API's fullName first — it names a member with no real name by the salon — then the parts. Never
+// the sign-in placeholder «ارائه‌دهنده 9123135143» or a phone number (production QA 2026-09-23).
 const getStaffName = (staff: StaffMember): string =>
-  `${staff.firstName} ${staff.lastName}`.trim() || 'بدون نام'
+  personNameOrNull(staff.fullName) ?? realNameOrNull(staff.firstName, staff.lastName) ?? 'بدون نام'
 
 const getInitials = (staff: StaffMember): string => {
-  const first = staff.firstName?.charAt(0) || ''
-  const last = staff.lastName?.charAt(0) || ''
-  return `${first}${last}`.toUpperCase() || '??'
+  const name = personNameOrNull(staff.fullName) ?? realNameOrNull(staff.firstName, staff.lastName)
+  return name ? name.charAt(0).toUpperCase() : '??'
 }
 
 // The membership id — what availability and booking both expect as staffId.

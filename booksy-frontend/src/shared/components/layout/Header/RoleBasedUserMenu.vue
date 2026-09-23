@@ -2,7 +2,7 @@
   <div class="user-menu" v-click-outside="closeMenu">
     <!-- User Button -->
     <button class="user-button" :class="roleThemeClass" @click="toggleMenu" aria-label="User Menu" data-testid="user-menu-toggle">
-      <img v-if="user?.avatarUrl" :src="user.avatarUrl" :alt="user.fullName" class="user-avatar" />
+      <img v-if="user?.avatarUrl" :src="user.avatarUrl" :alt="names.full ?? ''" class="user-avatar" />
       <div v-else class="user-avatar-placeholder" :style="{ background: userColor }">
         {{ userInitials }}
       </div>
@@ -28,7 +28,7 @@
         <!-- User Info Section -->
         <div class="menu-header" :class="roleThemeClass">
           <div class="user-info">
-            <div class="user-name-large">{{ user?.fullName || 'کاربر' }}</div>
+            <div class="user-name-large">{{ names.full ?? 'کاربر' }}</div>
             <div class="user-email">{{ user?.email || user?.phoneNumber }}</div>
             <div v-if="userRole === 'provider' && !isProviderOnboardingComplete" class="onboarding-notice">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -107,6 +107,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
 import { useCustomerStore } from '@/modules/customer/stores/customer.store'
 import { useRoleBasedNavigation, type MenuItem } from '@/shared/composables/useRoleBasedNavigation'
+import { personNameOrNull, userNames } from '@/core/utils/person-name'
 
 interface Props {
   showRoleBadge?: boolean
@@ -127,10 +128,14 @@ const isMenuOpen = ref(false)
 const user = computed(() => authStore.user)
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 
+// The person's real name only. A phone sign-up that skipped the name is «مشتری 9384444636», and its synthetic
+// email is «9384444636@booksy.customer» — neither is a name (production QA 2026-09-23).
+const names = computed(() => userNames(user.value))
+
 // Display name
 const displayName = computed(() => {
   if (!user.value) return 'مهمان'
-  return user.value.firstName || user.value.email?.split('@')[0] || 'کاربر'
+  return names.value.first ?? personNameOrNull(user.value.email?.split('@')[0]) ?? 'کاربر'
 })
 
 // Get user initials
@@ -138,8 +143,7 @@ const userInitials = computed(() => {
   if (customerStore.profile) {
     return customerStore.userInitial
   }
-  if (!user.value?.firstName) return 'ک'
-  return user.value.firstName.charAt(0).toUpperCase()
+  return names.value.first?.charAt(0).toUpperCase() ?? 'ک'
 })
 
 // Get user color

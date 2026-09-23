@@ -2,11 +2,11 @@
   <div class="user-menu" v-click-outside="closeMenu">
     <!-- User Button -->
     <button class="user-button" @click="toggleMenu" aria-label="User Menu">
-      <img v-if="user?.avatarUrl" :src="user.avatarUrl" :alt="user.fullName" class="user-avatar" />
+      <img v-if="user?.avatarUrl" :src="user.avatarUrl" :alt="names.full ?? ''" class="user-avatar" />
       <div v-else class="user-avatar-placeholder" :style="{ background: userColor }">
         {{ userInitials }}
       </div>
-      <span class="user-name">{{ user?.firstName || 'مهمان' }}</span>
+      <span class="user-name">{{ names.first ?? (user ? 'کاربر' : 'مهمان') }}</span>
       <svg
         class="dropdown-arrow"
         :class="{ rotated: isMenuOpen }"
@@ -25,7 +25,7 @@
         <!-- User Info Section -->
         <div class="menu-header">
           <div class="user-info">
-            <div class="user-name-large">{{ user?.fullName }}</div>
+            <div class="user-name-large">{{ names.full ?? '' }}</div>
             <div class="user-email">{{ user?.email }}</div>
           </div>
         </div>
@@ -86,6 +86,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
 import { useCustomerStore } from '@/modules/customer/stores/customer.store'
+import { userNames } from '@/core/utils/person-name'
 
 interface MenuItem {
   name: string
@@ -105,14 +106,15 @@ const isMenuOpen = ref(false)
 const user = computed(() => authStore.user)
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 
+// The person's real name only — never «مشتری 9384444636» (production QA 2026-09-23).
+const names = computed(() => userNames(user.value))
+
 // Get user initials for avatar placeholder - using customer store's computed
 const userInitials = computed(() => {
   if (customerStore.profile) {
     return customerStore.userInitial
   }
-  if (!user.value?.firstName) return 'ک'
-  const firstName = user.value.firstName
-  return firstName.charAt(0).toUpperCase()
+  return names.value.first?.charAt(0).toUpperCase() ?? 'ک'
 })
 
 // Get user color from customer store

@@ -63,7 +63,7 @@ _Root causes, with evidence (file:line at 6912ca13)._
 - [x] T6 Salon app: never a phone as a name (header, account sheet, More, team list, invitations) — tests first
 - [x] T7 Salon app: name restored from the token on cold start and after a rename (tests first)
 - [x] T8 Salon app: complete-name page after OTP for an established account with a placeholder name (tests first)
-- [ ] T9 Vue web: check the same displays; fix what reads the raw parts
+- [x] T9 Vue web: check the same displays; fix what reads the raw parts
 - [ ] T10 Verify: build + unit projects + affected integration classes; flutter analyze/test in both apps
 
 ## Decisions

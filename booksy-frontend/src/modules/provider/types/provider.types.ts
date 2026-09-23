@@ -210,6 +210,8 @@ export interface StaffMember {
   providerId: string
   firstName: string
   lastName: string
+  /** The name the API gives the member: their real name, else the salon's name for them, else the salon's. */
+  fullName?: string
   email: string
   phone: string
   title?: string
