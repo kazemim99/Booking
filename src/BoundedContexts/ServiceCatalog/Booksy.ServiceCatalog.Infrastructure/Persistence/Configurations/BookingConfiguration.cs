@@ -3,6 +3,7 @@
 // ========================================
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate;
+using Booksy.Infrastructure.Core.Persistence.Converters;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -84,15 +85,19 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Configurations
             // TimeSlot (Owned Value Object)
             builder.OwnsOne(b => b.TimeSlot, timeSlot =>
             {
+                // The salon's wall clock, not an instant: stored like every other DateTime, read back with no zone
+                // so no client moves it to its own (see WallClockDateTimeConverter; QA 2026-09-23).
                 timeSlot.Property(ts => ts.StartTime)
                     .HasColumnName("StartTime")
                     .IsRequired()
-                    .HasColumnType("timestamp with time zone");
+                    .HasColumnType("timestamp with time zone")
+                    .HasConversion<WallClockDateTimeConverter>();
 
                 timeSlot.Property(ts => ts.EndTime)
                     .HasColumnName("EndTime")
                     .IsRequired()
-                    .HasColumnType("timestamp with time zone");
+                    .HasColumnType("timestamp with time zone")
+                    .HasConversion<WallClockDateTimeConverter>();
             });
 
             // Duration (Value Object)

@@ -1,3 +1,4 @@
+import '../../../core/utils/wall_clock.dart';
 import '../domain/entities/booking_summary.dart';
 
 /// Maps the two booking shapes the API returns to [BookingSummary]. Manual
@@ -78,7 +79,8 @@ class BookingSummaryJson {
     required String? cancellationReason,
     required DateTime now,
   }) {
-    final start = DateTime.parse(startTime).toLocal();
+    // The salon's wall clock: the digits are the time, whatever zone the server wrote (QA 2026-09-23).
+    final start = parseWallClock(startTime);
     final statusText = (status ?? '').toString();
     final actionable =
         _actionableStatuses.contains(statusText.toLowerCase()) &&

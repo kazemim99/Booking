@@ -1,5 +1,8 @@
 import 'package:json_annotation/json_annotation.dart';
 
+// Booking times are the salon's wall clock; the parser keeps the server's digits (QA 2026-09-23).
+import '../../utils/wall_clock.dart';
+
 part 'booking_models.g.dart';
 
 // ==================== Enums ====================

@@ -13,7 +13,7 @@ CreateBookingRequest _$CreateBookingRequestFromJson(
       providerId: json['providerId'] as String,
       serviceId: json['serviceId'] as String,
       staffProviderId: json['staffProviderId'] as String,
-      startTime: DateTime.parse(json['startTime'] as String),
+      startTime: parseWallClock(json['startTime'] as String),
       customerNotes: json['customerNotes'] as String?,
     );
 
@@ -62,10 +62,10 @@ BookingDto _$BookingDtoFromJson(Map<String, dynamic> json) => BookingDto(
       providerId: json['providerId'] as String,
       serviceId: json['serviceId'] as String,
       staffProviderId: json['staffProviderId'] as String,
-      startTime: DateTime.parse(json['startTime'] as String),
+      startTime: parseWallClock(json['startTime'] as String),
       endTime: json['endTime'] == null
           ? null
-          : DateTime.parse(json['endTime'] as String),
+          : parseWallClock(json['endTime'] as String),
       status: $enumDecode(_$BookingStatusEnumMap, json['status']),
       customerNotes: json['customerNotes'] as String?,
       providerNotes: json['providerNotes'] as String?,
@@ -132,7 +132,7 @@ CustomerBookingDto _$CustomerBookingDtoFromJson(Map<String, dynamic> json) =>
       providerImageUrl: json['providerImageUrl'] as String?,
       serviceName: json['serviceName'] as String,
       durationMinutes: (json['durationMinutes'] as num).toInt(),
-      startTime: DateTime.parse(json['startTime'] as String),
+      startTime: parseWallClock(json['startTime'] as String),
       status: $enumDecode(_$BookingStatusEnumMap, json['status']),
       totalAmount: (json['totalAmount'] as num?)?.toDouble(),
       staffName: json['staffName'] as String?,

@@ -245,6 +245,25 @@ void main() {
       expect(HomeApiService.bookingStart({}), isNull);
     });
 
+    // QA 2026-09-23: a customer booked 10:30; the calendar said "11:00 تا 14:00" and the booking sheet 14:00. A booking
+    // time is the salon's wall clock — the digits are the time, whatever zone suffix the API wrote ("Z" in production
+    // that day, "+03:30" earlier). Converting it to the device's zone added 3:30 to every start.
+    test('booking start and end read the salon clock whatever zone suffix came with them', () {
+      for (final raw in const [
+        '2026-09-24T10:30:00',
+        '2026-09-24T10:30:00Z',
+        '2026-09-24T10:30:00+03:30',
+      ]) {
+        final start = HomeApiService.bookingStart({'startTime': raw});
+        expect([start!.hour, start.minute], [10, 30], reason: raw);
+        expect(start.isUtc, isFalse, reason: raw);
+
+        final end = HomeApiService.readDate({'endTime': raw.replaceFirst('10:30', '11:00')}, const ['endTime']);
+        expect([end!.hour, end.minute], [11, 0], reason: raw);
+        expect(end.isUtc, isFalse, reason: raw);
+      }
+    });
+
     test('readInt accepts int, num, and numeric strings', () {
       expect(HomeApiService.readInt({'total': 5}, const ['total']), 5);
       expect(HomeApiService.readInt({'total': 5.0}, const ['total']), 5);

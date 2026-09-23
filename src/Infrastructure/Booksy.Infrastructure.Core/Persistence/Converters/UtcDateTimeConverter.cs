@@ -37,6 +37,29 @@ public sealed class UtcDateTimeConverter : ValueConverter<DateTime, DateTime>
     };
 }
 
+/// <summary>
+/// For the one kind of <see cref="DateTime"/> that is NOT an instant: a booking's time, which is the salon's wall
+/// clock («۱۰:۳۰» is half past ten at the salon, in no zone — FOLLOW-UPS #63).
+///
+/// <para>It is stored exactly as <see cref="UtcDateTimeConverter"/> stores it (the digits under a UTC marker, which is
+/// what Postgres needs for <c>timestamp with time zone</c>), so storage, queries and every existing row are unchanged.
+/// It is read back <c>Kind=Unspecified</c> instead of <c>Utc</c>: serialized, that has no <c>Z</c> and no offset, so a
+/// client reads the clock it is. Read back as UTC, the API wrote "…T10:30:00Z" and every client (Flutter's
+/// <c>toLocal()</c>, the browser's <c>new Date(…)</c>) moved it to its own zone — QA 2026-09-23: a 10:30 booking
+/// showed as 14:00 on the customer's appointment and on the salon's calendar.</para>
+///
+/// <para>Comparisons are unaffected: .NET compares DateTimes by their digits, whatever their Kind.</para>
+/// </summary>
+public sealed class WallClockDateTimeConverter : ValueConverter<DateTime, DateTime>
+{
+    public WallClockDateTimeConverter()
+        : base(
+            v => DateTime.SpecifyKind(v, DateTimeKind.Utc),
+            v => DateTime.SpecifyKind(v, DateTimeKind.Unspecified))
+    {
+    }
+}
+
 public static class UtcDateTimeConventions
 {
     /// <summary>

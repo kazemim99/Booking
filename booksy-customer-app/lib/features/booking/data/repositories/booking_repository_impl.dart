@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import '../../../../core/utils/wall_clock.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import '../../../../core/constants/app_strings.dart';
@@ -145,8 +146,9 @@ class BookingRepositoryImpl implements BookingRepository {
 
   TimeSlot _parseSlot(Map<String, dynamic> json) {
     return TimeSlot(
-      startTime: DateTime.parse(json['startTime'] as String).toLocal(),
-      endTime: DateTime.parse(json['endTime'] as String).toLocal(),
+      // Slots are the salon's wall clock: the digits are the time, whatever zone the server wrote.
+      startTime: parseWallClock(json['startTime'] as String),
+      endTime: parseWallClock(json['endTime'] as String),
       durationMinutes: (json['durationMinutes'] as num?)?.toInt() ?? 0,
       isAvailable: json['isAvailable'] as bool? ?? false,
       staffId: json['availableStaffId']?.toString(),

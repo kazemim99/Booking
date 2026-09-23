@@ -1,3 +1,4 @@
+import '../../../../core/utils/wall_clock.dart';
 import 'package:dio/dio.dart';
 
 import '../../../../core/api/config/api_constants.dart';
@@ -694,9 +695,9 @@ class HomeApiService {
   }
 
   /// Booking start time, from the first recognized key; null when unparsable.
-  /// Normalized to LOCAL time: the API emits offset timestamps (e.g.
-  /// `+03:30`, verified live) which Dart parses as UTC — display and
-  /// same-day comparisons need wall-clock time.
+  /// The salon's wall clock: the digits are the time, whatever zone suffix the
+  /// API wrote — converting it to the device's zone added 3:30 to every start
+  /// (QA 2026-09-23; see tryParseWallClock).
   static DateTime? bookingStart(Map<String, dynamic> booking) {
     for (final key in const [
       'startTime',
@@ -707,8 +708,8 @@ class HomeApiService {
     ]) {
       final v = booking[key];
       if (v is String) {
-        final parsed = DateTime.tryParse(v);
-        if (parsed != null) return parsed.toLocal();
+        final parsed = tryParseWallClock(v);
+        if (parsed != null) return parsed;
       }
     }
     return null;
@@ -758,12 +759,12 @@ class HomeApiService {
     );
   }
 
-  /// First parsable date under [keys], or null.
+  /// First parsable date under [keys], or null — read as the salon's wall clock (a booking time; see tryParseWallClock).
   static DateTime? readDate(Map<String, dynamic> map, List<String> keys) {
     for (final k in keys) {
       final v = map[k];
       if (v is String && v.isNotEmpty) {
-        final parsed = DateTime.tryParse(v);
+        final parsed = tryParseWallClock(v);
         if (parsed != null) return parsed;
       }
     }
