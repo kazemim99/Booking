@@ -8,6 +8,7 @@ import '../../../../config/theme/app_colors.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/network/connectivity_service.dart';
 import '../../../../core/utils/jalali_formatter.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
@@ -32,11 +33,16 @@ class BookingFlowPage extends StatefulWidget {
   /// The bloc to drive; the app-scoped singleton when null. Tests pass their own.
   final BookingBloc? bloc;
 
+  /// Drives the offline banner. The wizard covers the tab shell, whose banner it would otherwise hide; the router
+  /// passes the app's service, and a page built without one shows no banner.
+  final ConnectivityService? connectivity;
+
   const BookingFlowPage({
     super.key,
     required this.providerId,
     this.initialServiceId,
     this.bloc,
+    this.connectivity,
   });
 
   @override
@@ -62,6 +68,12 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
   /// the listener, which only hears changes after the page opened: a success left in the app-scoped bloc by an
   /// earlier visit is not latched, and [BookingStarted] clears it.
   BookingState? _submitted;
+
+  /// [child] under the offline banner, when the page has a connectivity service to follow.
+  Widget _offlineAware(Widget child) {
+    final connectivity = widget.connectivity;
+    return connectivity == null ? child : OfflineBanner(connectivity: connectivity, child: child);
+  }
 
   String get _stepTitle {
     switch (_bloc.state.step) {
@@ -133,7 +145,7 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
                   ),
                 ),
               ),
-              body: switch (state.providerStatus) {
+              body: _offlineAware(switch (state.providerStatus) {
                 BookingProviderStatus.loading => Padding(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     child: SkeletonLoader.list(items: 4, itemHeight: 80),
@@ -152,7 +164,7 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
                         providerId: widget.providerId,
                       ),
                   },
-              },
+              }),
             ),
           );
         },

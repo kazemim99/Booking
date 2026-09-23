@@ -261,6 +261,8 @@ class AppRouter {
                     builder: (context, state) => BookingFlowPage(
                       providerId: state.pathParameters['id']!,
                       initialServiceId: state.uri.queryParameters['service'],
+                      // Above the shell, so the shell's offline banner is hidden: the wizard shows its own.
+                      connectivity: getIt<ConnectivityService>(),
                     ),
                   ),
                 ],

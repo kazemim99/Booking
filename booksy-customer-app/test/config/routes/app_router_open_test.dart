@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:booksy_customer_app/config/routes/app_router.dart';
 import 'package:booksy_customer_app/config/theme/app_theme.dart';
+import 'package:booksy_customer_app/core/constants/app_strings.dart';
 import 'package:booksy_customer_app/core/di/injection.dart';
 import 'package:booksy_customer_app/core/network/connectivity_service.dart';
 import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_bloc.dart';
@@ -24,19 +25,24 @@ import 'package:booksy_customer_app/features/search/presentation/pages/provider_
 import '../../features/bookings/bookings_fakes.dart';
 import '../../helpers/fake_auth_bloc.dart';
 
-/// Opening a screen from outside the screen stack — a tapped push notification — with the app's REAL router.
+/// The app's REAL router with the booking wizard drawn above the tab shell (review of the merged branch, 2026-09-23).
 ///
-/// Booking and checkout are drawn on the root navigator, above the tab shell. go_router 13 folds a pushed tab route
+/// Opening a screen from outside the screen stack — a tapped push notification: go_router 13 folds a pushed tab route
 /// into the shell only when the shell is the top of the stack; above booking it adds a second copy of the shell whose
-/// navigators reuse the first one's keys, and the app dies on a duplicate-GlobalKey assertion (review of the merged
-/// branch, 2026-09-23).
+/// navigators reuse the first one's keys, and the app dies on a duplicate-GlobalKey assertion.
+///
+/// The offline banner lives in the tab shell, so a page above it has to show its own.
 
-class _Online implements ConnectivityService {
-  @override
-  Stream<bool> get onStatusChange => const Stream<bool>.empty();
+class _Connectivity implements ConnectivityService {
+  final bool online;
+
+  _Connectivity({required this.online});
 
   @override
-  Future<bool> get isOnline async => true;
+  Stream<bool> get onStatusChange => Stream<bool>.value(online);
+
+  @override
+  Future<bool> get isOnline async => online;
 }
 
 class _IdleProviderDetailCubit extends ProviderDetailCubit {
@@ -54,12 +60,14 @@ class _NoCustomerRepository implements HomeRepository {
 void main() {
   late FakeAuthBloc auth;
   late GoRouter router;
+  late _Connectivity connectivity;
 
   setUp(() {
+    connectivity = _Connectivity(online: true);
     final bookings = FakeBookings(upcoming: [fakeBooking('b9')]);
     final slots = FakeSlots();
     getIt
-      ..registerSingleton<ConnectivityService>(_Online())
+      ..registerLazySingleton<ConnectivityService>(() => connectivity)
       ..registerSingleton<BookingsRepository>(bookings)
       ..registerSingleton<BookingRepository>(slots)
       ..registerLazySingleton<BookingBloc>(() => BookingBloc(slots))
@@ -130,5 +138,21 @@ void main() {
     router.pop();
     await settle(tester);
     expect(find.byType(ProviderDetailPage), findsOneWidget);
+  });
+
+  testWidgets('the booking wizard, above the tabs, still says when the device is offline', (tester) async {
+    connectivity = _Connectivity(online: false);
+    await openSalon(tester);
+    // The tabs' own banner, under the salon's profile.
+    expect(find.text(AppStrings.offlineBanner), findsOneWidget);
+
+    unawaited(router.push(Routes.bookingFlow('p1')));
+    await settle(tester);
+
+    expect(find.byType(BookingFlowPage), findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(BookingFlowPage), matching: find.text(AppStrings.offlineBanner)),
+      findsOneWidget,
+    );
   });
 }
