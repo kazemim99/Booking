@@ -183,6 +183,19 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
+      // Every star lies inside the dialog: the 16 dp inset leaves a 328 dp
+      // dialog and 280 dp of content for five 48 dp stars (240 dp) — not
+      // the 232 dp Material's default 40 dp inset would.
+      final dialog = tester.getRect(find.descendant(
+          of: find.byType(AlertDialog), matching: find.byType(Material)).first);
+      for (final key in [
+        for (var star = 1; star <= 5; star++) 'review-star-$star',
+        for (var star = 1; star <= 5; star++) 'review-dim-skill-$star',
+      ]) {
+        final star = tester.getRect(find.byKey(Key(key)));
+        expect(star.left, greaterThanOrEqualTo(dialog.left), reason: key);
+        expect(star.right, lessThanOrEqualTo(dialog.right), reason: key);
+      }
     });
   }
 }
