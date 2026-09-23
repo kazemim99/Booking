@@ -67,6 +67,9 @@ class _Repo implements AuthRepository {
 
   @override
   Future<Either<Failure, AuthSession?>> getCurrentSession() async => Right(hasStoredSession ? _session : null);
+
+  @override
+  Future<void> rememberUserName({required String firstName, required String lastName}) async {}
 }
 
 class _Push implements PushLifecycle {

@@ -10,12 +10,15 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/network/connectivity_service.dart';
 import '../../../../core/utils/jalali_formatter.dart';
+import '../../../../core/utils/person_name.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../profile/presentation/bloc/profile_cubit.dart';
 import '../../domain/business_days.dart';
 import '../../domain/entities/booking_entities.dart';
 import '../bloc/booking_bloc.dart';
+import '../widgets/booking_name_sheet.dart';
 import '../widgets/service_selection_step.dart';
 import '../widgets/slot_picker.dart';
 import '../../../../core/utils/price_formatter.dart';
@@ -37,12 +40,16 @@ class BookingFlowPage extends StatefulWidget {
   /// passes the app's service, and a page built without one shows no banner.
   final ConnectivityService? connectivity;
 
+  /// Saves the name asked for at the confirm step; the page makes its own when null. Tests pass their own.
+  final ProfileCubit? profileCubit;
+
   const BookingFlowPage({
     super.key,
     required this.providerId,
     this.initialServiceId,
     this.bloc,
     this.connectivity,
+    this.profileCubit,
   });
 
   @override
@@ -162,6 +169,7 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
                     BookingStep.confirm => _ConfirmStep(
                         state: state,
                         providerId: widget.providerId,
+                        profileCubit: widget.profileCubit,
                       ),
                   },
               }),
@@ -406,8 +414,34 @@ class _InfoNote extends StatelessWidget {
 class _ConfirmStep extends StatelessWidget {
   final BookingState state;
   final String providerId;
+  final ProfileCubit? profileCubit;
 
-  const _ConfirmStep({required this.state, required this.providerId});
+  const _ConfirmStep({
+    required this.state,
+    required this.providerId,
+    this.profileCubit,
+  });
+
+  /// A guest signs in first; a customer still named by the OTP placeholder gives a first and last name — the salon
+  /// saw «مشتری 9384444636» on the booking (QA recording 2026-09-23 #9). Here there is no skip: closing the sheet
+  /// books nothing. The name page after sign-up stays skippable; only a booking needs the name.
+  Future<void> _confirm(BuildContext context) async {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! Authenticated) {
+      // Point-of-need login: selections live in the singleton
+      // bloc, so the round-trip lands back here intact.
+      final target = Uri.encodeComponent(Routes.bookingFlow(providerId));
+      context.push('${Routes.login}?redirect=$target');
+      return;
+    }
+    final bookings = context.read<BookingBloc>();
+    final user = authState.session.user;
+    if (isPlaceholderName(user.firstName, user.lastName)) {
+      final named = await BookingNameSheet.show(context, cubit: profileCubit);
+      if (!named) return;
+    }
+    bookings.add(const BookingSubmitted());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -467,18 +501,7 @@ class _ConfirmStep extends StatelessWidget {
             child: AppButton(
               label: AppStrings.bookingConfirmCta,
               loading: state.submitStatus == SubmitStatus.submitting,
-              onPressed: () {
-                final authState = context.read<AuthBloc>().state;
-                if (authState is! Authenticated) {
-                  // Point-of-need login: selections live in the singleton
-                  // bloc, so the round-trip lands back here intact.
-                  final target =
-                      Uri.encodeComponent(Routes.bookingFlow(providerId));
-                  context.push('${Routes.login}?redirect=$target');
-                  return;
-                }
-                context.read<BookingBloc>().add(const BookingSubmitted());
-              },
+              onPressed: () => _confirm(context),
             ),
           ),
         ),

@@ -4,12 +4,17 @@ import 'package:booksy_customer_app/config/theme/app_theme.dart';
 import 'package:booksy_customer_app/core/constants/app_strings.dart';
 import 'package:booksy_customer_app/core/di/injection.dart';
 import 'package:booksy_customer_app/core/storage/secure_storage_service.dart';
+import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_state.dart';
 import 'package:booksy_customer_app/features/profile/data/datasources/profile_remote_datasource.dart';
 import 'package:booksy_customer_app/features/profile/presentation/bloc/profile_cubit.dart';
 import 'package:booksy_customer_app/features/profile/presentation/pages/complete_name_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../helpers/fake_auth_bloc.dart';
 
 /// Asking a new customer for their name (QA walkthrough 2026-09-22: the profile read «ارائه‌دهنده 9384444636»
 /// and nothing ever asked). Worth asking once; never worth blocking the journey over.
@@ -55,11 +60,23 @@ void main() {
   late ProfileCubit cubit;
   late String landedOn;
 
+  /// The session: a customer who signed up by OTP and has no name yet.
+  late FakeAuthBloc auth;
+
   setUp(() {
     remote = _RecordingDataSource();
     cubit = ProfileCubit(remoteDataSource: remote, storageService: _FakeStorage());
     landedOn = '';
+    auth = FakeAuthBloc()..signIn(sessionNamed('مشتری', '9384444636'));
   });
+
+  tearDown(() => auth.close());
+
+  String? sessionName() {
+    final state = auth.state;
+    if (state is! Authenticated) return null;
+    return '${state.session.user.firstName} ${state.session.user.lastName}';
+  }
 
   Future<void> pump(WidgetTester tester, {String? redirect}) async {
     final router = GoRouter(
@@ -80,12 +97,15 @@ void main() {
       ],
     );
 
-    await tester.pumpWidget(MaterialApp.router(
-      theme: AppTheme.light,
-      routerConfig: router,
-      builder: (context, child) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: child ?? const SizedBox.shrink(),
+    await tester.pumpWidget(BlocProvider<AuthBloc>.value(
+      value: auth,
+      child: MaterialApp.router(
+        theme: AppTheme.light,
+        routerConfig: router,
+        builder: (context, child) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: child ?? const SizedBox.shrink(),
+        ),
       ),
     ));
     await tester.pumpAndSettle();
@@ -102,6 +122,34 @@ void main() {
     expect(remote.firstName, 'سارا');
     expect(remote.lastName, 'احمدی');
     expect(landedOn, '/providers/p1/book', reason: 'the booking they were in the middle of');
+  });
+
+  // QA recording 2026-09-23 #9: the booking confirm step asks a customer without a name for one. Someone who has
+  // just given it here must not be asked again there.
+  testWidgets('the saved name is the session\'s from now on', (tester) async {
+    await pump(tester, redirect: Uri.encodeComponent('/providers/p1/book'));
+
+    await tester.enterText(find.byKey(const Key('complete-name-first')), 'سارا');
+    await tester.enterText(find.byKey(const Key('complete-name-last')), 'احمدی');
+    await tester.tap(find.byKey(const Key('complete-name-save')));
+    await tester.pumpAndSettle();
+
+    expect(sessionName(), 'سارا احمدی');
+    expect(auth.rememberedNames, [('سارا', 'احمدی')]);
+  });
+
+  testWidgets('skipping, or a failed save, leaves the session as it was', (tester) async {
+    remote.failWith = Exception('offline');
+    await pump(tester);
+
+    await tester.enterText(find.byKey(const Key('complete-name-first')), 'سارا');
+    await tester.tap(find.byKey(const Key('complete-name-save')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('complete-name-skip')));
+    await tester.pumpAndSettle();
+
+    expect(sessionName(), 'مشتری 9384444636');
+    expect(auth.rememberedNames, isEmpty);
   });
 
   testWidgets('a name is asked for, not demanded', (tester) async {
@@ -200,12 +248,15 @@ void main() {
           }),
         ],
       );
-      await tester.pumpWidget(MaterialApp.router(
-        theme: AppTheme.light,
-        routerConfig: router,
-        builder: (context, child) => Directionality(
-          textDirection: TextDirection.rtl,
-          child: child ?? const SizedBox.shrink(),
+      await tester.pumpWidget(BlocProvider<AuthBloc>.value(
+        value: auth,
+        child: MaterialApp.router(
+          theme: AppTheme.light,
+          routerConfig: router,
+          builder: (context, child) => Directionality(
+            textDirection: TextDirection.rtl,
+            child: child ?? const SizedBox.shrink(),
+          ),
         ),
       ));
       router.push('/profile/name');
@@ -253,6 +304,18 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(remote.firstName, 'سارا', reason: 'the save itself still reaches the server');
       expect(landedOn, '', reason: 'a page that is gone sends nobody anywhere');
+    });
+
+    testWidgets('a save that answers after the page is gone still reaches the session', (tester) async {
+      final router = await pumpOwned(tester);
+      await startSaving(tester);
+
+      router.go('/start');
+      await tester.pumpAndSettle();
+      remote.gate!.complete();
+      await tester.pumpAndSettle();
+
+      expect(auth.rememberedNames, [('سارا', '')]);
     });
   });
 }

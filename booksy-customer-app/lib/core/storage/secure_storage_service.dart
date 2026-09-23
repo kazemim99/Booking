@@ -16,6 +16,8 @@ class SecureStorageService {
   static const String _userIdKey = 'user_id';
   static const String _customerIdKey = 'customer_id';
   static const String _phoneNumberKey = 'phone_number';
+  static const String _firstNameKey = 'first_name';
+  static const String _lastNameKey = 'last_name';
 
   /// Every read in this service goes through here rather than calling
   /// `_secureStorage.read` directly.
@@ -122,6 +124,32 @@ class SecureStorageService {
     return _readSafely(_phoneNumberKey);
   }
 
+  /// Keeps the signed-in person's name, or forgets it when there is none: a session restored at the next start
+  /// used to carry no name at all, so a customer who had given one looked unnamed again (QA recording
+  /// 2026-09-23 #9).
+  Future<void> saveUserName({String? firstName, String? lastName}) async {
+    await Future.wait([
+      _writeOrDelete(_firstNameKey, firstName),
+      _writeOrDelete(_lastNameKey, lastName),
+    ]);
+  }
+
+  Future<String?> getFirstName() async {
+    return _readSafely(_firstNameKey);
+  }
+
+  Future<String?> getLastName() async {
+    return _readSafely(_lastNameKey);
+  }
+
+  Future<void> _writeOrDelete(String key, String? value) async {
+    if (value == null || value.isEmpty) {
+      await _secureStorage.delete(key: key);
+    } else {
+      await _secureStorage.write(key: key, value: value);
+    }
+  }
+
   // ==================== Session Management ====================
 
   /// Check if user is logged in
@@ -137,6 +165,8 @@ class SecureStorageService {
     required String userId,
     required String customerId,
     String? phoneNumber,
+    String? firstName,
+    String? lastName,
   }) async {
     await Future.wait([
       saveAccessToken(accessToken),
@@ -144,6 +174,8 @@ class SecureStorageService {
       saveUserId(userId),
       saveCustomerId(customerId),
       if (phoneNumber != null) savePhoneNumber(phoneNumber),
+      // Always written: a name left from whoever signed in before on this device must not carry over.
+      saveUserName(firstName: firstName, lastName: lastName),
     ]);
   }
 
@@ -154,6 +186,8 @@ class SecureStorageService {
       _secureStorage.delete(key: _userIdKey),
       _secureStorage.delete(key: _customerIdKey),
       _secureStorage.delete(key: _phoneNumberKey),
+      _secureStorage.delete(key: _firstNameKey),
+      _secureStorage.delete(key: _lastNameKey),
     ]);
   }
 

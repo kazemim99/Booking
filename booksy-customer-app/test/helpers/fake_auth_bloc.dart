@@ -13,17 +13,38 @@ import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_state.d
 /// It starts as a guest (the bloc's own initial state). Call [signIn] to put it in the state a successful OTP
 /// produces. Shared so a screen test does not have to hand-roll the whole auth repository to render.
 class FakeAuthBloc extends AuthBloc {
-  FakeAuthBloc._(AuthRepository repo)
+  final _InertAuthRepository _repo;
+
+  FakeAuthBloc._(this._repo)
       : super(
-          SendVerificationCodeUseCase(repo),
-          CompleteAuthenticationUseCase(repo),
-          repo,
+          SendVerificationCodeUseCase(_repo),
+          CompleteAuthenticationUseCase(_repo),
+          _repo,
         );
 
   factory FakeAuthBloc() => FakeAuthBloc._(_InertAuthRepository());
 
-  void signIn() => emit(Authenticated(fakeSession));
+  /// Signed in as [session], [fakeSession] by default.
+  void signIn([AuthSession? session]) => emit(Authenticated(session ?? fakeSession));
+
+  /// The names the bloc asked the repository to keep on the device, oldest first.
+  List<(String, String)> get rememberedNames => List.unmodifiable(_repo.remembered);
 }
+
+/// A session for someone called [firstName] [lastName] — «مشتری 9384444636» is how the server stores a customer
+/// who signed up by OTP and never gave a name.
+AuthSession sessionNamed(String? firstName, String? lastName) => AuthSession(
+      accessToken: 'token',
+      refreshToken: 'refresh',
+      user: User(
+        id: 'user-1',
+        phoneNumber: '+989121234567',
+        firstName: firstName,
+        lastName: lastName,
+        createdAt: DateTime(2026, 1, 1),
+      ),
+      expiresIn: 3600,
+    );
 
 final fakeSession = AuthSession(
   accessToken: 'token',
@@ -33,6 +54,12 @@ final fakeSession = AuthSession(
 );
 
 class _InertAuthRepository implements AuthRepository {
+  final remembered = <(String, String)>[];
+
+  @override
+  Future<void> rememberUserName({required String firstName, required String lastName}) async =>
+      remembered.add((firstName, lastName));
+
   @override
   Future<Either<Failure, String>> sendVerificationCode({
     required String phoneNumber,

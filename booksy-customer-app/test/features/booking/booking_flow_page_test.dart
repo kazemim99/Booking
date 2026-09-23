@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,13 +10,21 @@ import 'package:booksy_customer_app/config/theme/app_colors.dart';
 import 'package:booksy_customer_app/config/theme/app_theme.dart';
 import 'package:booksy_customer_app/core/constants/app_strings.dart';
 import 'package:booksy_customer_app/core/errors/failures.dart';
+import 'package:booksy_customer_app/core/storage/secure_storage_service.dart';
 import 'package:booksy_customer_app/core/utils/jalali_formatter.dart';
 import 'package:booksy_customer_app/core/widgets/widgets.dart';
+import 'package:booksy_customer_app/features/auth/domain/entities/user.dart';
+import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_state.dart';
 import 'package:booksy_customer_app/features/booking/domain/entities/booking_entities.dart';
 import 'package:booksy_customer_app/features/booking/domain/repositories/booking_repository.dart';
 import 'package:booksy_customer_app/features/booking/presentation/bloc/booking_bloc.dart';
 import 'package:booksy_customer_app/features/booking/presentation/pages/booking_flow_page.dart';
 import 'package:booksy_customer_app/features/booking/presentation/widgets/slot_picker.dart';
+import 'package:booksy_customer_app/features/profile/data/datasources/profile_remote_datasource.dart';
+import 'package:booksy_customer_app/features/profile/presentation/bloc/profile_cubit.dart';
+
+import '../../helpers/fake_auth_bloc.dart';
 
 /// The booking wizard as the customer sees it (UX review 2026-09-23, #4, #9, #17): it can open on a service tapped on
 /// the salon's profile, it opens on a day that has free times and says why, the step bar is readable on the blue app
@@ -56,6 +65,7 @@ const _staff = StaffMember(id: 'st1', name: 'مریم احمدی', isActive: tru
 class _Repo implements BookingRepository {
   final Map<int, DaySlots> slotsByDay;
   final List<BusinessHour> hours;
+  var createCalls = 0;
 
   _Repo({this.slotsByDay = const {}, this.hours = const []});
 
@@ -89,8 +99,44 @@ class _Repo implements BookingRepository {
     required String staffProviderId,
     required DateTime startTime,
     List<String>? serviceIds,
-  }) async =>
-      const Right('b1');
+  }) async {
+    createCalls++;
+    return const Right('b1');
+  }
+}
+
+/// The customer's profile on the wire: records the name it was sent.
+class _Names implements ProfileRemoteDataSource {
+  String? firstName;
+  String? lastName;
+  var calls = 0;
+
+  /// When set, the save fails with this.
+  Object? failWith;
+
+  @override
+  Future<void> updateProfile({
+    required String customerId,
+    required String firstName,
+    required String lastName,
+  }) async {
+    calls++;
+    if (failWith != null) throw failWith!;
+    this.firstName = firstName;
+    this.lastName = lastName;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Enough of the storage for the profile cubit: it reads the customer id before saving.
+class _Storage implements SecureStorageService {
+  @override
+  Future<String?> getCustomerId() async => 'c1';
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 Future<void> _settle(WidgetTester tester) async {
@@ -112,6 +158,8 @@ double _contrast(Color a, Color b) {
 Color _over(Color top, Color background) => Color.alphaBlend(top, background);
 
 void main() {
+  late GoRouter router;
+
   Future<BookingBloc> pumpFlow(
     WidgetTester tester, {
     _Repo? repo,
@@ -119,6 +167,8 @@ void main() {
     Size size = const Size(390, 844),
     BookingBloc? existing,
     bool settle = true,
+    AuthBloc? auth,
+    ProfileCubit? profileCubit,
   }) async {
     tester.view.physicalSize = size * 3;
     tester.view.devicePixelRatio = 3;
@@ -128,10 +178,14 @@ void main() {
     // Closed in a tear-down: `await bloc.close()` inside testWidgets waits on the fake clock.
     addTearDown(bloc.close);
 
-    final router = GoRouter(
+    router = GoRouter(
       initialLocation: Routes.bookingFlow('p1', serviceId: serviceId),
       routes: [
         GoRoute(path: Routes.home, builder: (_, __) => const Text('home-page')),
+        GoRoute(
+          path: Routes.login,
+          builder: (_, __) => const Scaffold(body: Text('login-page')),
+        ),
         GoRoute(
           path: Routes.appointments,
           builder: (_, __) => const Text('appointments-page'),
@@ -142,17 +196,23 @@ void main() {
             providerId: state.pathParameters['id']!,
             initialServiceId: state.uri.queryParameters['service'],
             bloc: bloc,
+            profileCubit: profileCubit,
           ),
         ),
       ],
     );
     addTearDown(router.dispose);
 
-    await tester.pumpWidget(MaterialApp.router(
-      theme: AppTheme.light,
-      routerConfig: router,
-      builder: (context, child) =>
-          Directionality(textDirection: TextDirection.rtl, child: child!),
+    final session = auth ?? FakeAuthBloc();
+    if (auth == null) addTearDown(session.close);
+    await tester.pumpWidget(BlocProvider<AuthBloc>.value(
+      value: session,
+      child: MaterialApp.router(
+        theme: AppTheme.light,
+        routerConfig: router,
+        builder: (context, child) =>
+            Directionality(textDirection: TextDirection.rtl, child: child!),
+      ),
     ));
     if (settle) await _settle(tester);
     return bloc;
@@ -327,6 +387,222 @@ void main() {
 
       expect(tester.takeException(), isNull);
       await tester.ensureVisible(find.text(AppStrings.bookingConfirmCta));
+    });
+  });
+
+  // QA recording 2026-09-23 #9: the salon saw «مشتری 9384444636» on the booking. A customer still named by the OTP
+  // placeholder gives a first and last name at the confirm step — here there is no skip — and it is saved to their
+  // profile and to the session before the booking goes.
+  group('a name before the booking goes', () {
+    Finder confirm() => find.text(AppStrings.bookingConfirmCta);
+    Finder sheet() => find.byKey(const Key('booking-name-sheet'));
+    Finder first() => find.byKey(const Key('booking-name-first'));
+    Finder last() => find.byKey(const Key('booking-name-last'));
+    Finder save() => find.byKey(const Key('booking-name-save'));
+
+    Future<({BookingBloc bloc, _Repo repo, FakeAuthBloc auth, _Names names})> atConfirmAs(
+      WidgetTester tester,
+      AuthSession? session, {
+      Object? saveFails,
+      Size size = const Size(390, 844),
+    }) async {
+      final repo = _Repo(slotsByDay: {23: DaySlots(slots: [_at(23, 16)])});
+      final auth = FakeAuthBloc();
+      if (session != null) auth.signIn(session);
+      addTearDown(auth.close);
+      final names = _Names()..failWith = saveFails;
+      final cubit = ProfileCubit(remoteDataSource: names, storageService: _Storage());
+      addTearDown(cubit.close);
+
+      final bloc = await pumpFlow(
+        tester,
+        serviceId: 's1',
+        size: size,
+        repo: repo,
+        auth: auth,
+        profileCubit: cubit,
+      );
+      bloc.add(BookingSlotSelected(_at(23, 16)));
+      await _settle(tester);
+      return (bloc: bloc, repo: repo, auth: auth, names: names);
+    }
+
+    String? sessionFirstName(FakeAuthBloc auth) {
+      final state = auth.state;
+      return state is Authenticated ? state.session.user.firstName : null;
+    }
+
+    testWidgets('a customer still named by the OTP placeholder is asked first',
+        (tester) async {
+      final flow = await atConfirmAs(tester, sessionNamed('مشتری', '9384444636'));
+
+      await tester.tap(confirm());
+      await _settle(tester);
+
+      expect(sheet(), findsOneWidget);
+      expect(find.text(AppStrings.bookingNameTitle), findsOneWidget);
+      expect(first(), findsOneWidget);
+      expect(last(), findsOneWidget);
+      expect(flow.repo.createCalls, 0, reason: 'nothing is booked yet');
+    });
+
+    testWidgets('a session without any name is asked too', (tester) async {
+      final flow = await atConfirmAs(tester, sessionNamed(null, null));
+
+      await tester.tap(confirm());
+      await _settle(tester);
+
+      expect(sheet(), findsOneWidget);
+      expect(flow.repo.createCalls, 0);
+    });
+
+    testWidgets('without both names nothing is saved and nothing is booked',
+        (tester) async {
+      final flow = await atConfirmAs(tester, sessionNamed('مشتری', '9384444636'));
+      await tester.tap(confirm());
+      await _settle(tester);
+
+      await tester.tap(save());
+      await _settle(tester);
+      expect(find.text(AppStrings.firstNameRequired), findsOneWidget);
+      expect(find.text(AppStrings.lastNameRequired), findsOneWidget);
+
+      await tester.enterText(first(), 'سارا');
+      await tester.tap(save());
+      await _settle(tester);
+      expect(find.text(AppStrings.firstNameRequired), findsNothing);
+      expect(find.text(AppStrings.lastNameRequired), findsOneWidget);
+
+      await tester.enterText(first(), '   ');
+      await tester.enterText(last(), 'احمدی');
+      await tester.tap(save());
+      await _settle(tester);
+      expect(find.text(AppStrings.firstNameRequired), findsOneWidget);
+
+      expect(flow.names.calls, 0);
+      expect(flow.repo.createCalls, 0);
+      expect(sheet(), findsOneWidget);
+    });
+
+    testWidgets('closing the sheet books nothing and stays on the confirm step',
+        (tester) async {
+      final flow = await atConfirmAs(tester, sessionNamed('مشتری', '9384444636'));
+      await tester.tap(confirm());
+      await _settle(tester);
+
+      await tester.tap(find.byKey(const Key('booking-name-cancel')));
+      await _settle(tester);
+
+      expect(sheet(), findsNothing);
+      expect(flow.repo.createCalls, 0);
+      expect(confirm(), findsOneWidget);
+    });
+
+    testWidgets(
+        'both names are saved to the profile and the session, then the booking goes',
+        (tester) async {
+      final flow = await atConfirmAs(tester, sessionNamed('مشتری', '9384444636'));
+      await tester.tap(confirm());
+      await _settle(tester);
+
+      await tester.enterText(first(), ' سارا ');
+      await tester.enterText(last(), 'احمدی');
+      await tester.tap(save());
+      await _settle(tester);
+
+      expect(flow.names.firstName, 'سارا');
+      expect(flow.names.lastName, 'احمدی');
+      expect(sessionFirstName(flow.auth), 'سارا',
+          reason: 'the session has the name, so the next booking does not ask');
+      expect(flow.auth.rememberedNames, [('سارا', 'احمدی')]);
+      expect(sheet(), findsNothing);
+      expect(flow.repo.createCalls, 1);
+      expect(find.text(AppStrings.bookingSuccessAwaiting), findsOneWidget);
+    });
+
+    testWidgets('a customer with a real name books straight away',
+        (tester) async {
+      final flow = await atConfirmAs(tester, sessionNamed('سارا', 'احمدی'));
+
+      await tester.tap(confirm());
+      await _settle(tester);
+
+      expect(sheet(), findsNothing);
+      expect(flow.names.calls, 0);
+      expect(flow.repo.createCalls, 1);
+      expect(find.text(AppStrings.bookingSuccessAwaiting), findsOneWidget);
+    });
+
+    testWidgets('a failed save keeps the sheet open, says so, and books nothing',
+        (tester) async {
+      final flow = await atConfirmAs(
+        tester,
+        sessionNamed('مشتری', '9384444636'),
+        saveFails: Exception('offline'),
+      );
+      await tester.tap(confirm());
+      await _settle(tester);
+
+      await tester.enterText(first(), 'سارا');
+      await tester.enterText(last(), 'احمدی');
+      await tester.tap(save());
+      await _settle(tester);
+
+      expect(sheet(), findsOneWidget);
+      expect(find.text(AppStrings.completeNameSaveFailed), findsOneWidget);
+      // What they typed is still there to try again with.
+      expect(find.descendant(of: first(), matching: find.text('سارا')), findsOneWidget);
+      expect(find.descendant(of: last(), matching: find.text('احمدی')), findsOneWidget);
+      expect(flow.repo.createCalls, 0);
+      expect(sessionFirstName(flow.auth), 'مشتری');
+      expect(flow.auth.rememberedNames, isEmpty);
+    });
+
+    testWidgets(
+        'signing in at the confirm step still asks a placeholder customer before booking',
+        (tester) async {
+      final flow = await atConfirmAs(tester, null);
+
+      await tester.tap(confirm());
+      await _settle(tester);
+      expect(find.text('login-page'), findsOneWidget);
+
+      // The OTP round-trip: signed in as a customer with no name, and back on the confirm step.
+      flow.auth.signIn(sessionNamed('مشتری', '9384444636'));
+      router.pop();
+      // The login page slides away before the confirm button can be tapped.
+      await tester.pump(const Duration(seconds: 1));
+      await _settle(tester);
+      expect(confirm(), findsOneWidget);
+
+      await tester.tap(confirm());
+      await _settle(tester);
+
+      expect(sheet(), findsOneWidget);
+      expect(flow.repo.createCalls, 0);
+    });
+
+    testWidgets('the sheet fits a 360x640 phone at 1.3x text, with 48 dp targets',
+        (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await atConfirmAs(
+        tester,
+        sessionNamed('مشتری', '9384444636'),
+        size: const Size(360, 640),
+      );
+
+      await tester.tap(confirm());
+      await _settle(tester);
+      // The save error adds a line; it has to fit too.
+      await tester.tap(save());
+      await _settle(tester);
+
+      expect(tester.takeException(), isNull);
+      for (final target in [first(), last(), save(), find.byKey(const Key('booking-name-cancel'))]) {
+        await tester.ensureVisible(target);
+        expect(tester.getSize(target).height, greaterThanOrEqualTo(48));
+      }
     });
   });
 

@@ -55,6 +55,11 @@ class ProfilePage extends StatelessWidget {
         listenWhen: (prev, next) => prev.editStatus != next.editStatus,
         listener: (context, state) {
           if (state.editStatus == ProfileEditStatus.success) {
+            // The session follows, so the booking confirm step knows the name.
+            context.read<AuthBloc>().add(UserNameChangedEvent(
+                  firstName: state.firstName ?? '',
+                  lastName: state.lastName ?? '',
+                ));
             AppSnackbar.success(context, AppStrings.profileUpdated);
           } else if (state.editStatus == ProfileEditStatus.failure) {
             AppSnackbar.error(
@@ -69,51 +74,77 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
+/// The edit sheet's fields; closes with the trimmed names, or with nothing when dismissed.
+///
+/// The controllers belong to this widget, so they are disposed with it — after the sheet's closing animation. They
+/// used to be disposed the moment the sheet's future completed, while the closing sheet still built its fields
+/// ("A TextEditingController was used after being disposed").
+class _EditNameForm extends StatefulWidget {
+  final String firstName;
+  final String lastName;
+
+  const _EditNameForm({required this.firstName, required this.lastName});
+
+  @override
+  State<_EditNameForm> createState() => _EditNameFormState();
+}
+
+class _EditNameFormState extends State<_EditNameForm> {
+  late final _first = TextEditingController(text: widget.firstName);
+  late final _last = TextEditingController(text: widget.lastName);
+
+  @override
+  void dispose() {
+    _first.dispose();
+    _last.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppTextField(
+          controller: _first,
+          label: AppStrings.firstNameLabel,
+          autofocus: true,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        AppTextField(
+          controller: _last,
+          label: AppStrings.lastNameLabel,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        AppButton(
+          label: AppStrings.save,
+          onPressed: () => Navigator.of(context).pop((
+            first: _first.text.trim(),
+            last: _last.text.trim(),
+          )),
+        ),
+      ],
+    );
+  }
+}
+
 class _ProfileView extends StatelessWidget {
   const _ProfileView();
 
   Future<void> _editProfile(BuildContext context) async {
     final cubit = context.read<ProfileCubit>();
-    final firstController =
-        TextEditingController(text: cubit.state.firstName ?? '');
-    final lastController =
-        TextEditingController(text: cubit.state.lastName ?? '');
-
-    await AppBottomSheet.show<void>(
+    final name = await AppBottomSheet.show<({String first, String last})>(
       context: context,
       title: AppStrings.profileEditTitle,
       isScrollControlled: true,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AppTextField(
-            controller: firstController,
-            label: AppStrings.firstNameLabel,
-            autofocus: true,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          AppTextField(
-            controller: lastController,
-            label: AppStrings.lastNameLabel,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          AppButton(
-            label: AppStrings.save,
-            onPressed: () {
-              Navigator.of(context).pop();
-              cubit.saveProfile(
-                firstName: firstController.text.trim(),
-                lastName: lastController.text.trim(),
-              );
-            },
-          ),
-        ],
+      child: _EditNameForm(
+        firstName: cubit.state.firstName ?? '',
+        lastName: cubit.state.lastName ?? '',
       ),
     );
-
-    firstController.dispose();
-    lastController.dispose();
+    if (name == null) return;
+    await cubit.saveProfile(firstName: name.first, lastName: name.last);
   }
 
   Future<void> _logout(BuildContext context) async {

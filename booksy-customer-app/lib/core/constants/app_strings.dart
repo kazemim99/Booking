@@ -252,6 +252,12 @@ class AppStrings {
       'برای اینکه سالن بداند نوبت برای چه کسی است، نام و نام خانوادگی خود را وارد کنید.';
   static const String completeNameSkip = 'بعداً';
   static const String firstNameRequired = 'لطفاً نام خود را وارد کنید';
+  static const String lastNameRequired = 'لطفاً نام خانوادگی خود را وارد کنید';
+  // A booking needs a real name (QA recording 2026-09-23 #9): asked at the confirm step, with no skip there.
+  static const String bookingNameTitle = 'نام شما برای این نوبت';
+  static const String bookingNameBody =
+      'سالن باید بداند نوبت برای چه کسی است. برای ثبت نوبت، نام و نام خانوادگی خود را وارد کنید.';
+  static const String bookingNameSaveAndBook = 'ذخیره و ثبت نوبت';
   static const String reviewsTitle = 'نظرها';
   static const String reviewsEmpty = 'هنوز نظری ثبت نشده است';
   // "Where do I leave my review?" (QA recording 2026-09-23 #10).

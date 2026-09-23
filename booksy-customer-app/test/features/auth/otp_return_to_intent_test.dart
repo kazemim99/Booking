@@ -64,6 +64,9 @@ class _InertAuthRepository implements AuthRepository {
   @override
   Future<Either<Failure, AuthSession?>> getCurrentSession() async =>
       const Right(null);
+
+  @override
+  Future<void> rememberUserName({required String firstName, required String lastName}) async {}
 }
 
 final _session = AuthSession(

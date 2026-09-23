@@ -36,4 +36,7 @@ abstract class AuthRepository {
 
   /// Get current auth session from storage
   Future<Either<Failure, AuthSession?>> getCurrentSession();
+
+  /// Keeps the signed-in person's name with the stored session, so a session restored at the next start has it.
+  Future<void> rememberUserName({required String firstName, required String lastName});
 }

@@ -71,6 +71,8 @@ class AuthRepositoryImpl implements AuthRepository {
           userId: authData.userId,
           customerId: authData.customerId,
           phoneNumber: phoneNumber,
+          firstName: authData.user.firstName,
+          lastName: authData.user.lastName,
         );
 
         // Convert DTO to Entity
@@ -190,6 +192,8 @@ class AuthRepositoryImpl implements AuthRepository {
       final userId = await _storageService.getUserId();
       final customerId = await _storageService.getCustomerId();
       final phoneNumber = await _storageService.getPhoneNumber();
+      final firstName = await _storageService.getFirstName();
+      final lastName = await _storageService.getLastName();
 
       if (accessToken == null ||
           refreshToken == null ||
@@ -203,6 +207,8 @@ class AuthRepositoryImpl implements AuthRepository {
       final user = User(
         id: userId,
         phoneNumber: phoneNumber,
+        firstName: firstName,
+        lastName: lastName,
         createdAt: DateTime.now(), // Placeholder
       );
 
@@ -225,6 +231,16 @@ class AuthRepositoryImpl implements AuthRepository {
       return Right(session);
     } catch (e) {
       return const Left(CacheFailure('خطا در دریافت اطلاعات کاربر'));
+    }
+  }
+
+  @override
+  Future<void> rememberUserName({required String firstName, required String lastName}) async {
+    try {
+      await _storageService.saveUserName(firstName: firstName, lastName: lastName);
+    } catch (_) {
+      // Best effort: the name is already saved on the server and in this session. Losing the local copy only
+      // means being asked for it again after a restart.
     }
   }
 

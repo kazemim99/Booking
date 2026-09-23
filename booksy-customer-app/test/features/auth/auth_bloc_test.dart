@@ -68,6 +68,9 @@ class _FakeAuthRepository implements AuthRepository {
 
   @override
   Future<Either<Failure, void>> logout() async => const Right(null);
+
+  @override
+  Future<void> rememberUserName({required String firstName, required String lastName}) async {}
 }
 
 AuthSession _session() => AuthSession(

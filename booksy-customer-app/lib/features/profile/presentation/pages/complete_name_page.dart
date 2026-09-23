@@ -7,6 +7,8 @@ import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/widgets/widgets.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_event.dart';
 import '../bloc/profile_cubit.dart';
 
 /// Asks a customer for their name, once, right after they sign up.
@@ -79,6 +81,8 @@ class _CompleteNamePageState extends State<CompleteNamePage> {
       setState(() => _error = AppStrings.firstNameRequired);
       return;
     }
+    // Read now: the page can be gone by the time the save answers, and the session must still learn the name.
+    final auth = context.read<AuthBloc>();
     setState(() {
       _error = null;
       _saving = true;
@@ -89,6 +93,10 @@ class _CompleteNamePageState extends State<CompleteNamePage> {
       await saving;
     } finally {
       if (identical(_inFlight, saving)) _inFlight = null;
+    }
+    // The session has the name from now on, so the booking confirm step does not ask for it again.
+    if (_cubit.state.editStatus == ProfileEditStatus.success) {
+      auth.add(UserNameChangedEvent(firstName: first, lastName: last));
     }
     // Gone while saving: nobody is left to carry on or to tell.
     if (!mounted || _cubit.isClosed) return;

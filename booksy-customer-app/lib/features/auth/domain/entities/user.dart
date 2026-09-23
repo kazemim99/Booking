@@ -34,6 +34,19 @@ class User extends Equatable {
 
   String get displayName => fullName;
 
+  /// The same person under the name they gave.
+  User withName({required String firstName, required String lastName}) => User(
+        id: id,
+        phoneNumber: phoneNumber,
+        email: email,
+        firstName: firstName,
+        lastName: lastName,
+        profilePictureUrl: profilePictureUrl,
+        emailVerified: emailVerified,
+        phoneVerified: phoneVerified,
+        createdAt: createdAt,
+      );
+
   @override
   List<Object?> get props => [
         id,

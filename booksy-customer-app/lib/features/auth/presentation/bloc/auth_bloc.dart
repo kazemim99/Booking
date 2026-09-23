@@ -39,6 +39,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<CheckAuthStatusEvent>(_onCheckAuthStatus);
     on<LogoutEvent>(_onLogout);
     on<RefreshTokenEvent>(_onRefreshToken);
+    on<UserNameChangedEvent>(_onUserNameChanged);
   }
 
   /// Handle send verification code event
@@ -174,6 +175,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       },
       (session) => _signedIn(session, emit),
     );
+  }
+
+  /// The signed-in person gave their name (the name page after sign-up, the profile, or the booking confirm step).
+  /// The session carries it from now on, and it is kept with the stored session, so nothing asks for it again —
+  /// not the next booking, and not after a restart. Nobody signed in: nothing to rename.
+  Future<void> _onUserNameChanged(
+    UserNameChangedEvent event,
+    Emitter<AuthState> emit,
+  ) async {
+    final current = state;
+    if (current is! Authenticated) return;
+    final session = current.session;
+    emit(Authenticated(AuthSession(
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
+      user: session.user.withName(firstName: event.firstName, lastName: event.lastName),
+      customer: session.customer,
+      expiresIn: session.expiresIn,
+    )));
+    await _authRepository.rememberUserName(firstName: event.firstName, lastName: event.lastName);
   }
 
   /// A session exists on this device. Push registration is started but not awaited: it must never delay, or

@@ -66,3 +66,14 @@ class LogoutEvent extends AuthEvent {
 class RefreshTokenEvent extends AuthEvent {
   const RefreshTokenEvent();
 }
+
+/// The signed-in person gave their name in the app.
+class UserNameChangedEvent extends AuthEvent {
+  final String firstName;
+  final String lastName;
+
+  const UserNameChangedEvent({required this.firstName, required this.lastName});
+
+  @override
+  List<Object?> get props => [firstName, lastName];
+}
