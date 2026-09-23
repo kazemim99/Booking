@@ -91,6 +91,74 @@ void main() {
     }
   });
 
+  /// The frame as it runs on a given platform: [isWeb] stands in for kIsWeb, which is always false under test.
+  Widget framed({required bool isWeb, required void Function(Size mediaSize) onBuild}) => MaterialApp(
+        theme: AppTheme.light,
+        builder: (context, child) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: AppViewportFrame(isWeb: isWeb, child: child!),
+        ),
+        home: Scaffold(
+          body: Builder(builder: (context) {
+            onBuild(MediaQuery.sizeOf(context));
+            return const SizedBox.expand(key: Key('page'));
+          }),
+        ),
+      );
+
+  group('platform: the column is for browsers and large screens, never for a phone', () {
+    testWidgets('web, wide window: a centred column', (tester) async {
+      await setViewport(tester, const Size(1440, 900));
+      late Size media;
+      await tester.pumpWidget(framed(isWeb: true, onBuild: (m) => media = m));
+      expect(find.byKey(AppViewportFrame.backdropKey), findsOneWidget);
+      expect(media.width, AppViewportFrame.maxContentWidth);
+    });
+
+    testWidgets('web, a phone browser turned to landscape: a centred column', (tester) async {
+      await setViewport(tester, const Size(844, 390));
+      late Size media;
+      await tester.pumpWidget(framed(isWeb: true, onBuild: (m) => media = m));
+      expect(find.byKey(AppViewportFrame.backdropKey), findsOneWidget);
+      expect(media.width, AppViewportFrame.maxContentWidth);
+    });
+
+    for (final size in const [Size(844, 390), Size(640, 360), Size(915, 412)]) {
+      testWidgets('native phone in landscape ${size.width.toInt()}x${size.height.toInt()}: full width, no backdrop',
+          (tester) async {
+        await setViewport(tester, size);
+        late Size media;
+        await tester.pumpWidget(framed(isWeb: false, onBuild: (m) => media = m));
+        expect(find.byKey(AppViewportFrame.backdropKey), findsNothing);
+        expect(tester.getRect(find.byKey(const Key('page'))), Offset.zero & size);
+        expect(media, size);
+      });
+    }
+
+    testWidgets('native phone in portrait: full width, no backdrop', (tester) async {
+      await setViewport(tester, const Size(390, 844));
+      await tester.pumpWidget(framed(isWeb: false, onBuild: (_) {}));
+      expect(find.byKey(AppViewportFrame.backdropKey), findsNothing);
+    });
+
+    for (final size in const [Size(1024, 768), Size(768, 1024)]) {
+      testWidgets('native tablet ${size.width.toInt()}x${size.height.toInt()}: a centred column', (tester) async {
+        await setViewport(tester, size);
+        late Size media;
+        await tester.pumpWidget(framed(isWeb: false, onBuild: (m) => media = m));
+        expect(find.byKey(AppViewportFrame.backdropKey), findsOneWidget);
+        expect(media, Size(AppViewportFrame.maxContentWidth, size.height));
+      });
+    }
+
+    testWidgets('a large screen no wider than the column is left alone', (tester) async {
+      // A tablet in split screen can be tall and narrow: shortestSide below 600, nothing to centre anyway.
+      await setViewport(tester, const Size(AppViewportFrame.maxContentWidth, 1000));
+      await tester.pumpWidget(framed(isWeb: false, onBuild: (_) {}));
+      expect(find.byKey(AppViewportFrame.backdropKey), findsNothing);
+    });
+  });
+
   testWidgets('a viewport exactly the column width is treated as a phone', (tester) async {
     await setViewport(tester, const Size(AppViewportFrame.maxContentWidth, 800));
     await tester.pumpWidget(app(onBuild: (_, __) {}));

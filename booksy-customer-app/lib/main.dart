@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -69,8 +70,7 @@ class _BooksyCustomerAppState extends State<BooksyCustomerApp> {
             BlocProvider(create: (context) => getIt<HomeBloc>()),
           ],
           child: MaterialApp.router(
-            // On the web this is the browser tab's title once the app runs (index.html has the same text before).
-            title: AppStrings.appDocumentTitle,
+            title: appTitleFor(),
             debugShowCheckedModeBanner: false,
             // RTL Support for Persian/Arabic
             locale: const Locale('fa', 'IR'),
@@ -92,6 +92,12 @@ class _BooksyCustomerAppState extends State<BooksyCustomerApp> {
     );
   }
 }
+
+/// MaterialApp.title for the platform the app runs on ([isWeb] defaults to [kIsWeb]).
+///
+/// On the web it is the browser tab's title once the app runs, the same long text index.html shows before it. On
+/// Android it is the label in the recents screen, where the long text would be cut off: there it is the app's name.
+String appTitleFor({bool isWeb = kIsWeb}) => isWeb ? AppStrings.appDocumentTitle : AppStrings.homeTitle;
 
 /// Wraps every route (MaterialApp.builder): right-to-left throughout, and phone-shaped on wide screens.
 Widget buildAppShell(BuildContext context, Widget? child) {
