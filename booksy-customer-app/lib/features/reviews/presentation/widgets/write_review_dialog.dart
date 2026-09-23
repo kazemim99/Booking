@@ -173,6 +173,7 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
               label: AppStrings.reviewCommentLabel,
               maxLines: 3,
               maxLength: 2000,
+              showCounter: true,
             ),
             if (_editing)
               Text(

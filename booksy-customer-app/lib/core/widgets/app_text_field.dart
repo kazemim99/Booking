@@ -25,6 +25,10 @@ class AppTextField extends StatelessWidget {
   /// Lines the field shows: one unless a caller wants room to write.
   final int? maxLines;
 
+  /// Shows [maxLength]'s «used/max» counter under the field. Off by default:
+  /// a name or a phone number is capped silently, a long comment is not.
+  final bool showCounter;
+
   const AppTextField({
     super.key,
     this.controller,
@@ -44,6 +48,7 @@ class AppTextField extends StatelessWidget {
     this.maxLength,
     this.focusNode,
     this.maxLines = 1,
+    this.showCounter = false,
   });
 
   @override
@@ -66,7 +71,9 @@ class AppTextField extends StatelessWidget {
         labelText: label,
         hintText: hint,
         errorText: errorText,
-        counterText: '',
+        // null lets the field draw its own counter (with its spoken
+        // "characters remaining"); '' hides it.
+        counterText: showCounter ? null : '',
         prefixIcon: prefixIcon != null ? Icon(prefixIcon) : null,
       ),
     );

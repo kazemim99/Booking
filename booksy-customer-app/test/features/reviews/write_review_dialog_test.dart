@@ -76,6 +76,23 @@ void main() {
     expect(field.decoration?.enabledBorder, themed.enabledBorder);
   });
 
+  testWidgets('the comment shows how much of its 2000 characters is used',
+      (tester) async {
+    await open(tester)();
+
+    final comment = find.byKey(const Key('review-comment'));
+    expect(
+        find.descendant(of: comment, matching: find.text('0/2000')),
+        findsOneWidget);
+    await tester.enterText(
+        find.descendant(of: comment, matching: find.byType(TextField)),
+        'خیلی خوب بود');
+    await tester.pump();
+    expect(
+        find.descendant(of: comment, matching: find.text('12/2000')),
+        findsOneWidget);
+  });
+
   testWidgets('each overall star says how many stars it is, and which is chosen',
       (tester) async {
     final semantics = tester.ensureSemantics();
