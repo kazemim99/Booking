@@ -109,14 +109,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Notifications.Push
             if (_messaging is null)
                 return new PushSendResult(false, null, "Firebase is not configured");
 
-            var message = new Message
-            {
-                Token = deviceToken,
-                Notification = new Notification { Title = title, Body = body },
-                Data = data.ToDictionary(kv => kv.Key, kv => kv.Value),
-            };
-
-            return await SendCoreAsync(message, cancellationToken);
+            return await SendCoreAsync(FcmMessageFactory.ForDevice(deviceToken, title, body, data), cancellationToken);
         }
 
         public async Task<PushSendResult> SendToTopicAsync(
@@ -129,14 +122,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Notifications.Push
             if (_messaging is null)
                 return new PushSendResult(false, null, "Firebase is not configured");
 
-            var message = new Message
-            {
-                Topic = topic,
-                Notification = new Notification { Title = title, Body = body },
-                Data = data.ToDictionary(kv => kv.Key, kv => kv.Value),
-            };
-
-            return await SendCoreAsync(message, cancellationToken);
+            return await SendCoreAsync(FcmMessageFactory.ForTopic(topic, title, body, data), cancellationToken);
         }
 
         private async Task<PushSendResult> SendCoreAsync(Message message, CancellationToken cancellationToken)
