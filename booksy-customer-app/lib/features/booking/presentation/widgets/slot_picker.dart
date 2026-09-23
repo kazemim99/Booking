@@ -1,5 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
+import '../../../../config/theme/app_colors.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/utils/jalali_formatter.dart';
@@ -24,6 +27,19 @@ class SlotPicker extends StatelessWidget {
   /// The salon's own answer for an empty day; the generic line is used when there is none.
   final String? emptyReason;
 
+  /// The first day of the strip; the device's today when null. Injectable so the strip is deterministic in tests.
+  final DateTime? today;
+
+  /// [DateTime.weekday] values the salon is shut. Those days are drawn muted and cannot be picked. Empty (the
+  /// default) leaves every day pickable.
+  final Set<int> closedWeekdays;
+
+  /// Offered on a day with no free time as «نزدیک‌ترین روز با وقت خالی»; no button when null.
+  final VoidCallback? onFindNextFreeDay;
+
+  /// A short line under the day strip saying why this day is shown (the app chose it); nothing when null.
+  final String? notice;
+
   const SlotPicker({
     super.key,
     required this.selectedDate,
@@ -35,25 +51,51 @@ class SlotPicker extends StatelessWidget {
     required this.onRetry,
     this.daysToShow = 14,
     this.emptyReason,
+    this.today,
+    this.closedWeekdays = const {},
+    this.onFindNextFreeDay,
+    this.notice,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final today = DateTime.now();
+    final today = this.today ?? DateTime.now();
     final days = List.generate(
       daysToShow,
       (i) => DateTime(today.year, today.month, today.day + i),
+    );
+
+    // The strip is as tall as its two lines at the reader's text size (a fixed height overflowed at 1.3x), and never
+    // shorter than a touch target.
+    final scaler = MediaQuery.textScalerOf(context);
+    double lineHeight(TextStyle? style) => (TextPainter(
+          text: TextSpan(text: 'ی۲', style: style),
+          textDirection: TextDirection.rtl,
+          textScaler: scaler,
+          maxLines: 1,
+        )..layout())
+            .height;
+    final chipHeight = math.max(
+      AppTouchTarget.min,
+      lineHeight(theme.textTheme.bodySmall) +
+          AppSpacing.xxs +
+          lineHeight(theme.textTheme.titleSmall) +
+          2 * AppSpacing.xs +
+          2,
     );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          height: 84,
+          height: chipHeight + 2 * AppSpacing.sm,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.all(AppSpacing.md),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
             itemCount: days.length,
             separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.xs),
             itemBuilder: (context, index) {
@@ -61,57 +103,119 @@ class SlotPicker extends StatelessWidget {
               final isSelected = day.year == selectedDate.year &&
                   day.month == selectedDate.month &&
                   day.day == selectedDate.day;
-              return Semantics(
-                button: true,
-                selected: isSelected,
-                label: JalaliFormatter.formatDate(day),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  onTap: () => onDateSelected(day),
-                  child: Container(
-                    width: 64,
-                    padding:
-                        const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? theme.colorScheme.primary
+              final isClosed = closedWeekdays.contains(day.weekday);
+              final chip = Container(
+                constraints: const BoxConstraints(minWidth: 64),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xs,
+                  vertical: AppSpacing.xs,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : isClosed
+                          ? AppColors.surfaceSoft
                           : theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      border: Border.all(
-                        color: isSelected
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.outline,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          JalaliFormatter.weekday(day),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: isSelected
-                                ? Colors.white
-                                : theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.xxs),
-                        Text(
-                          JalaliFormatter.formatShortDate(day),
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: isSelected
-                                ? Colors.white
-                                : theme.colorScheme.onSurface,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(
+                    color: isSelected
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.outline,
                   ),
                 ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      JalaliFormatter.weekday(day),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: isSelected
+                            ? Colors.white
+                            : theme.colorScheme.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      isClosed && !isSelected
+                          ? AppStrings.bookingDayClosed
+                          : JalaliFormatter.formatShortDate(day),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: isSelected
+                            ? Colors.white
+                            : theme.colorScheme.onSurface,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              );
+              return Semantics(
+                key: ValueKey(
+                  'slot-picker-day-${day.year}-${day.month}-${day.day}',
+                ),
+                container: true,
+                button: !isClosed,
+                enabled: !isClosed,
+                selected: isSelected,
+                label: isClosed
+                    ? '${JalaliFormatter.formatDate(day)}، ${AppStrings.bookingDayClosed}'
+                    : JalaliFormatter.formatDate(day),
+                excludeSemantics: true,
+                onTap: isClosed ? null : () => onDateSelected(day),
+                child: isClosed
+                    // The salon is shut every such weekday: muted and not tappable, so the customer never lands on
+                    // a day that cannot have times.
+                    ? Opacity(opacity: 0.55, child: chip)
+                    : InkWell(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        onTap: () => onDateSelected(day),
+                        child: chip,
+                      ),
               );
             },
           ),
         ),
+        if (notice != null)
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(
+              AppSpacing.md,
+              0,
+              AppSpacing.md,
+              AppSpacing.xs,
+            ),
+            child: Container(
+              key: const Key('slot-picker-notice'),
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.infoTint,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.info_outline,
+                    size: AppIconSize.sm,
+                    color: AppColors.infoText,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      notice!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.infoText,
+                      ),
+                      textAlign: TextAlign.start,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         Expanded(
           child: switch (status) {
             SlotPickerStatus.loading => Padding(
@@ -133,9 +237,22 @@ class SlotPicker extends StatelessWidget {
               ),
             SlotPickerStatus.error => ErrorState(onRetry: onRetry),
             SlotPickerStatus.loaded => slots.isEmpty
-                ? EmptyState(
-                    icon: Icons.event_busy_outlined,
-                    title: emptyReason ?? AppStrings.bookingNoSlots,
+                // Scrollable so a long reason, the button and a large text size never overflow a small screen.
+                ? LayoutBuilder(
+                    builder: (context, constraints) => SingleChildScrollView(
+                      child: ConstrainedBox(
+                        constraints:
+                            BoxConstraints(minHeight: constraints.maxHeight),
+                        child: EmptyState(
+                          icon: Icons.event_busy_outlined,
+                          title: emptyReason ?? AppStrings.bookingNoSlots,
+                          ctaLabel: onFindNextFreeDay == null
+                              ? null
+                              : AppStrings.bookingFindNextFreeDay,
+                          onCta: onFindNextFreeDay,
+                        ),
+                      ),
+                    ),
                   )
                 : SingleChildScrollView(
                     padding: const EdgeInsets.all(AppSpacing.md),

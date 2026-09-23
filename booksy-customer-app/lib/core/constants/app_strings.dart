@@ -356,6 +356,20 @@ class AppStrings {
   // --- end of slice C ---
 
   // --- slice D: booking wizard ---
+  static const String bookingMovedFromToday =
+      'امروز وقت خالی ندارد؛ نزدیک‌ترین روز با وقت خالی انتخاب شد';
+  static const String bookingMovedFromPickedDay =
+      'این روز وقت خالی ندارد؛ نزدیک‌ترین روز با وقت خالی انتخاب شد';
+  static const String bookingNoFreeDayInWindow =
+      'تا پایان روزهای قابل رزرو این سالن وقت خالی پیدا نشد';
+  static const String bookingFindNextFreeDay = 'نزدیک‌ترین روز با وقت خالی';
+  static const String bookingDayClosed = 'تعطیل';
+  static const String bookingWhatNextTitle = 'بعد از ثبت چه می‌شود؟';
+  static const String bookingWhatNextBody =
+      'درخواست شما با وضعیت «$statusPending» ثبت می‌شود. سالن آن را بررسی و تایید می‌کند و نتیجه به شما اطلاع داده می‌شود.';
+  static const String bookingSuccessRequestedTitle = 'درخواست نوبت ثبت شد';
+  static const String bookingSuccessAwaiting =
+      'نوبت شما در انتظار تایید سالن است. پس از تایید به شما اطلاع می‌دهیم.';
   // --- end of slice D ---
 
   // --- slice E: appointments ---

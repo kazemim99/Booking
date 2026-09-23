@@ -26,7 +26,7 @@ class ServiceSelectionStep extends StatelessWidget {
     if (services.isEmpty) {
       return const EmptyState(
         icon: Icons.design_services_outlined,
-        title: AppStrings.noResultsTitle,
+        title: AppStrings.noServicesYet,
       );
     }
 
@@ -132,13 +132,23 @@ class SelectableServiceTile extends StatelessWidget {
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: AppSpacing.xxs),
-                    Text(duration, style: theme.textTheme.bodySmall),
+                    Flexible(
+                      child: Text(duration, style: theme.textTheme.bodySmall),
+                    ),
                   ],
                 ),
               ],
             ),
           ),
-          Text(price, style: theme.textTheme.titleSmall),
+          const SizedBox(width: AppSpacing.xs),
+          // Wraps rather than squeezing the name and duration off the row on a narrow phone.
+          Flexible(
+            child: Text(
+              price,
+              style: theme.textTheme.titleSmall,
+              textAlign: TextAlign.end,
+            ),
+          ),
         ],
       ),
     );

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -38,13 +40,16 @@ TimeSlot _slot(int hour, {String? staffId = 'st1'}) => TimeSlot(
 ProviderDetail _provider({
   List<StaffMember> staff = const [_staffA],
   List<ServiceItem> services = const [_service, _service2],
+  List<BusinessHour> businessHours = const [],
+  int maxAdvanceBookingDays = 7,
 }) =>
     ProviderDetail(
       id: 'p1',
       businessName: 'سالن نمونه',
       averageRating: 4.8,
       totalReviews: 12,
-      businessHours: const [],
+      maxAdvanceBookingDays: maxAdvanceBookingDays,
+      businessHours: businessHours,
       services: services,
       staff: staff,
     );
@@ -64,10 +69,21 @@ class FakeBookingRepository implements BookingRepository {
   String? lastSlotsServiceId;
   List<String>? lastSlotsServiceIds;
 
+  /// When set, each day answers from here by its day of the month, and a day
+  /// missing from the map is empty — how the first-free-day search is driven.
+  Map<int, DaySlots>? slotsByDay;
+
+  /// Every day asked for, in order.
+  final List<DateTime> slotsDates = [];
+
+  /// Holds a day's answer back until the test releases it (stale-result cover).
+  Map<int, Completer<void>> gates = {};
+
   FakeBookingRepository({
     required this.provider,
     required this.slotsResult,
     required this.createResults,
+    this.slotsByDay,
   });
 
   @override
@@ -83,8 +99,13 @@ class FakeBookingRepository implements BookingRepository {
     List<String>? serviceIds,
   }) async {
     slotsCalls++;
+    slotsDates.add(date);
     lastSlotsServiceId = serviceId;
     lastSlotsServiceIds = serviceIds;
+    final gate = gates[date.day];
+    if (gate != null) await gate.future;
+    final byDay = slotsByDay;
+    if (byDay != null) return Right(byDay[date.day] ?? const DaySlots());
     return slotsResult;
   }
 
@@ -478,4 +499,334 @@ void main() {
       expect(bloc.state.submitStatus, isNot(SubmitStatus.success));
     });
   });
+
+  // UX review 2026-09-23, #4: a service tapped on the salon's profile opens the
+  // flow with that service chosen, and the customer lands past the service step.
+  group('BookingStarted with a service', () {
+    test('selects it and goes straight to the time step (single staff)',
+        () async {
+      final repo = FakeBookingRepository(
+        provider: _provider(),
+        slotsResult: Right(DaySlots(slots: [_slot(10)])),
+        createResults: [const Right('b1')],
+      );
+      final bloc = BookingBloc(repo);
+      addTearDown(bloc.close);
+
+      bloc.add(const BookingStarted('p1', serviceId: 's2'));
+      await _flush();
+
+      expect(bloc.state.services, [_service2]);
+      expect(bloc.state.step, BookingStep.time);
+      expect(bloc.state.staff, _staffA);
+      expect(bloc.state.slotsStatus, SlotsStatus.loaded);
+      expect(repo.lastSlotsServiceIds, ['s2']);
+    });
+
+    test('goes to the staff step when the salon has a choice of staff',
+        () async {
+      final repo = FakeBookingRepository(
+        provider: _provider(staff: const [_staffA, _staffB]),
+        slotsResult: Right(DaySlots(slots: [_slot(10)])),
+        createResults: [const Right('b1')],
+      );
+      final bloc = BookingBloc(repo);
+      addTearDown(bloc.close);
+
+      bloc.add(const BookingStarted('p1', serviceId: 's1'));
+      await _flush();
+
+      expect(bloc.state.services, [_service]);
+      expect(bloc.state.step, BookingStep.staff);
+    });
+
+    test('back from the time step shows the service step with it selected',
+        () async {
+      final repo = FakeBookingRepository(
+        provider: _provider(),
+        slotsResult: Right(DaySlots(slots: [_slot(10)])),
+        createResults: [const Right('b1')],
+      );
+      final bloc = BookingBloc(repo);
+      addTearDown(bloc.close);
+
+      bloc.add(const BookingStarted('p1', serviceId: 's2'));
+      await _flush();
+      bloc.add(const BookingStepBack());
+      await _flush();
+
+      expect(bloc.state.step, BookingStep.service);
+      expect(bloc.state.isServiceSelected(_service2), isTrue);
+    });
+
+    test('an unknown service starts the flow as usual', () async {
+      final repo = FakeBookingRepository(
+        provider: _provider(),
+        slotsResult: Right(DaySlots(slots: [_slot(10)])),
+        createResults: [const Right('b1')],
+      );
+      final bloc = BookingBloc(repo);
+      addTearDown(bloc.close);
+
+      bloc.add(const BookingStarted('p1', serviceId: 'gone'));
+      await _flush();
+
+      expect(bloc.state.providerStatus, BookingProviderStatus.loaded);
+      expect(bloc.state.step, BookingStep.service);
+      expect(bloc.state.services, isEmpty);
+      expect(repo.slotsCalls, 0);
+    });
+
+    test('coming back with the same service keeps the selections made since',
+        () async {
+      final repo = FakeBookingRepository(
+        provider: _provider(),
+        slotsResult: Right(DaySlots(slots: [_slot(10)])),
+        createResults: [const Right('b1')],
+      );
+      final bloc = BookingBloc(repo);
+      addTearDown(bloc.close);
+
+      bloc.add(const BookingStarted('p1', serviceId: 's1'));
+      await _flush();
+      bloc.add(BookingSlotSelected(bloc.state.slots.first));
+      await _flush();
+
+      bloc.add(const BookingStarted('p1', serviceId: 's1'));
+      await _flush();
+
+      expect(bloc.state.step, BookingStep.confirm);
+      expect(bloc.state.slot, isNotNull);
+    });
+
+    test(
+        'tapping the service again after backing out to the salon moves past '
+        'the service step once more', () async {
+      final repo = FakeBookingRepository(
+        provider: _provider(),
+        slotsResult: Right(DaySlots(slots: [_slot(10)])),
+        createResults: [const Right('b1')],
+      );
+      final bloc = BookingBloc(repo);
+      addTearDown(bloc.close);
+
+      bloc.add(const BookingStarted('p1', serviceId: 's1'));
+      await _flush();
+      // Back to the service step, then out of the flow to the salon's profile.
+      bloc.add(const BookingStepBack());
+      await _flush();
+      expect(bloc.state.step, BookingStep.service);
+
+      bloc.add(const BookingStarted('p1', serviceId: 's1'));
+      await _flush();
+
+      expect(bloc.state.services, [_service]);
+      expect(bloc.state.step, BookingStep.time);
+    });
+
+    test('another service of the same salon starts over with that service',
+        () async {
+      final repo = FakeBookingRepository(
+        provider: _provider(),
+        slotsResult: Right(DaySlots(slots: [_slot(10)])),
+        createResults: [const Right('b1')],
+      );
+      final bloc = BookingBloc(repo);
+      addTearDown(bloc.close);
+
+      bloc.add(const BookingStarted('p1', serviceId: 's1'));
+      await _flush();
+      bloc.add(BookingSlotSelected(bloc.state.slots.first));
+      await _flush();
+
+      bloc.add(const BookingStarted('p1', serviceId: 's2'));
+      await _flush();
+
+      expect(bloc.state.services, [_service2]);
+      expect(bloc.state.step, BookingStep.time);
+      expect(bloc.state.slot, isNull);
+    });
+  });
+
+  // UX review 2026-09-23, #4 (observed live): the salon had today registered as
+  // a holiday and the customer landed on an empty day with no way forward, while
+  // the home card already said "tomorrow, 18 free times".
+  group('BookingBloc first day with free times', () {
+    // A Wednesday. Thursday the 24th, Friday the 25th, and so on.
+    final now = DateTime(2026, 9, 23, 10, 30);
+    DateTime day(int d) => DateTime(2026, 9, d);
+    TimeSlot at(int d, int hour) => TimeSlot(
+          startTime: DateTime(2026, 9, d, hour),
+          endTime: DateTime(2026, 9, d, hour, 45),
+          durationMinutes: 45,
+          isAvailable: true,
+          staffId: 'st1',
+        );
+
+    Future<(BookingBloc, FakeBookingRepository)> atTimeStep(
+      Map<int, DaySlots> days, {
+      List<BusinessHour> hours = const [],
+      int window = 7,
+      Map<int, Completer<void>> gates = const {},
+    }) async {
+      final repo = FakeBookingRepository(
+        provider: _provider(businessHours: hours, maxAdvanceBookingDays: window),
+        slotsResult: const Right(DaySlots()),
+        createResults: [const Right('b1')],
+        slotsByDay: days,
+      )..gates = Map.of(gates);
+      final bloc = BookingBloc(repo, now: () => now);
+      addTearDown(bloc.close);
+      bloc.add(const BookingStarted('p1', serviceId: 's1'));
+      await _flush();
+      return (bloc, repo);
+    }
+
+    test('today with free times stays on today and says nothing', () async {
+      final (bloc, repo) = await atTimeStep({
+        23: DaySlots(slots: [at(23, 16)]),
+      });
+
+      expect(bloc.state.date, day(23));
+      expect(bloc.state.slots, [at(23, 16)]);
+      expect(bloc.state.freeDayNotice, isNull);
+      expect(repo.slotsDates, [day(23)]);
+    });
+
+    test('an empty today moves to the first day with free times and says why',
+        () async {
+      final (bloc, repo) = await atTimeStep({
+        23: const DaySlots(reason: 'مجموعه در این روز تعطیل است.'),
+        24: const DaySlots(),
+        25: DaySlots(slots: [at(25, 9), at(25, 10)]),
+        26: DaySlots(slots: [at(26, 9)]),
+      });
+
+      expect(bloc.state.date, day(25));
+      expect(bloc.state.slots, [at(25, 9), at(25, 10)]);
+      expect(bloc.state.slotsStatus, SlotsStatus.loaded);
+      expect(bloc.state.slotsReason, isNull);
+      expect(bloc.state.freeDayNotice, FreeDayNotice.movedFromToday);
+      expect(repo.slotsDates, [day(23), day(24), day(25)],
+          reason: 'one day at a time, stopping at the first hit');
+    });
+
+    test("no free day in the window stays on today with the salon's reason",
+        () async {
+      final (bloc, repo) = await atTimeStep({
+        23: const DaySlots(reason: 'مجموعه در این روز تعطیل است.'),
+      });
+
+      expect(bloc.state.date, day(23));
+      expect(bloc.state.slots, isEmpty);
+      expect(bloc.state.slotsStatus, SlotsStatus.loaded);
+      expect(bloc.state.slotsReason, 'مجموعه در این روز تعطیل است.');
+      expect(bloc.state.freeDayNotice, FreeDayNotice.noneInWindow);
+      expect(repo.slotsDates, hasLength(8), reason: 'today plus a week');
+    });
+
+    test("the search never goes past the salon's booking window", () async {
+      final (bloc, repo) = await atTimeStep({
+        27: DaySlots(slots: [at(27, 9)]),
+      }, window: 2);
+
+      expect(repo.slotsDates, [day(23), day(24), day(25)]);
+      expect(bloc.state.date, day(23));
+      expect(bloc.state.freeDayNotice, FreeDayNotice.noneInWindow);
+    });
+
+    test('weekdays the salon is closed are not asked about', () async {
+      final (bloc, repo) = await atTimeStep({
+        26: DaySlots(slots: [at(26, 9)]),
+      }, hours: const [
+        BusinessHour(dayOfWeek: 'پنج‌شنبه', isClosed: true),
+        BusinessHour(dayOfWeek: 'جمعه', isClosed: true),
+      ]);
+
+      expect(repo.slotsDates, [day(23), day(26)]);
+      expect(bloc.state.date, day(26));
+    });
+
+    test('a day the customer picks meanwhile wins over the search', () async {
+      final gate = Completer<void>();
+      final (bloc, repo) = await atTimeStep({
+        24: DaySlots(slots: [at(24, 9)]),
+        27: DaySlots(slots: [at(27, 11)]),
+      }, gates: {24: gate});
+
+      // The search is waiting on the 24th; the customer taps the 27th.
+      bloc.add(BookingDateSelected(day(27)));
+      await _flush();
+      gate.complete();
+      await _flush();
+
+      expect(bloc.state.date, day(27));
+      expect(bloc.state.slots, [at(27, 11)]);
+      expect(bloc.state.freeDayNotice, isNull);
+      expect(repo.slotsDates, [day(23), day(24), day(27)],
+          reason: 'the search stopped at the stale answer for the 24th');
+    });
+
+    test('an empty day the customer picked offers the next day with free times',
+        () async {
+      final (bloc, repo) = await atTimeStep({
+        23: DaySlots(slots: [at(23, 16)]),
+        28: DaySlots(slots: [at(28, 12)]),
+      });
+
+      bloc.add(BookingDateSelected(day(26)));
+      await _flush();
+      expect(bloc.state.slots, isEmpty);
+
+      repo.slotsDates.clear();
+      bloc.add(const BookingNextFreeDayRequested());
+      await _flush();
+
+      expect(bloc.state.date, day(28));
+      expect(bloc.state.slots, [at(28, 12)]);
+      expect(bloc.state.freeDayNotice, FreeDayNotice.movedFromPickedDay);
+      expect(repo.slotsDates, [day(26), day(27), day(28)]);
+    });
+
+    test('picking a day clears the notice', () async {
+      final (bloc, _) = await atTimeStep({
+        24: DaySlots(slots: [at(24, 9)]),
+        25: DaySlots(slots: [at(25, 9)]),
+      });
+      expect(bloc.state.freeDayNotice, FreeDayNotice.movedFromToday);
+
+      bloc.add(BookingDateSelected(day(25)));
+      await _flush();
+
+      expect(bloc.state.freeDayNotice, isNull);
+    });
+
+    test('slot-taken recovery reloads the chosen day, not the first free one',
+        () async {
+      final (bloc, repo) = await atTimeStep({
+        23: DaySlots(slots: [at(23, 16)]),
+        26: DaySlots(slots: [at(26, 9), at(26, 10)]),
+      });
+      repo.createResults = [const Left(SlotTakenFailure('گرفته شد'))];
+
+      bloc.add(BookingDateSelected(day(26)));
+      await _flush();
+      bloc.add(BookingSlotSelected(at(26, 9)));
+      await _flush();
+      bloc.add(const BookingSubmitted());
+      await _flush();
+
+      expect(bloc.state.step, BookingStep.time);
+      expect(bloc.state.date, day(26));
+      expect(bloc.state.slots, [at(26, 9), at(26, 10)]);
+    });
+  });
+}
+
+/// Lets queued events and the fake repository's answers run to completion
+/// without waiting on the clock.
+Future<void> _flush() async {
+  for (var i = 0; i < 30; i++) {
+    await Future<void>.delayed(Duration.zero);
+  }
 }

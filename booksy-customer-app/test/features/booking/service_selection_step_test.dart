@@ -305,6 +305,9 @@ void main() {
       await pump(tester, services: const []);
 
       expect(find.byType(EmptyState), findsOneWidget);
+      // The salon has no services — not "no results" for a search nobody ran (UX review 2026-09-23, G.6).
+      expect(find.text(AppStrings.noServicesYet), findsOneWidget);
+      expect(find.text(AppStrings.noResultsTitle), findsNothing);
       expect(find.byKey(_continueKey), findsNothing);
     });
   });

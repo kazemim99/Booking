@@ -1,6 +1,9 @@
+import 'package:dartz/dartz.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/errors/failures.dart';
+import '../../domain/business_days.dart';
 import '../../domain/entities/booking_entities.dart';
 import '../../domain/repositories/booking_repository.dart';
 
@@ -16,13 +19,22 @@ abstract class BookingEvent extends Equatable {
 /// Enter the flow for a provider. Keeps existing state when re-entering for
 /// the same provider (e.g. returning from a login round-trip) so selections
 /// survive; resets for a different provider.
+///
+/// [serviceId] is the service the customer tapped on the salon's profile (or a
+/// past visit booked again). Once the salon has loaded and the id is one of its
+/// services, the flow starts with it selected and moves on exactly as
+/// [BookingServicesConfirmed] would. An id the salon does not offer is ignored.
+/// Re-entering the same salon with no service (the login round-trip) keeps what
+/// the customer has chosen, as does the same service while they are past the
+/// service step; otherwise a service of the salon starts over with it.
 class BookingStarted extends BookingEvent {
   final String providerId;
+  final String? serviceId;
 
-  const BookingStarted(this.providerId);
+  const BookingStarted(this.providerId, {this.serviceId});
 
   @override
-  List<Object?> get props => [providerId];
+  List<Object?> get props => [providerId, serviceId];
 }
 
 /// Adds the service to the visit, or removes it when already selected.
@@ -74,6 +86,18 @@ class BookingSlotSelected extends BookingEvent {
   List<Object?> get props => [slot];
 }
 
+/// The customer is on a day with no free time and asks for the nearest day that
+/// has some: searched from the shown day to the end of the salon's window.
+class BookingNextFreeDayRequested extends BookingEvent {
+  const BookingNextFreeDayRequested();
+}
+
+/// The time step has just been entered: show the chosen day (today when none),
+/// or the first day after it with free times when it has none.
+class _BookingTimeStepEntered extends BookingEvent {
+  const _BookingTimeStepEntered();
+}
+
 class BookingStepBack extends BookingEvent {
   const BookingStepBack();
 }
@@ -93,6 +117,19 @@ enum BookingStep { service, staff, time, confirm }
 enum BookingProviderStatus { loading, loaded, error }
 
 enum SlotsStatus { initial, loading, loaded, error }
+
+/// Why the time step shows the day it shows, when the app chose it rather than
+/// the customer.
+enum FreeDayNotice {
+  /// Today had no free time; the first day that has some was selected.
+  movedFromToday,
+
+  /// The day the customer was on had no free time; the next one was selected.
+  movedFromPickedDay,
+
+  /// No day in the salon's booking window has free time.
+  noneInWindow,
+}
 
 enum SubmitStatus { idle, submitting, success, slotTaken, error }
 
@@ -121,6 +158,9 @@ class BookingState extends Equatable {
   final String? submitError;
   final String? bookingId;
 
+  /// Set when the app moved the customer to another day; null otherwise.
+  final FreeDayNotice? freeDayNotice;
+
   const BookingState({
     this.providerId,
     this.providerStatus = BookingProviderStatus.loading,
@@ -138,6 +178,7 @@ class BookingState extends Equatable {
     this.submitStatus = SubmitStatus.idle,
     this.submitError,
     this.bookingId,
+    this.freeDayNotice,
   });
 
   /// Steps actually shown for this provider (staff step auto-skipped when
@@ -194,6 +235,7 @@ class BookingState extends Equatable {
     SubmitStatus? submitStatus,
     String? submitError,
     String? bookingId,
+    FreeDayNotice? Function()? freeDayNotice,
   }) {
     return BookingState(
       providerId: providerId ?? this.providerId,
@@ -212,6 +254,8 @@ class BookingState extends Equatable {
       submitStatus: submitStatus ?? this.submitStatus,
       submitError: submitError,
       bookingId: bookingId ?? this.bookingId,
+      freeDayNotice:
+          freeDayNotice != null ? freeDayNotice() : this.freeDayNotice,
     );
   }
 
@@ -233,6 +277,7 @@ class BookingState extends Equatable {
         submitStatus,
         submitError,
         bookingId,
+        freeDayNotice,
       ];
 }
 
@@ -246,33 +291,87 @@ class BookingState extends Equatable {
 /// A visit may bundle several services. Their durations sum into the slot
 /// length requested from the backend, and their prices sum into the total the
 /// customer is shown, so the slot offered always fits the whole visit.
+///
+/// Entering the time step shows the chosen day (today at first) and, when it has
+/// no free time, the first later day in the salon's window that does (UX review
+/// 2026-09-23, #4). The search asks the slot endpoint one day at a time rather
+/// than using the providers' availability summary, because only the slot query
+/// knows this visit: the summed duration of the chosen services and the chosen
+/// staff member. The summary is service-agnostic, so it can promise a day on
+/// which a two-service visit does not fit. A week's window is at most eight
+/// small requests, stopped at the first day with times, and the salon's closed
+/// weekdays are skipped without asking.
 class BookingBloc extends Bloc<BookingEvent, BookingState> {
   final BookingRepository repository;
+  final DateTime Function() _now;
+
+  /// Bumped by every request for slots and by anything that invalidates one in
+  /// flight, so a late answer never lands on a newer choice.
   int _slotsRequestId = 0;
 
-  BookingBloc(this.repository) : super(const BookingState()) {
+  BookingBloc(this.repository, {DateTime Function()? now})
+      : _now = now ?? DateTime.now,
+        super(const BookingState()) {
     on<BookingStarted>(_onStarted);
     on<BookingServiceToggled>(_onServiceToggled);
     on<BookingServicesConfirmed>(_onServicesConfirmed);
     on<BookingStaffSelected>(_onStaffSelected);
     on<BookingDateSelected>(_onDateSelected);
+    on<_BookingTimeStepEntered>(_onTimeStepEntered);
+    on<BookingNextFreeDayRequested>(_onNextFreeDayRequested);
     on<BookingSlotSelected>(_onSlotSelected);
     on<BookingStepBack>(_onStepBack);
     on<BookingSubmitted>(_onSubmitted);
     on<BookingReset>(_onReset);
   }
 
+  /// Today's date, midnight, by the injected clock.
+  DateTime get today {
+    final now = _now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  /// The last day this salon takes bookings for: today plus its window.
+  DateTime get _lastBookableDay {
+    final first = today;
+    return DateTime(
+      first.year,
+      first.month,
+      first.day + (state.provider?.maxAdvanceBookingDays ?? 7),
+    );
+  }
+
   Future<void> _onStarted(
     BookingStarted event,
     Emitter<BookingState> emit,
   ) async {
+    final wanted = event.serviceId;
+
     // Same provider and already loaded → keep selections (login round-trip).
     if (state.providerId == event.providerId &&
         state.providerStatus == BookingProviderStatus.loaded &&
         state.submitStatus != SubmitStatus.success) {
+      if (wanted == null) return;
+      // Past the service step with it chosen: the customer is mid-flow.
+      if (state.step != BookingStep.service &&
+          state.services.any((s) => s.id == wanted)) {
+        return;
+      }
+      final service = _serviceOf(state.provider, wanted);
+      if (service == null) return;
+      // Another of this salon's services was tapped, or this one again after
+      // backing out to the profile: start over with it.
+      _slotsRequestId++;
+      emit(BookingState(
+        providerId: event.providerId,
+        providerStatus: BookingProviderStatus.loaded,
+        provider: state.provider,
+      ));
+      _startWith(service, emit);
       return;
     }
 
+    _slotsRequestId++;
     emit(BookingState(providerId: event.providerId));
     final result = await repository.getProviderDetail(event.providerId);
     result.fold(
@@ -280,11 +379,24 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
         providerStatus: BookingProviderStatus.error,
         providerError: failure.message,
       )),
-      (provider) => emit(state.copyWith(
-        providerStatus: BookingProviderStatus.loaded,
-        provider: provider,
-      )),
+      (provider) {
+        emit(state.copyWith(
+          providerStatus: BookingProviderStatus.loaded,
+          provider: provider,
+        ));
+        final service = wanted == null ? null : _serviceOf(provider, wanted);
+        if (service != null) _startWith(service, emit);
+      },
     );
+  }
+
+  static ServiceItem? _serviceOf(ProviderDetail? provider, String id) =>
+      provider?.services.where((s) => s.id == id).firstOrNull;
+
+  /// Selects [service] and leaves the service step as confirming it would.
+  void _startWith(ServiceItem service, Emitter<BookingState> emit) {
+    emit(state.copyWith(services: [service]));
+    _leaveServiceStep(emit);
   }
 
   void _onServiceToggled(
@@ -300,8 +412,10 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     }
 
     // Changing the set changes the visit's length, so any slots already
-    // fetched are for the wrong duration. Drop them rather than re-fetch on
-    // every tap — the fetch happens once the selection is confirmed.
+    // fetched — or on their way — are for the wrong duration. Drop them rather
+    // than re-fetch on every tap; the fetch happens once the selection is
+    // confirmed.
+    _slotsRequestId++;
     emit(state.copyWith(
       services: selected,
       slots: const [],
@@ -317,7 +431,10 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     // A visit needs at least one service. The UI disables its continue button,
     // and this guard keeps the rule true regardless of the caller.
     if (!state.hasServices) return;
+    _leaveServiceStep(emit);
+  }
 
+  void _leaveServiceStep(Emitter<BookingState> emit) {
     final singleStaff = (state.provider?.activeStaff.length ?? 0) <= 1;
     emit(state.copyWith(
       // Auto-skip the staff step when there is no real choice.
@@ -330,7 +447,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       slotsStatus: SlotsStatus.initial,
       slot: () => null,
     ));
-    _loadSlotsForDate(state.date ?? DateTime.now());
+    add(const _BookingTimeStepEntered());
   }
 
   void _onStaffSelected(
@@ -345,7 +462,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       slotsStatus: SlotsStatus.initial,
       slot: () => null,
     ));
-    _loadSlotsForDate(state.date ?? DateTime.now());
+    add(const _BookingTimeStepEntered());
   }
 
   Future<void> _onDateSelected(
@@ -363,18 +480,11 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       slotsStatus: SlotsStatus.loading,
       slotsReason: () => null,
       slot: () => null,
+      // The customer chose this day; nothing to explain any more.
+      freeDayNotice: () => null,
     ));
 
-    // The whole set goes to the backend so the returned slots are long enough
-    // for the combined duration — a two-service visit must not be offered a
-    // slot sized for one.
-    final result = await repository.getAvailableSlots(
-      providerId: providerId,
-      serviceId: serviceIds.first,
-      date: event.date,
-      staffId: state.staff?.id,
-      serviceIds: serviceIds,
-    );
+    final result = await _slotsFor(event.date);
 
     // A newer day selection superseded this request — never show stale
     // slots for the wrong day.
@@ -387,6 +497,110 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
         slotsStatus: SlotsStatus.loaded,
         slotsReason: () => day.reason,
       )),
+    );
+  }
+
+  Future<void> _onTimeStepEntered(
+    _BookingTimeStepEntered event,
+    Emitter<BookingState> emit,
+  ) =>
+      _showFirstFreeDayFrom(state.date ?? today, emit);
+
+  Future<void> _onNextFreeDayRequested(
+    BookingNextFreeDayRequested event,
+    Emitter<BookingState> emit,
+  ) =>
+      _showFirstFreeDayFrom(state.date ?? today, emit);
+
+  /// Shows [from] when it has free times, else the first later day in the
+  /// salon's window that has some, asking one day at a time.
+  ///
+  /// When no day has any, [from] stays selected with the salon's reason for it.
+  /// Another day chosen while this runs wins: every answer is checked against
+  /// the latest request before it is shown.
+  Future<void> _showFirstFreeDayFrom(
+    DateTime from,
+    Emitter<BookingState> emit,
+  ) async {
+    if (state.selectedServiceIds.isEmpty || state.providerId == null) return;
+
+    final first = today;
+    final last = _lastBookableDay;
+    var anchor = DateTime(from.year, from.month, from.day);
+    // A day kept from an earlier visit may have slipped out of the window.
+    if (anchor.isBefore(first) || anchor.isAfter(last)) anchor = first;
+    final moved = anchor == first
+        ? FreeDayNotice.movedFromToday
+        : FreeDayNotice.movedFromPickedDay;
+    final closed =
+        BusinessDays.closedWeekdays(state.provider?.businessHours ?? const []);
+
+    final requestId = ++_slotsRequestId;
+    emit(state.copyWith(
+      date: anchor,
+      slots: const [],
+      slotsStatus: SlotsStatus.loading,
+      slotsReason: () => null,
+      slot: () => null,
+      freeDayNotice: () => null,
+    ));
+
+    String? anchorReason;
+    for (var day = anchor;
+        !day.isAfter(last);
+        day = DateTime(day.year, day.month, day.day + 1)) {
+      // The shown day is always asked, so its empty state carries the salon's
+      // own reason; later closed weekdays cannot have times.
+      if (day != anchor && closed.contains(day.weekday)) continue;
+
+      final result = await _slotsFor(day);
+      if (requestId != _slotsRequestId) return;
+
+      final found = result.getOrElse(() => const DaySlots());
+      if (result.isLeft()) {
+        // The shown day failing is an error to retry; a later day failing just
+        // ends the search on the shown day's own answer.
+        emit(day == anchor
+            ? state.copyWith(slotsStatus: SlotsStatus.error)
+            : state.copyWith(
+                slotsStatus: SlotsStatus.loaded,
+                slotsReason: () => anchorReason,
+              ));
+        return;
+      }
+      if (found.slots.isNotEmpty) {
+        emit(state.copyWith(
+          date: day,
+          slots: found.slots,
+          slotsStatus: SlotsStatus.loaded,
+          slotsReason: () => null,
+          freeDayNotice: () => day == anchor ? null : moved,
+        ));
+        return;
+      }
+      if (day == anchor) anchorReason = found.reason;
+    }
+
+    emit(state.copyWith(
+      date: anchor,
+      slots: const [],
+      slotsStatus: SlotsStatus.loaded,
+      slotsReason: () => anchorReason,
+      freeDayNotice: () => FreeDayNotice.noneInWindow,
+    ));
+  }
+
+  /// One day's slots for the visit as chosen so far. The whole set of services
+  /// goes to the backend so the returned slots are long enough for the combined
+  /// duration — a two-service visit must not be offered a slot sized for one.
+  Future<Either<Failure, DaySlots>> _slotsFor(DateTime day) {
+    final serviceIds = state.selectedServiceIds;
+    return repository.getAvailableSlots(
+      providerId: state.providerId!,
+      serviceId: serviceIds.first,
+      date: day,
+      staffId: state.staff?.id,
+      serviceIds: serviceIds,
     );
   }
 
@@ -443,7 +657,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
             step: BookingStep.time,
             slot: () => null,
           ));
-          add(BookingDateSelected(state.date ?? DateTime.now()));
+          add(BookingDateSelected(state.date ?? today));
         } else {
           emit(state.copyWith(
             submitStatus: SubmitStatus.error,
@@ -461,10 +675,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
   }
 
   void _onReset(BookingReset event, Emitter<BookingState> emit) {
+    _slotsRequestId++;
     emit(const BookingState());
-  }
-
-  void _loadSlotsForDate(DateTime date) {
-    add(BookingDateSelected(DateTime(date.year, date.month, date.day)));
   }
 }
