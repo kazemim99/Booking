@@ -31,12 +31,15 @@ required at booking confirmation (the login stays phone-only). Each surface — 
 - [x] 9 A customer without a real name must enter it before a booking can be confirmed (no skip there)
 - [x] 10 Salon profile says reviews can be written after a completed visit, from the appointment
 - [x] 12 Only the salon (owner / booking-managing member / admin) can confirm, complete, no-show or staff its bookings
-- [?] 13 DECISION: GET /providers/{id}/hierarchy/members only requires sign-in — any signed-in user can read any
-      salon's member list WITH phone numbers. Restrict to the salon (CanManageProvider) and drop phones for others?
+- [x] 13 The salon's roster and pending invitations (with phones) are readable only by its own active members or an admin
 - [x] 11 FULL verify green
 - [?] 14 DECISION: deploy — push fix/qa-walkthrough-2026-09-23b to master (protected; the 3h30 display bug is live)
 
 ## Decisions
+
+- USER 2026-09-24 (13): restrict the roster. Rule: CanManageOrganization(ManageBookings) = any active member of that
+  salon (the day-book rule), or admin. Applied to GET members and GET invitations (both carry phones); the public
+  invitation-by-id page is unchanged.
 
 - T2 (1) WallClockDateTimeConverter on Booking.TimeSlot only: stored as before, read Kind=Unspecified, so every booking
   API writes zone-less digits; fixes the Vue apps without touching them. Clients also parse digits defensively.

@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Booksy.ServiceCatalog.Application.Queries.Membership.CanManageOrganization;
 using Booksy.ServiceCatalog.Application.Commands.Membership.AcceptInvitationAsMember;
 using Booksy.ServiceCatalog.Application.Commands.Membership.RegisterAndAcceptInvitation;
 using Booksy.ServiceCatalog.Application.Commands.ProviderHierarchy.CancelInvitation;
@@ -44,6 +46,25 @@ public class ProviderHierarchyController : ControllerBase
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
+    /// <summary>
+    /// The roster and the pending invitations carry people's phone numbers. They only required a sign-in, so any
+    /// customer or any other salon could read any salon's staff phones (2026-09-23; the user decided to restrict it).
+    /// Now: the salon's own people — any active member, the rule its day book uses — or an admin.
+    /// </summary>
+    private async Task<bool> IsTheSalonsOwnAsync(Guid providerId, CancellationToken cancellationToken)
+    {
+        if (User.IsInRole("Admin") || User.IsInRole("SysAdmin"))
+            return true;
+
+        if (await _mediator.Send(
+                new CanManageOrganizationQuery(providerId, OrganizationPermission.ManageBookings), cancellationToken))
+            return true;
+
+        _logger.LogWarning("User {UserId} was refused the roster of provider {ProviderId}",
+            User.FindFirstValue(ClaimTypes.NameIdentifier), providerId);
+        return false;
+    }
+
     #region Members
 
     /// <summary>
@@ -55,6 +76,9 @@ public class ProviderHierarchyController : ControllerBase
     [ProducesResponseType(typeof(GetOrganizationMembershipsResult), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMembers(Guid providerId, CancellationToken cancellationToken)
     {
+        if (!await IsTheSalonsOwnAsync(providerId, cancellationToken))
+            return Forbid();
+
         var result = await _mediator.Send(new GetOrganizationMembershipsQuery(providerId), cancellationToken);
         return Ok(result);
     }
@@ -71,6 +95,9 @@ public class ProviderHierarchyController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetPendingInvitations(Guid providerId, CancellationToken cancellationToken)
     {
+        if (!await IsTheSalonsOwnAsync(providerId, cancellationToken))
+            return Forbid();
+
         var result = await _mediator.Send(new GetPendingInvitationsQuery(providerId), cancellationToken);
         return Ok(result);
     }
