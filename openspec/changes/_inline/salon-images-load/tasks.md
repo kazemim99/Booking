@@ -1,4 +1,4 @@
-Status: ACTIVE
+Status: DONE
 Verify: FULL
 
 User report (2026-09-23): after yesterday's deploy, «سالن نهال»'s photos still do not load in the application.
@@ -83,7 +83,11 @@ _Reversible engineering calls, recorded._
 - [x] 6 G3 `tests/e2e/media-url-smoke.sh` (read-only: media URLs absolute https on search + detail, one upload
       fetch is image/* with the CORS header) + deploy.yml step after publish + keystone job step
 - [x] 7 Surfaces: customer (Flutter + Vue), provider, admin — each checked, recorded below
-- [ ] 8 FULL verify green; commit; report (the fix reaches users only when the branch is deployed)
+- [x] 8 FULL verify green; commit; report (the fix reaches users only when the branch is deployed)
+      FULL PASS on master 6797842c (11 steps, 796 integration tests); the touched frontends run by hand on
+      the same tree (verify skips apps it sees as untouched once committed): Vue type-check/lint/145 unit,
+      customer app analyze + 360 tests, provider app analyze + 615 tests — all green. Shipped on master
+      without booking-64's in-progress 9fe50414/db17b2c4 (their call: hold).
 
 ## Surfaces
 
