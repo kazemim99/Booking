@@ -1,4 +1,9 @@
+using Booksy.ServiceCatalog.Application.Abstractions;
 using Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderByOwnerId;
+using Booksy.ServiceCatalog.Domain.Aggregates;
+using Booksy.ServiceCatalog.Domain.Enums;
+using Booksy.ServiceCatalog.Domain.Repositories;
+using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Booksy.UserManagement.Application.Services.Interfaces;
 using MediatR;
 
@@ -37,10 +42,14 @@ namespace Booksy.Host.Composition;
 public sealed class InProcessProviderInfoService : IProviderInfoService
 {
     private readonly ISender _mediator;
+    private readonly IProviderReadRepository _providers;
+    private readonly IUrlService _urls;
 
-    public InProcessProviderInfoService(ISender mediator)
+    public InProcessProviderInfoService(ISender mediator, IProviderReadRepository providers, IUrlService urls)
     {
         _mediator = mediator;
+        _providers = providers;
+        _urls = urls;
     }
 
     public async Task<ProviderInfo?> GetProviderByOwnerIdAsync(
@@ -55,5 +64,38 @@ public sealed class InProcessProviderInfoService : IProviderInfoService
         return provider is null
             ? null
             : new ProviderInfo(provider.Id, provider.Status.ToString());
+    }
+
+    /// <summary>
+    /// A customer's favourites and recent visits store only salon ids; this answers what their cards show, in ONE
+    /// query (customer-app-ux-review-fixes). Only Active salons come back — one that was archived, suspended or never
+    /// approved since the customer saved or opened it is left out rather than sent as a row the app cannot open.
+    /// </summary>
+    public async Task<IReadOnlyDictionary<Guid, SalonCard>> GetActiveSalonCardsAsync(
+        IReadOnlyCollection<Guid> providerIds,
+        CancellationToken cancellationToken = default)
+    {
+        var ids = providerIds.Distinct().Select(ProviderId.From).ToList();
+        if (ids.Count == 0)
+            return new Dictionary<Guid, SalonCard>();
+
+        var salons = await _providers.GetAsync(new ActiveSalonsByIdsSpecification(ids), cancellationToken);
+
+        return salons.ToDictionary(
+            p => p.Id.Value,
+            p => new SalonCard(
+                p.Profile.BusinessName,
+                _urls.AbsoluteOrNull(p.Profile.DisplayImageUrl),
+                p.Address?.City,
+                p.AverageRating,
+                p.PublishedReviewCount));
+    }
+
+    private sealed class ActiveSalonsByIdsSpecification : BaseSpecification<Provider>
+    {
+        public ActiveSalonsByIdsSpecification(List<ProviderId> ids)
+            : base(p => ids.Contains(p.Id) && p.Status == ProviderStatus.Active)
+        {
+        }
     }
 }

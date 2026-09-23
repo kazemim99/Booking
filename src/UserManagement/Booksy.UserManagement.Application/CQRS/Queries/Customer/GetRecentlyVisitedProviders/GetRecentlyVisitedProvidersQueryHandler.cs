@@ -3,9 +3,7 @@
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Domain.ValueObjects;
-using Booksy.ServiceCatalog.Application.Abstractions;
-using Booksy.ServiceCatalog.Domain.Repositories;
-using Booksy.UserManagement.Application.CQRS.Queries.Customer.GetCustomerFavoriteProviders;
+using Booksy.UserManagement.Application.Services.Interfaces;
 using Booksy.UserManagement.Domain.Repositories;
 using Microsoft.Extensions.Logging;
 
@@ -17,19 +15,16 @@ namespace Booksy.UserManagement.Application.CQRS.Queries.Customer.GetRecentlyVis
     public sealed class GetRecentlyVisitedProvidersQueryHandler : IQueryHandler<GetRecentlyVisitedProvidersQuery, List<RecentlyVisitedProviderViewModel>>
     {
         private readonly ICustomerRepository _customerRepository;
-        private readonly IProviderReadRepository _providers;
-        private readonly IUrlService _urls;
+        private readonly IProviderInfoService _salons;
         private readonly ILogger<GetRecentlyVisitedProvidersQueryHandler> _logger;
 
         public GetRecentlyVisitedProvidersQueryHandler(
             ICustomerRepository customerRepository,
-            IProviderReadRepository providers,
-            IUrlService urls,
+            IProviderInfoService salons,
             ILogger<GetRecentlyVisitedProvidersQueryHandler> logger)
         {
             _customerRepository = customerRepository;
-            _providers = providers;
-            _urls = urls;
+            _salons = salons;
             _logger = logger;
         }
 
@@ -65,10 +60,8 @@ namespace Booksy.UserManagement.Application.CQRS.Queries.Customer.GetRecentlyVis
                     .OrderByDescending(v => v.Newest.VisitedAt)
                     .ToList();
 
-                var salons = await SalonSummaryLookup.FindActiveAsync(
-                    _providers,
-                    _urls,
-                    visits.Select(v => v.Newest.ProviderId),
+                var salons = await _salons.GetActiveSalonCardsAsync(
+                    visits.Select(v => v.Newest.ProviderId).ToList(),
                     cancellationToken);
 
                 var result = visits

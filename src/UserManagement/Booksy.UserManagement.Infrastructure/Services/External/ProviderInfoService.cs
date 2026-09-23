@@ -60,6 +60,16 @@ public class ProviderInfoService : IProviderInfoService
         }
     }
 
+    /// <summary>
+    /// The standalone UserManagement host has no way to read salons in one call (ServiceCatalog exposes no batched
+    /// public endpoint), so it returns none; the customer's lists then come back empty rather than failing. The
+    /// composed Booksy.Host — the one that runs in production — uses InProcessProviderInfoService instead.
+    /// </summary>
+    public Task<IReadOnlyDictionary<Guid, SalonCard>> GetActiveSalonCardsAsync(
+        IReadOnlyCollection<Guid> providerIds,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyDictionary<Guid, SalonCard>>(new Dictionary<Guid, SalonCard>());
+
     // DTO that matches the ServiceCatalog API response structure
     private record ProviderDetailsDto(
         Guid Id,           // ProviderId

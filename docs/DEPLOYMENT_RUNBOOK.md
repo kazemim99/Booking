@@ -232,8 +232,11 @@ white page for seconds: `main.dart.<hash>.js` (3.9 MB) went out **uncompressed**
   `gzip_types` for JS, CSS, JSON, the manifest, wasm, SVG and fonts. The cache headers and the SPA
   fallback are unchanged.
 
-**One-time root step to install the vhost** (the deploy user has no root; the deploy job only copies
-files, so until this runs the `.gz` files sit unused and nothing breaks).
+**One-time root step to install the vhost — do it BEFORE the deploy that ships this change.** The deploy user
+has no root and the deploy job only copies files. The same deploy moves CanvasKit from gstatic's CDN (which
+compresses it) to our own site: without this vhost the stock nginx gzips only `text/html`, so the 7.2 MB
+`canvaskit.wasm` would go out raw and the first visit would get SLOWER than today. Installing the vhost first is
+safe: until the new bundle lands its `gzip on` simply starts compressing today's uncompressed `main.dart.js`.
 
 The box has no checkout of this repository to copy from. The runner's workspace
 (`/home/booksy/actions-runner/_work/...`) is not one either: the deploy job sparse-checks out only

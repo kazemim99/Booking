@@ -3,8 +3,7 @@
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Domain.ValueObjects;
-using Booksy.ServiceCatalog.Application.Abstractions;
-using Booksy.ServiceCatalog.Domain.Repositories;
+using Booksy.UserManagement.Application.Services.Interfaces;
 using Booksy.UserManagement.Domain.Repositories;
 using Microsoft.Extensions.Logging;
 
@@ -13,19 +12,16 @@ namespace Booksy.UserManagement.Application.CQRS.Queries.Customer.GetCustomerFav
     public sealed class GetCustomerFavoriteProvidersQueryHandler : IQueryHandler<GetCustomerFavoriteProvidersQuery, List<FavoriteProviderViewModel>>
     {
         private readonly ICustomerRepository _customerRepository;
-        private readonly IProviderReadRepository _providers;
-        private readonly IUrlService _urls;
+        private readonly IProviderInfoService _salons;
         private readonly ILogger<GetCustomerFavoriteProvidersQueryHandler> _logger;
 
         public GetCustomerFavoriteProvidersQueryHandler(
             ICustomerRepository customerRepository,
-            IProviderReadRepository providers,
-            IUrlService urls,
+            IProviderInfoService salons,
             ILogger<GetCustomerFavoriteProvidersQueryHandler> logger)
         {
             _customerRepository = customerRepository;
-            _providers = providers;
-            _urls = urls;
+            _salons = salons;
             _logger = logger;
         }
 
@@ -43,10 +39,8 @@ namespace Booksy.UserManagement.Application.CQRS.Queries.Customer.GetCustomerFav
                     throw new InvalidOperationException($"Customer not found with ID: {request.CustomerId}");
                 }
 
-                var salons = await SalonSummaryLookup.FindActiveAsync(
-                    _providers,
-                    _urls,
-                    customer.FavoriteProviders.Select(fp => fp.ProviderId),
+                var salons = await _salons.GetActiveSalonCardsAsync(
+                    customer.FavoriteProviders.Select(fp => fp.ProviderId).ToList(),
                     cancellationToken);
 
                 // A favourite whose salon is gone or no longer Active is left out: the app cannot

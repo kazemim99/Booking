@@ -9,7 +9,23 @@ public interface IProviderInfoService
     /// Get provider information by user/owner ID
     /// </summary>
     Task<ProviderInfo?> GetProviderByOwnerIdAsync(Guid ownerId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// What a customer's favourites and recent visits show about each salon, in ONE lookup. Only salons that are
+    /// Active come back; an id that is gone, archived or not yet approved is simply absent from the result.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, SalonCard>> GetActiveSalonCardsAsync(
+        IReadOnlyCollection<Guid> providerIds,
+        CancellationToken cancellationToken = default);
 }
+
+/// <summary>Enough about one salon to draw its card in a customer's list.</summary>
+public sealed record SalonCard(
+    string Name,
+    string? LogoUrl,
+    string? City,
+    decimal AverageRating,
+    int TotalReviews);
 
 /// <summary>
 /// A provider profile as seen from UserManagement, resolved through

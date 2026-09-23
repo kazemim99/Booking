@@ -64,8 +64,10 @@ public class PublicProviderListingStatusTests
         // salons it has yet to activate.
         var spec = new SearchProvidersSpecification(includeInactive: true);
 
-        if (spec.Criteria is not null)
-            spec.Criteria.Compile()(ProviderIn(status)).Should().BeTrue();
+        // No criteria at all means "matches everything", which is also a pass.
+        var matches = spec.Criteria?.Compile() ?? (_ => true);
+        matches(ProviderIn(status)).Should().BeTrue();
+        matches(ProviderIn(ProviderStatus.Active)).Should().BeTrue();
     }
 
     [Fact]

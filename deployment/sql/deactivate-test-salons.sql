@@ -27,6 +27,8 @@
 --     booksy:Provider:466e8bf3-c47d-417f-830d-9d0389f4eef6 booksy:Provider:9baeae5e-e9b5-4780-9816-16be959a02f0; \
 --     redis-cli -a "$REDIS_PASSWORD" --no-auth-warning --scan --pattern "booksy:Provider:owner:*" \
 --     | xargs -r redis-cli -a "$REDIS_PASSWORD" --no-auth-warning DEL'
+-- If that deletes nothing (as on 2026-09-23), the API is using its in-memory cache (Cache:Provider=Redis needs
+-- Cache__RedisConnectionString, which docker-compose.prod.yml does not set): restart booksy-api, or wait 15 minutes.
 --
 -- REVERSE (restores the status each salon had; only touches rows this script archived and nobody renamed since):
 --   BEGIN;
