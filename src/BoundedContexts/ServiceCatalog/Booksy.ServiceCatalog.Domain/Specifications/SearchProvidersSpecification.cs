@@ -134,10 +134,16 @@ namespace Booksy.ServiceCatalog.Domain.Specifications.Provider
                 }
             }
 
-            // Status filter (default to active providers only)
+            // Status filter: a public listing shows Active salons only.
+            //
+            // This used to be `!= Archived`, so every Drafted, PendingVerification, Verified, Inactive and
+            // Suspended salon reached customers — on production a half-registered test salon and an unverified
+            // medical-supplies shop sat in search beside the one real salon. A salon becomes Active when the admin
+            // panel approves it (or register-full auto-approves it), which is the same rule category counts and
+            // by-location already use. `includeInactive` is how the admin panel still sees every salon.
             if (!includeInactive)
             {
-                AddCriteria(provider => provider.Status != ProviderStatus.Archived);
+                AddCriteria(provider => provider.Status == ProviderStatus.Active);
             }
 
             // No hierarchy filter any more. Staff used to be sub-provider rows, so search had
