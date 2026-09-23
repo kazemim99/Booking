@@ -36,6 +36,10 @@ class _CompleteNamePageState extends State<CompleteNamePage> {
   String? _error;
   bool _saving = false;
 
+  /// The save on its way, if any. The page's own cubit is closed only once it is done: the page can still be
+  /// taken away mid-save (a sign-out redirect), and a closed cubit cannot report the answer.
+  Future<void>? _inFlight;
+
   @override
   void initState() {
     super.initState();
@@ -46,7 +50,14 @@ class _CompleteNamePageState extends State<CompleteNamePage> {
 
   @override
   void dispose() {
-    if (widget.cubit == null) _cubit.close();
+    if (widget.cubit == null) {
+      final inFlight = _inFlight;
+      if (inFlight == null) {
+        _cubit.close();
+      } else {
+        inFlight.whenComplete(_cubit.close).ignore();
+      }
+    }
     _first.dispose();
     _last.dispose();
     super.dispose();
@@ -72,8 +83,15 @@ class _CompleteNamePageState extends State<CompleteNamePage> {
       _error = null;
       _saving = true;
     });
-    await _cubit.saveProfile(firstName: first, lastName: last);
-    if (!mounted) return;
+    final saving = _cubit.saveProfile(firstName: first, lastName: last);
+    _inFlight = saving;
+    try {
+      await saving;
+    } finally {
+      if (identical(_inFlight, saving)) _inFlight = null;
+    }
+    // Gone while saving: nobody is left to carry on or to tell.
+    if (!mounted || _cubit.isClosed) return;
     if (_cubit.state.editStatus == ProfileEditStatus.success) {
       _continue();
       return;
@@ -89,59 +107,63 @@ class _CompleteNamePageState extends State<CompleteNamePage> {
     final theme = Theme.of(context);
     return BlocProvider<ProfileCubit>.value(
       value: _cubit,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text(AppStrings.completeNameTitle),
-          actions: [
-            TextButton(
-              key: const Key('complete-name-skip'),
-              onPressed: _continue,
-              // The theme's text-button ink is navy, which reads at 1.41:1 on the blue bar; this is the only
-              // way to skip, so it takes the bar's own foreground.
-              style: TextButton.styleFrom(
-                foregroundColor: theme.appBarTheme.foregroundColor ?? theme.colorScheme.onPrimary,
+      // Leaving now would abandon a save half-way, its answer unheard; it takes a moment, then either
+      // path is open again.
+      child: PopScope(
+        canPop: !_saving,
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text(AppStrings.completeNameTitle),
+            actions: [
+              TextButton(
+                key: const Key('complete-name-skip'),
+                onPressed: _saving ? null : _continue,
+                // The theme's text-button ink is navy, which reads at 1.41:1 on the blue bar; this is the only
+                // way to skip, so it takes the bar's own foreground.
+                style: TextButton.styleFrom(
+                  foregroundColor: theme.appBarTheme.foregroundColor ?? theme.colorScheme.onPrimary,
+                ),
+                child: const Text(AppStrings.completeNameSkip),
               ),
-              child: const Text(AppStrings.completeNameSkip),
-            ),
-          ],
-        ),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(AppStrings.completeNameSubtitle, style: theme.textTheme.bodyMedium),
-                const SizedBox(height: AppSpacing.md),
-                AppTextField(
-                  key: const Key('complete-name-first'),
-                  controller: _first,
-                  label: AppStrings.firstNameLabel,
-                  autofocus: true,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                AppTextField(
-                  key: const Key('complete-name-last'),
-                  controller: _last,
-                  label: AppStrings.lastNameLabel,
-                ),
-                if (_error != null) ...[
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    _error!,
-                    key: const Key('complete-name-error'),
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: theme.colorScheme.error),
+            ],
+          ),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(AppStrings.completeNameSubtitle, style: theme.textTheme.bodyMedium),
+                  const SizedBox(height: AppSpacing.md),
+                  AppTextField(
+                    key: const Key('complete-name-first'),
+                    controller: _first,
+                    label: AppStrings.firstNameLabel,
+                    autofocus: true,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  AppTextField(
+                    key: const Key('complete-name-last'),
+                    controller: _last,
+                    label: AppStrings.lastNameLabel,
+                  ),
+                  if (_error != null) ...[
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      _error!,
+                      key: const Key('complete-name-error'),
+                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.lg),
+                  AppButton(
+                    key: const Key('complete-name-save'),
+                    label: AppStrings.save,
+                    loading: _saving,
+                    onPressed: _save,
                   ),
                 ],
-                const SizedBox(height: AppSpacing.lg),
-                AppButton(
-                  key: const Key('complete-name-save'),
-                  label: AppStrings.save,
-                  loading: _saving,
-                  onPressed: _save,
-                ),
-              ],
+              ),
             ),
           ),
         ),

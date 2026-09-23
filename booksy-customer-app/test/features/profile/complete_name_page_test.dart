@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:booksy_customer_app/config/theme/app_theme.dart';
 import 'package:booksy_customer_app/core/constants/app_strings.dart';
+import 'package:booksy_customer_app/core/di/injection.dart';
 import 'package:booksy_customer_app/core/storage/secure_storage_service.dart';
 import 'package:booksy_customer_app/features/profile/data/datasources/profile_remote_datasource.dart';
 import 'package:booksy_customer_app/features/profile/presentation/bloc/profile_cubit.dart';
@@ -177,5 +178,81 @@ void main() {
     await tester.tap(find.byKey(const Key('complete-name-save')));
     await tester.pumpAndSettle();
     expect(landedOn, '/providers/p1/book');
+  });
+
+  group('while the save is on its way (P2 review)', () {
+    tearDown(() => getIt.reset());
+
+    /// The page pushed over another one, so the system back gesture has
+    /// somewhere to go; the cubit is the page's own, from DI.
+    Future<GoRouter> pumpOwned(WidgetTester tester) async {
+      getIt
+        ..registerSingleton<ProfileRemoteDataSource>(remote)
+        ..registerSingleton<SecureStorageService>(_FakeStorage());
+      final router = GoRouter(
+        initialLocation: '/start',
+        routes: [
+          GoRoute(path: '/start', builder: (_, __) => const Scaffold(body: Text('start'))),
+          GoRoute(path: '/profile/name', builder: (_, __) => const CompleteNamePage()),
+          GoRoute(path: '/home', builder: (_, __) {
+            landedOn = '/home';
+            return const Scaffold(body: Text('home'));
+          }),
+        ],
+      );
+      await tester.pumpWidget(MaterialApp.router(
+        theme: AppTheme.light,
+        routerConfig: router,
+        builder: (context, child) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: child ?? const SizedBox.shrink(),
+        ),
+      ));
+      router.push('/profile/name');
+      await tester.pumpAndSettle();
+      return router;
+    }
+
+    Future<void> startSaving(WidgetTester tester) async {
+      remote.gate = Completer<void>();
+      await tester.enterText(find.byKey(const Key('complete-name-first')), 'سارا');
+      await tester.tap(find.byKey(const Key('complete-name-save')));
+      await tester.pump();
+    }
+
+    testWidgets('«later» and the back gesture wait for it', (tester) async {
+      await pumpOwned(tester);
+      await startSaving(tester);
+
+      final skip = tester.widget<TextButton>(find.byKey(const Key('complete-name-skip')));
+      expect(skip.onPressed, isNull, reason: 'skipping now would abandon a save half-way');
+      await tester.tap(find.byKey(const Key('complete-name-skip')), warnIfMissed: false);
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      expect(find.byType(CompleteNamePage), findsOneWidget);
+      expect(landedOn, '');
+
+      remote.gate!.complete();
+      await tester.pumpAndSettle();
+      expect(remote.firstName, 'سارا');
+      expect(landedOn, '/home');
+    });
+
+    testWidgets('the page being taken away anyway breaks nothing', (tester) async {
+      final router = await pumpOwned(tester);
+      await startSaving(tester);
+
+      // E.g. a sign-out redirect: the page goes, and with it its own cubit.
+      router.go('/start');
+      await tester.pumpAndSettle();
+      expect(find.byType(CompleteNamePage), findsNothing);
+
+      remote.gate!.complete();
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(remote.firstName, 'سارا', reason: 'the save itself still reaches the server');
+      expect(landedOn, '', reason: 'a page that is gone sends nobody anywhere');
+    });
   });
 }
