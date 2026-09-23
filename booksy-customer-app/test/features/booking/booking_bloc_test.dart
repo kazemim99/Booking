@@ -73,8 +73,15 @@ class FakeBookingRepository implements BookingRepository {
   /// missing from the map is empty — how the first-free-day search is driven.
   Map<int, DaySlots>? slotsByDay;
 
+  /// When set, a staff member's days answer from here (by staff id, then day of the month) ahead of
+  /// [slotsByDay]; a day missing from that staff member's map is empty.
+  Map<String, Map<int, DaySlots>>? slotsByStaff;
+
   /// Every day asked for, in order.
   final List<DateTime> slotsDates = [];
+
+  /// The staff id sent with each slots request, in order.
+  final List<String?> slotsStaffIds = [];
 
   /// Holds a day's answer back until the test releases it (stale-result cover).
   Map<int, Completer<void>> gates = {};
@@ -100,10 +107,13 @@ class FakeBookingRepository implements BookingRepository {
   }) async {
     slotsCalls++;
     slotsDates.add(date);
+    slotsStaffIds.add(staffId);
     lastSlotsServiceId = serviceId;
     lastSlotsServiceIds = serviceIds;
     final gate = gates[date.day];
     if (gate != null) await gate.future;
+    final byStaff = slotsByStaff?[staffId];
+    if (byStaff != null) return Right(byStaff[date.day] ?? const DaySlots());
     final byDay = slotsByDay;
     if (byDay != null) return Right(byDay[date.day] ?? const DaySlots());
     return slotsResult;
@@ -668,9 +678,14 @@ void main() {
       List<BusinessHour> hours = const [],
       int window = 7,
       Map<int, Completer<void>> gates = const {},
+      List<StaffMember> staff = const [_staffA],
     }) async {
       final repo = FakeBookingRepository(
-        provider: _provider(businessHours: hours, maxAdvanceBookingDays: window),
+        provider: _provider(
+          businessHours: hours,
+          maxAdvanceBookingDays: window,
+          staff: staff,
+        ),
         slotsResult: const Right(DaySlots()),
         createResults: [const Right('b1')],
         slotsByDay: days,
@@ -799,6 +814,146 @@ void main() {
       await _flush();
 
       expect(bloc.state.freeDayNotice, isNull);
+    });
+
+    // Review follow-up: the search used to start from whatever day was showing, even one an earlier search had
+    // chosen, so a staff member free today was never looked at today.
+    test(
+        'a day the app chose for one staff member is not where the search '
+        'starts for another', () async {
+      final (bloc, repo) = await atTimeStep(
+        const {},
+        staff: const [_staffA, _staffB],
+      );
+      repo.slotsByStaff = {
+        // Staff A has nothing today; tomorrow is the first day with times.
+        'st1': {24: DaySlots(slots: [at(24, 9)])},
+        // Staff B is free today.
+        'st2': {23: DaySlots(slots: [at(23, 16)])},
+      };
+
+      bloc.add(const BookingStaffSelected(_staffA));
+      await _flush();
+      expect(bloc.state.date, day(24));
+      expect(bloc.state.freeDayNotice, FreeDayNotice.movedFromToday);
+
+      bloc.add(const BookingStepBack());
+      await _flush();
+      repo.slotsDates.clear();
+      bloc.add(const BookingStaffSelected(_staffB));
+      await _flush();
+
+      expect(bloc.state.date, day(23));
+      expect(bloc.state.slots, [at(23, 16)]);
+      expect(bloc.state.freeDayNotice, isNull);
+      expect(repo.slotsDates, [day(23)]);
+    });
+
+    test('a day the customer picked is where the search starts for another '
+        'staff member', () async {
+      final (bloc, repo) = await atTimeStep(
+        const {},
+        staff: const [_staffA, _staffB],
+      );
+      repo.slotsByStaff = {
+        'st1': {
+          23: DaySlots(slots: [at(23, 9)]),
+          26: DaySlots(slots: [at(26, 9)]),
+        },
+        'st2': {
+          23: DaySlots(slots: [at(23, 16)]),
+          26: DaySlots(slots: [at(26, 11)]),
+        },
+      };
+
+      bloc.add(const BookingStaffSelected(_staffA));
+      await _flush();
+      bloc.add(BookingDateSelected(day(26)));
+      await _flush();
+
+      bloc.add(const BookingStepBack());
+      await _flush();
+      repo.slotsDates.clear();
+      bloc.add(const BookingStaffSelected(_staffB));
+      await _flush();
+
+      expect(bloc.state.date, day(26));
+      expect(bloc.state.slots, [at(26, 11)]);
+      expect(repo.slotsDates, [day(26)]);
+    });
+
+    test('a customer-picked day the search moved on from is no longer theirs',
+        () async {
+      final (bloc, repo) = await atTimeStep(
+        const {},
+        staff: const [_staffA, _staffB],
+      );
+      repo.slotsByStaff = {
+        'st1': {
+          23: DaySlots(slots: [at(23, 9)]),
+          27: DaySlots(slots: [at(27, 9)]),
+        },
+        'st2': {23: DaySlots(slots: [at(23, 16)])},
+      };
+
+      bloc.add(const BookingStaffSelected(_staffA));
+      await _flush();
+      // The customer picks an empty day and asks for the next free one: the app chose the 27th.
+      bloc.add(BookingDateSelected(day(25)));
+      await _flush();
+      bloc.add(const BookingNextFreeDayRequested());
+      await _flush();
+      expect(bloc.state.date, day(27));
+
+      bloc.add(const BookingStepBack());
+      await _flush();
+      bloc.add(const BookingStaffSelected(_staffB));
+      await _flush();
+
+      expect(bloc.state.date, day(23));
+      expect(bloc.state.slots, [at(23, 16)]);
+    });
+
+    test('the staff step asks for no times until a staff member is chosen',
+        () async {
+      final (bloc, repo) = await atTimeStep(
+        {23: DaySlots(slots: [at(23, 16)])},
+        staff: const [_staffA, _staffB],
+      );
+
+      expect(bloc.state.step, BookingStep.staff);
+      expect(repo.slotsDates, isEmpty,
+          reason: 'the times depend on the staff member not yet chosen');
+
+      bloc.add(const BookingStaffSelected(_staffB));
+      await _flush();
+      expect(repo.slotsStaffIds, ['st2']);
+    });
+
+    test('stepping back out of the time step stops the search', () async {
+      final gate = Completer<void>();
+      final (bloc, repo) = await atTimeStep(
+        const {},
+        staff: const [_staffA, _staffB],
+      );
+      repo
+        ..slotsByStaff = {
+          'st1': {25: DaySlots(slots: [at(25, 9)])},
+        }
+        ..gates = {23: gate};
+
+      bloc.add(const BookingStaffSelected(_staffA));
+      await _flush();
+      // The search is waiting on today; the customer goes back to the staff step.
+      bloc.add(const BookingStepBack());
+      await _flush();
+      gate.complete();
+      await _flush();
+
+      expect(bloc.state.step, BookingStep.staff);
+      expect(repo.slotsDates, [day(23)],
+          reason: 'no later day is asked for a step the customer left');
+      expect(bloc.state.slots, isEmpty);
     });
 
     test('slot-taken recovery reloads the chosen day, not the first free one',

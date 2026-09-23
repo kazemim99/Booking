@@ -92,8 +92,9 @@ class BookingNextFreeDayRequested extends BookingEvent {
   const BookingNextFreeDayRequested();
 }
 
-/// The time step has just been entered: show the chosen day (today when none),
-/// or the first day after it with free times when it has none.
+/// The time step has just been entered: show the day the customer picked
+/// (today when they picked none), or the first day after it with free times
+/// when it has none.
 class _BookingTimeStepEntered extends BookingEvent {
   const _BookingTimeStepEntered();
 }
@@ -161,6 +162,12 @@ class BookingState extends Equatable {
   /// Set when the app moved the customer to another day; null otherwise.
   final FreeDayNotice? freeDayNotice;
 
+  /// Whether [date] is a day the customer picked, rather than one the app chose
+  /// (today, or a day a free-day search moved to). Only a picked day is kept
+  /// when the time step is entered again — after another staff member, say —
+  /// because a day chosen for the old choice says nothing about the new one.
+  final bool dateChosenByCustomer;
+
   const BookingState({
     this.providerId,
     this.providerStatus = BookingProviderStatus.loading,
@@ -179,6 +186,7 @@ class BookingState extends Equatable {
     this.submitError,
     this.bookingId,
     this.freeDayNotice,
+    this.dateChosenByCustomer = false,
   });
 
   /// Steps actually shown for this provider (staff step auto-skipped when
@@ -236,6 +244,7 @@ class BookingState extends Equatable {
     String? submitError,
     String? bookingId,
     FreeDayNotice? Function()? freeDayNotice,
+    bool? dateChosenByCustomer,
   }) {
     return BookingState(
       providerId: providerId ?? this.providerId,
@@ -256,6 +265,7 @@ class BookingState extends Equatable {
       bookingId: bookingId ?? this.bookingId,
       freeDayNotice:
           freeDayNotice != null ? freeDayNotice() : this.freeDayNotice,
+      dateChosenByCustomer: dateChosenByCustomer ?? this.dateChosenByCustomer,
     );
   }
 
@@ -278,6 +288,7 @@ class BookingState extends Equatable {
         submitError,
         bookingId,
         freeDayNotice,
+        dateChosenByCustomer,
       ];
 }
 
@@ -292,9 +303,11 @@ class BookingState extends Equatable {
 /// length requested from the backend, and their prices sum into the total the
 /// customer is shown, so the slot offered always fits the whole visit.
 ///
-/// Entering the time step shows the chosen day (today at first) and, when it has
-/// no free time, the first later day in the salon's window that does (UX review
-/// 2026-09-23, #4). The search asks the slot endpoint one day at a time rather
+/// Entering the time step shows the day the customer picked (today when they
+/// picked none) and, when it has no free time, the first later day in the
+/// salon's window that does (UX review 2026-09-23, #4). A day an earlier search
+/// chose is not a starting point: it was chosen for the staff member and
+/// services of that search. The search asks the slot endpoint one day at a time rather
 /// than using the providers' availability summary, because only the slot query
 /// knows this visit: the summed duration of the chosen services and the chosen
 /// staff member. The summary is service-agnostic, so it can promise a day on
@@ -447,7 +460,8 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       slotsStatus: SlotsStatus.initial,
       slot: () => null,
     ));
-    add(const _BookingTimeStepEntered());
+    // With a choice of staff the times wait until a staff member is chosen.
+    if (singleStaff) add(const _BookingTimeStepEntered());
   }
 
   void _onStaffSelected(
@@ -482,6 +496,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       slot: () => null,
       // The customer chose this day; nothing to explain any more.
       freeDayNotice: () => null,
+      dateChosenByCustomer: true,
     ));
 
     final result = await _slotsFor(event.date);
@@ -504,7 +519,10 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     _BookingTimeStepEntered event,
     Emitter<BookingState> emit,
   ) =>
-      _showFirstFreeDayFrom(state.date ?? today, emit);
+      _showFirstFreeDayFrom(
+        state.dateChosenByCustomer ? state.date ?? today : today,
+        emit,
+      );
 
   Future<void> _onNextFreeDayRequested(
     BookingNextFreeDayRequested event,
@@ -517,7 +535,8 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
   ///
   /// When no day has any, [from] stays selected with the salon's reason for it.
   /// Another day chosen while this runs wins: every answer is checked against
-  /// the latest request before it is shown.
+  /// the latest request before it is shown. A day the search moves to is the
+  /// app's choice, not the customer's.
   Future<void> _showFirstFreeDayFrom(
     DateTime from,
     Emitter<BookingState> emit,
@@ -529,6 +548,11 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     var anchor = DateTime(from.year, from.month, from.day);
     // A day kept from an earlier visit may have slipped out of the window.
     if (anchor.isBefore(first) || anchor.isAfter(last)) anchor = first;
+    // The customer's pick survives only while the search stays on it.
+    final picked = state.date;
+    final anchorPicked = state.dateChosenByCustomer &&
+        picked != null &&
+        DateTime(picked.year, picked.month, picked.day) == anchor;
     final moved = anchor == first
         ? FreeDayNotice.movedFromToday
         : FreeDayNotice.movedFromPickedDay;
@@ -543,6 +567,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       slotsReason: () => null,
       slot: () => null,
       freeDayNotice: () => null,
+      dateChosenByCustomer: anchorPicked,
     ));
 
     String? anchorReason;
@@ -575,6 +600,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
           slotsStatus: SlotsStatus.loaded,
           slotsReason: () => null,
           freeDayNotice: () => day == anchor ? null : moved,
+          dateChosenByCustomer: day == anchor && anchorPicked,
         ));
         return;
       }
@@ -616,6 +642,9 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     final steps = state.visibleSteps;
     final index = steps.indexOf(state.step);
     if (index > 0) {
+      // Leaving the time step drops a search still running there: its answers
+      // are for a step the customer left, and entering it again searches anew.
+      if (state.step == BookingStep.time) _slotsRequestId++;
       emit(state.copyWith(
         step: steps[index - 1],
         submitStatus: SubmitStatus.idle,
