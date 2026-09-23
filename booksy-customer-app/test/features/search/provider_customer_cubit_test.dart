@@ -252,6 +252,44 @@ void main() {
     });
   });
 
+  // Review of the merged branch: the customer id is read from secure storage, which can throw. The page does not
+  // await customerSignedIn, so its error went unhandled, and a heart tap waiting on the lookup rethrew it.
+  group('a customer lookup that fails', () {
+    test('the page treats the customer as unknown, and nothing goes unhandled', () async {
+      final repo = _FakeHomeRepository();
+      final cubit = ProviderCustomerCubit(
+        providerId: 'p1',
+        repository: repo,
+        customerId: () async => throw StateError('storage unavailable'),
+      );
+
+      // Not awaited, as the page calls it.
+      unawaited(cubit.customerSignedIn());
+      await pumpEventQueue();
+
+      expect(cubit.state.signedIn, isFalse);
+      expect(repo.visits, isEmpty);
+    });
+
+    test('a heart tap waiting on it reports "not changed" instead of throwing', () async {
+      final lookup = Completer<String?>();
+      final repo = _FakeHomeRepository();
+      final cubit = ProviderCustomerCubit(
+        providerId: 'p1',
+        repository: repo,
+        customerId: () => lookup.future,
+      );
+
+      unawaited(cubit.customerSignedIn());
+      final toggled = cubit.toggleFavorite();
+      lookup.completeError(StateError('storage unavailable'));
+
+      expect(await toggled, isFalse);
+      expect(repo.added, isEmpty);
+      expect(cubit.state.isFavorite, isFalse);
+    });
+  });
+
   group('signing out (P2 review)', () {
     test("the next customer's opening of the same page is a visit too",
         () async {

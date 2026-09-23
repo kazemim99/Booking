@@ -82,8 +82,7 @@ class ProviderCustomerCubit extends Cubit<ProviderCustomerState> {
   /// login round-trip can come back to this very page).
   Future<void> customerSignedIn() {
     final session = _session;
-    final lookup = customerId();
-    final signingIn = lookup.then((id) {
+    final signingIn = _lookUpCustomerId().then((id) {
       if (isClosed || session != _session || id == null || id.isEmpty) {
         return null;
       }
@@ -114,6 +113,16 @@ class ProviderCustomerCubit extends Cubit<ProviderCustomerState> {
         (ids) => emit(state.copyWith(isFavorite: ids.contains(providerId))),
       );
     });
+  }
+
+  /// The customer id, or null when it cannot be read: the id comes from secure storage, which can throw, and the
+  /// page neither awaits this nor can do anything with the error — an unknown customer is treated as a guest here.
+  Future<String?> _lookUpCustomerId() async {
+    try {
+      return await customerId();
+    } catch (_) {
+      return null;
+    }
   }
 
   void customerSignedOut() {
