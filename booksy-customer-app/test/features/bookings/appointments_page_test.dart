@@ -55,6 +55,46 @@ Widget _app({double textScale = 1.0}) {
   );
 }
 
+/// The real app's shape: the tabs are branches of a stateful shell, so the appointments tab stays alive while
+/// another tab is shown, and a notification pushes a booking's detail from whichever tab is open.
+Widget _shellApp() {
+  final auth = FakeAuthBloc()..signIn();
+  _router = GoRouter(
+    initialLocation: '/appointments',
+    routes: [
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, shell) => shell,
+        branches: [
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/home', builder: (context, state) => const Scaffold(body: Text('home'))),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(
+              path: '/appointments',
+              builder: (context, state) => const AppointmentsPage(),
+              routes: [
+                GoRoute(
+                  path: ':id',
+                  builder: (context, state) => Scaffold(body: Text('detail ${state.pathParameters['id']}')),
+                ),
+              ],
+            ),
+          ]),
+        ],
+      ),
+    ],
+  );
+
+  return BlocProvider<AuthBloc>.value(
+    value: auth,
+    child: MaterialApp.router(
+      theme: AppTheme.light,
+      routerConfig: _router,
+      builder: (context, child) => Directionality(textDirection: TextDirection.rtl, child: child!),
+    ),
+  );
+}
+
 Future<void> _settle(WidgetTester tester) async {
   for (var i = 0; i < 12; i++) {
     await tester.pump(const Duration(milliseconds: 50));
@@ -150,5 +190,69 @@ void main() {
 
     expect(_bookings.listCalls, greaterThan(callsBefore));
     expect(find.text(AppStrings.cancelBooking), findsNothing);
+  });
+
+  testWidgets('a booking opened from another tab and changed there is re-read when this tab is shown again',
+      (tester) async {
+    _bookings.upcoming = [fakeBooking('b1', start: DateTime(2030, 1, 5, 16, 30))];
+    tester.view.physicalSize = const Size(360 * 3, 640 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(_shellApp());
+    await _settle(tester);
+    expect(find.text(AppStrings.cancelBooking), findsOneWidget);
+
+    // On the home tab, a notification opens the booking; it is cancelled there and the customer backs out.
+    _router.go('/home');
+    await _settle(tester);
+    _router.push('/appointments/b1');
+    await _settle(tester);
+    expect(find.text('detail b1'), findsOneWidget);
+    _bookings.upcoming = [
+      _bookings.upcoming.single.copyWith(status: 'Cancelled', canCancel: false, canReschedule: false),
+    ];
+    _router.pop();
+    await _settle(tester);
+    expect(_router.routerDelegate.currentConfiguration.uri.path, '/home');
+    final callsBefore = _bookings.listCalls;
+
+    _router.go('/appointments');
+    await _settle(tester);
+
+    expect(_bookings.listCalls, greaterThan(callsBefore));
+    expect(find.text(AppStrings.cancelBooking), findsNothing);
+  });
+
+  testWidgets('a booking a notification pushed over this tab is re-read on the way back', (tester) async {
+    _bookings.upcoming = [fakeBooking('b1', start: DateTime(2030, 1, 5, 16, 30))];
+    await tester.pumpWidget(_shellApp());
+    await _settle(tester);
+
+    _router.push('/appointments/b1');
+    await _settle(tester);
+    expect(find.text('detail b1'), findsOneWidget);
+    _bookings.upcoming = [
+      _bookings.upcoming.single.copyWith(status: 'Cancelled', canCancel: false, canReschedule: false),
+    ];
+    final callsBefore = _bookings.listCalls;
+    _router.pop();
+    await _settle(tester);
+
+    expect(_bookings.listCalls, greaterThan(callsBefore));
+    expect(find.text(AppStrings.cancelBooking), findsNothing);
+  });
+
+  testWidgets('switching tabs without opening a booking does not re-read the list', (tester) async {
+    _bookings.upcoming = [fakeBooking('b1', start: DateTime(2030, 1, 5, 16, 30))];
+    await tester.pumpWidget(_shellApp());
+    await _settle(tester);
+    final callsBefore = _bookings.listCalls;
+
+    _router.go('/home');
+    await _settle(tester);
+    _router.go('/appointments');
+    await _settle(tester);
+
+    expect(_bookings.listCalls, callsBefore);
   });
 }

@@ -118,7 +118,9 @@ class _AppointmentsView extends StatefulWidget {
 class _AppointmentsViewState extends State<_AppointmentsView> {
   bool _showUpcoming = true;
   GoRouter? _router;
-  bool _wasOnBooking = false;
+
+  /// A booking's detail was shown since this list was last read.
+  bool _bookingVisited = false;
 
   @override
   void didChangeDependencies() {
@@ -127,7 +129,7 @@ class _AppointmentsViewState extends State<_AppointmentsView> {
     if (router != _router) {
       _router?.routerDelegate.removeListener(_onLocationChanged);
       _router = router?..routerDelegate.addListener(_onLocationChanged);
-      _wasOnBooking = _isOnBooking();
+      _bookingVisited = _isOnBooking();
     }
   }
 
@@ -137,22 +139,33 @@ class _AppointmentsViewState extends State<_AppointmentsView> {
     super.dispose();
   }
 
-  bool _isOnBooking() {
-    final path = _router?.routerDelegate.currentConfiguration.uri.path ?? '';
-    return path.startsWith('${Routes.appointments}/');
+  bool _isOnBooking() => _visiblePath().startsWith('${Routes.appointments}/');
+
+  /// The path of the screen on top. A pushed route (a notification opens a
+  /// booking with `push`) does not change the router's own location, so it
+  /// is read from the pushed match.
+  String _visiblePath() {
+    final config = _router?.routerDelegate.currentConfiguration;
+    if (config == null) return '';
+    final top = config.lastOrNull;
+    return (top is ImperativeRouteMatch ? top.matches.uri : config.uri).path;
   }
 
   /// A booking's detail can cancel or reschedule it, and it is reached from
   /// this list, the home card and notifications alike. Whichever way it was
-  /// opened, coming back from it re-reads the list (keeping it on screen) so
-  /// a card never offers an action the booking no longer allows.
+  /// opened, the next time this list is shown it is re-read (keeping it on
+  /// screen) so a card never offers an action the booking no longer allows.
+  /// A detail pushed from another tab returns to that tab, so "shown" is
+  /// when the customer comes back to this tab, not when the detail closes.
   void _onLocationChanged() {
-    final onBooking = _isOnBooking();
-    final path = _router?.routerDelegate.currentConfiguration.uri.path;
-    if (_wasOnBooking && !onBooking && path == Routes.appointments && mounted) {
+    if (_isOnBooking()) {
+      _bookingVisited = true;
+      return;
+    }
+    if (_bookingVisited && _visiblePath() == Routes.appointments && mounted) {
+      _bookingVisited = false;
       context.read<AppointmentsBloc>().add(const AppointmentsRefreshed());
     }
-    _wasOnBooking = onBooking;
   }
 
   Future<void> _onRefresh() {
