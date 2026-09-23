@@ -11,7 +11,6 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/network/connectivity_service.dart';
 import '../../../../core/utils/jalali_formatter.dart';
-import '../../../../core/utils/person_name.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
