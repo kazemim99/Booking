@@ -381,7 +381,7 @@ void main() {
       expect(find.text(AppStrings.bookNowShort), findsNWidgets(2));
     });
 
-    testWidgets('hides rating and price band while the data is all zeros',
+    testWidgets('hides rating and starting price while the data is all zeros',
         (tester) async {
       await tester.pumpWidget(_app(
         bloc: loadedBloc(topProviders: [_provider()]),
@@ -391,7 +391,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(ProviderRating), findsNothing);
-      expect(find.byType(PriceBandLabel), findsNothing);
+      expect(find.byKey(const Key('provider-starting-price')), findsNothing);
       expect(find.textContaining('کیلومتر'), findsNothing);
       // No image either — the placeholder stands in.
       expect(find.byIcon(Icons.storefront_outlined), findsWidgets);

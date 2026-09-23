@@ -330,7 +330,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(PriceFormatter.formatFrom(250000)), findsOneWidget);
-      expect(find.byType(PriceBandLabel), findsNothing);
       expect(find.textContaining(r'$'), findsNothing);
     });
 

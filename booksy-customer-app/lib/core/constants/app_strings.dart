@@ -217,7 +217,6 @@ class AppStrings {
   static const String notificationsTitle = 'اعلان‌ها';
   static const String notificationsEmpty = 'هنوز اعلانی ندارید.';
   static const String notificationsLoadFailed = 'اعلان‌ها بارگذاری نشد.';
-  static const String notificationsRetry = 'تلاش دوباره';
   static const String notificationsMarkAllRead = 'خواندن همه';
   static const String notificationsMarkFailed = 'علامت‌گذاری اعلان انجام نشد.';
   static const String nearestTitle = 'نزدیک‌ترین‌ها';
@@ -299,12 +298,6 @@ class AppStrings {
   static const String noServicesYet = 'خدمتی برای این سالن ثبت نشده است';
   static String reviewCountLabel(String count) => '$count نظر';
   static String distanceKmLabel(String km) => '$km کیلومتر';
-
-  /// Price band glyphs. Derived from the provider's own service prices —
-  /// never shown when no priced service exists.
-  static const String priceBandLow = r'$';
-  static const String priceBandMid = r'$$';
-  static const String priceBandHigh = r'$$$';
 
   // ---------------------------------------------------------------------
   // Map discovery — the map + carousel surface that replaced the

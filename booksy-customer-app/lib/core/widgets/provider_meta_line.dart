@@ -4,7 +4,6 @@ import '../../config/theme/app_tokens.dart';
 import '../constants/app_strings.dart';
 import '../utils/jalali_formatter.dart';
 import '../utils/price_formatter.dart';
-import 'price_band.dart';
 import 'provider_rating.dart';
 
 /// The one-line provider summary used on cards and on the profile header:
@@ -22,10 +21,6 @@ class ProviderMetaLine extends StatelessWidget {
   final String? category;
   final double? rating;
   final int? reviewCount;
-
-  /// The old `$`/`$$`/`$$$` band. No screen passes it any more: in a Toman app
-  /// the glyphs read as dollars, so cards show [startingPrice] instead.
-  final PriceBand? priceBand;
 
   /// The salon's cheapest price, in Toman. Shown as «از ۱۲۰٬۰۰۰ تومان»;
   /// null or zero (the search payload sends 0) hides it.
@@ -48,7 +43,6 @@ class ProviderMetaLine extends StatelessWidget {
     this.category,
     this.rating,
     this.reviewCount,
-    this.priceBand,
     this.startingPrice,
     this.distanceKm,
     this.nextFreeDate,
@@ -75,7 +69,6 @@ class ProviderMetaLine extends StatelessWidget {
       (category != null && category!.isNotEmpty) ||
       ProviderRating.hasRating(rating ?? 0, reviewCount) ||
       ProviderRating.isUnrated(reviewCount) ||
-      priceBand != null ||
       _hasStartingPrice ||
       distanceKm != null ||
       freeSlotsLabel(nextFreeDate, freeSlotCount, now ?? DateTime.now()) != null;
@@ -94,9 +87,6 @@ class ProviderMetaLine extends StatelessWidget {
       parts.add(ProviderRating(rating: rating ?? 0, reviewCount: reviewCount));
     } else if (ProviderRating.isUnrated(reviewCount)) {
       parts.add(const NoReviewsYetLabel());
-    }
-    if (priceBand != null) {
-      parts.add(PriceBandLabel(band: priceBand!));
     }
     if (_hasStartingPrice) {
       parts.add(Text(

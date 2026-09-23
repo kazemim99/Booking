@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:booksy_customer_app/config/theme/app_colors.dart';
 import 'package:booksy_customer_app/config/theme/app_theme.dart';
 import 'package:booksy_customer_app/core/constants/app_strings.dart';
+import 'package:booksy_customer_app/core/utils/price_formatter.dart';
 import 'package:booksy_customer_app/core/widgets/widgets.dart';
 
 import '../../helpers/contrast.dart';
@@ -371,41 +372,6 @@ void main() {
     });
   });
 
-  group('PriceBand', () {
-    test('is null when there is nothing to derive from', () {
-      // The backend publishes no price band, and every seeded provider has a
-      // zero starting price — the band must stay absent, never default to "$".
-      expect(PriceBand.fromPrices(const []), isNull);
-      expect(PriceBand.fromPrices(const [0]), isNull);
-      expect(PriceBand.fromPrices(const [0, 0, 0]), isNull);
-    });
-
-    test('derives a band from the median of the priced services', () {
-      expect(PriceBand.fromPrices(const [150000]), PriceBand.low);
-      expect(PriceBand.fromPrices(const [250000]), PriceBand.mid);
-      expect(PriceBand.fromPrices(const [900000]), PriceBand.high);
-      // One premium package must not drag a cheap salon into the top band.
-      expect(
-        PriceBand.fromPrices(const [80000, 100000, 2000000]),
-        PriceBand.low,
-      );
-      // Zero-priced services are ignored rather than pulling the median down.
-      expect(PriceBand.fromPrices(const [0, 700000]), PriceBand.high);
-      // Even-length lists average the two middle prices (250k + 850k → 550k).
-      expect(PriceBand.fromPrices(const [250000, 850000]), PriceBand.mid);
-    });
-
-    testWidgets('renders its glyph left-to-right inside RTL text',
-        (tester) async {
-      await tester.pumpWidget(
-        _wrap(const PriceBandLabel(band: PriceBand.mid)),
-      );
-      expect(find.text(AppStrings.priceBandMid), findsOneWidget);
-      final text = tester.widget<Text>(find.text(AppStrings.priceBandMid));
-      expect(text.textDirection, TextDirection.ltr);
-    });
-  });
-
   group('ProviderRating', () {
     // provider-reviews-and-ratings: the count is now the published review count,
     // so it decides. It used to be a constant zero, which is why `rating > 0`
@@ -468,13 +434,13 @@ void main() {
         _wrap(const ProviderMetaLine(
           category: 'پارس‌آباد',
           rating: 0,
-          priceBand: PriceBand.mid,
+          startingPrice: 250000,
           distanceKm: 1.5,
         )),
       );
 
       expect(find.text('پارس‌آباد'), findsOneWidget);
-      expect(find.text(AppStrings.priceBandMid), findsOneWidget);
+      expect(find.text(PriceFormatter.formatFrom(250000)), findsOneWidget);
       expect(find.text(AppStrings.distanceKmLabel('۱.۵')), findsOneWidget);
       // Rating absent → no star, and two separators for three parts.
       expect(find.byIcon(Icons.star_rounded), findsNothing);

@@ -13,7 +13,6 @@ export 'empty_state.dart';
 export 'error_state.dart';
 export 'offline_banner.dart';
 export 'otp_input.dart';
-export 'price_band.dart';
 export 'provider_image.dart';
 export 'provider_meta_line.dart';
 export 'provider_rating.dart';
