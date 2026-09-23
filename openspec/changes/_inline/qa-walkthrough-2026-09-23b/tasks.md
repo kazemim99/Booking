@@ -24,10 +24,10 @@ required at booking confirmation (the login stays phone-only). Each surface — 
 - [ ] 4 The salon app asks an owner/member whose name is the OTP placeholder for a real name, once
 - [x] 5 After the salon confirms (or declines) a booking, the customer gets an inbox notice
 - [ ] 6 Web push: customer and salon web apps register for push and show notifications on Android Chrome
-- [ ] 7 Salon profile: one «تماس و موقعیت» section holding address + map; «موقعیت روی نقشه» duplicate removed
-- [ ] 8 Appointment detail shows the staff member's name and what «در انتظار تأیید» means
-- [ ] 9 A customer without a real name must enter it before a booking can be confirmed (no skip there)
-- [ ] 10 Salon profile says reviews can be written after a completed visit, from the appointment
+- [x] 7 Salon profile: one «تماس و موقعیت» section holding address + map; «موقعیت روی نقشه» duplicate removed
+- [x] 8 Appointment detail shows the staff member's name and what «در انتظار تأیید» means
+- [x] 9 A customer without a real name must enter it before a booking can be confirmed (no skip there)
+- [x] 10 Salon profile says reviews can be written after a completed visit, from the appointment
 - [x] 12 Only the salon (owner / booking-managing member / admin) can confirm, complete, no-show or staff its bookings
 - [ ] 11 FULL verify green; deploy after the user's go
 
@@ -42,6 +42,10 @@ required at booking confirmation (the login stays phone-only). Each surface — 
   at booking confirmation, not at login.
 
 ## Log
+
+- 2026-09-23 7-10 done by an agent (c76f9e6f.. cherry-picked), plus f3e304b4: booking requires first AND last name
+  (the agent's check accepted a first name alone). Customers signed in before this build have no stored name and are
+  asked once at their next booking. Customer app 713 tests green.
 
 - 2026-09-23 1+2 done (26c7dda6): integration RED showed "2026-09-25T10:30:00Z" on the salon calendar; salon-app RED
   read 10:30 as 14:00. Full integration 810/810 (one flake on a loaded first run, green on re-run).
