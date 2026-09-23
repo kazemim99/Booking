@@ -95,8 +95,9 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
           }
         },
         builder: (context, state) {
-          final submitted = _submitted ??
-              (state.submitStatus == SubmitStatus.success ? state : null);
+          // Only a booking made on this page: the listener latches it before this rebuild, and a success left in the
+          // app-scoped bloc by an earlier visit must not flash as this visit's.
+          final submitted = _submitted;
           if (submitted != null) {
             return _SuccessView(bloc: _bloc, booking: submitted);
           }

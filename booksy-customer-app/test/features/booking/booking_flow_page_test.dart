@@ -118,6 +118,7 @@ void main() {
     String? serviceId,
     Size size = const Size(390, 844),
     BookingBloc? existing,
+    bool settle = true,
   }) async {
     tester.view.physicalSize = size * 3;
     tester.view.devicePixelRatio = 3;
@@ -153,7 +154,7 @@ void main() {
       builder: (context, child) =>
           Directionality(textDirection: TextDirection.rtl, child: child!),
     ));
-    await _settle(tester);
+    if (settle) await _settle(tester);
     return bloc;
   }
 
@@ -392,8 +393,12 @@ void main() {
       await _settle(tester);
       expect(bloc.state.submitStatus, SubmitStatus.success);
 
-      await pumpFlow(tester, existing: bloc);
+      await pumpFlow(tester, existing: bloc, settle: false);
 
+      // Not even for the first frame, before the bloc has handled the new visit.
+      expect(find.text(AppStrings.bookingSuccessAwaiting), findsNothing);
+
+      await _settle(tester);
       expect(find.text(AppStrings.bookingSuccessAwaiting), findsNothing);
       expect(find.text(AppStrings.bookingSelectServices), findsOneWidget);
     });
