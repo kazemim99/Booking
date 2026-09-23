@@ -191,7 +191,7 @@ class HomeRemoteDataSource {
         items = [];
       }
 
-      return items.map((json) => RecentlyVisitedProviderDto.fromJson(json as Map<String, dynamic>)).toList();
+      return _readRows(items, RecentlyVisitedProviderDto.fromJson);
     }
 
     throw DioException(
@@ -200,6 +200,23 @@ class HomeRemoteDataSource {
       type: DioExceptionType.badResponse,
       message: 'Failed to load recently visited providers',
     );
+  }
+
+  /// Each row that can be read, in order. One malformed row (a missing id or
+  /// date) is skipped rather than failing the whole Home section: the section
+  /// shows the salons it can, or stays hidden.
+  static List<T> _readRows<T>(
+      List<dynamic> items, T Function(Map<String, dynamic>) fromJson) {
+    final rows = <T>[];
+    for (final item in items) {
+      if (item is! Map<String, dynamic>) continue;
+      try {
+        rows.add(fromJson(item));
+      } catch (_) {
+        // Skipped: see above.
+      }
+    }
+    return rows;
   }
 
   /// Fetch favorite providers for a customer
@@ -233,7 +250,7 @@ class HomeRemoteDataSource {
         items = [];
       }
 
-      return items.map((json) => FavoriteProviderDto.fromJson(json as Map<String, dynamic>)).toList();
+      return _readRows(items, FavoriteProviderDto.fromJson);
     }
 
     throw DioException(

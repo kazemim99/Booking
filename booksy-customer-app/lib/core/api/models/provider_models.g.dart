@@ -93,15 +93,16 @@ RecentlyVisitedProviderDto _$RecentlyVisitedProviderDtoFromJson(
         Map<String, dynamic> json) =>
     RecentlyVisitedProviderDto(
       providerId: json['providerId'] as String,
-      providerName: json['providerName'] as String,
+      providerName: json['providerName'] as String?,
       providerType: json['providerType'] as String?,
       logoUrl: json['logoUrl'] as String?,
       city: json['city'] as String?,
       state: json['state'] as String?,
       averageRating: (json['averageRating'] as num?)?.toDouble(),
       totalReviews: (json['totalReviews'] as num?)?.toInt(),
-      lastVisitedAt: DateTime.parse(json['lastVisitedAt'] as String),
-      visitCount: (json['visitCount'] as num).toInt(),
+      lastVisitedAt: DateTime.parse(
+          _readLastVisitedAt(json, 'lastVisitedAt') as String),
+      visitCount: (json['visitCount'] as num?)?.toInt() ?? 1,
       viewSource: json['viewSource'] as String?,
     );
 
@@ -124,7 +125,7 @@ Map<String, dynamic> _$RecentlyVisitedProviderDtoToJson(
 FavoriteProviderDto _$FavoriteProviderDtoFromJson(Map<String, dynamic> json) =>
     FavoriteProviderDto(
       providerId: json['providerId'] as String,
-      providerName: json['providerName'] as String,
+      providerName: json['providerName'] as String?,
       providerType: json['providerType'] as String?,
       logoUrl: json['logoUrl'] as String?,
       city: json['city'] as String?,

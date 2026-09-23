@@ -92,24 +92,32 @@ class SearchProvidersRequest {
   Map<String, dynamic> toJson() => _$SearchProvidersRequestToJson(this);
 }
 
-/// Recently visited provider DTO
+/// Recently visited provider DTO — one row of
+/// GET /customers/{id}/recently-visited (RecentlyVisitedProviderViewModel).
+///
+/// Read tolerantly: a server from before customer-app-ux-review-fixes P1 sends
+/// only `providerId`, `visitedAt` and `viewSource`, so [providerName] may be
+/// missing (the repository drops such rows), [lastVisitedAt] falls back to
+/// `visitedAt` and [visitCount] to 1.
 @JsonSerializable()
 class RecentlyVisitedProviderDto {
   final String providerId;
-  final String providerName;
+  final String? providerName;
   final String? providerType;
   final String? logoUrl;
   final String? city;
   final String? state;
   final double? averageRating;
   final int? totalReviews;
+  @JsonKey(readValue: _readLastVisitedAt)
   final DateTime lastVisitedAt;
+  @JsonKey(defaultValue: 1)
   final int visitCount;
   final String? viewSource;
 
   RecentlyVisitedProviderDto({
     required this.providerId,
-    required this.providerName,
+    this.providerName,
     this.providerType,
     this.logoUrl,
     this.city,
@@ -127,11 +135,20 @@ class RecentlyVisitedProviderDto {
   Map<String, dynamic> toJson() => _$RecentlyVisitedProviderDtoToJson(this);
 }
 
-/// Favorite provider DTO
+/// `lastVisitedAt`, or the older `visitedAt` a pre-P1 server sends instead.
+Object? _readLastVisitedAt(Map json, String key) =>
+    json[key] ?? json['visitedAt'];
+
+/// Favorite provider DTO — one row of GET /customers/{id}/favorites
+/// (FavoriteProviderViewModel).
+///
+/// A server from before customer-app-ux-review-fixes P1 sends only
+/// `providerId`, `notes` and `addedAt`, so [providerName] may be missing; the
+/// repository drops such rows.
 @JsonSerializable()
 class FavoriteProviderDto {
   final String providerId;
-  final String providerName;
+  final String? providerName;
   final String? providerType;
   final String? logoUrl;
   final String? city;
@@ -143,7 +160,7 @@ class FavoriteProviderDto {
 
   FavoriteProviderDto({
     required this.providerId,
-    required this.providerName,
+    this.providerName,
     this.providerType,
     this.logoUrl,
     this.city,

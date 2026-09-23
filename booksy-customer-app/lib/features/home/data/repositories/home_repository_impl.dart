@@ -116,9 +116,14 @@ class HomeRepositoryImpl implements HomeRepository {
       String customerId, {int limit = 10}) async {
     try {
       final dtos = await remoteDataSource.getRecentlyVisitedProviders(customerId, limit: limit);
-      final providers = dtos.map((dto) => RecentlyVisitedProvider(
+      // A row without a salon name (a server from before the name was added)
+      // has nothing to draw; it is left out so the section stays hidden
+      // instead of showing its load error.
+      final providers = dtos
+          .where((dto) => _hasName(dto.providerName))
+          .map((dto) => RecentlyVisitedProvider(
         providerId: dto.providerId,
-        providerName: dto.providerName,
+        providerName: dto.providerName!,
         providerType: dto.providerType,
         logoUrl: dto.logoUrl,
         city: dto.city,
@@ -140,13 +145,18 @@ class HomeRepositoryImpl implements HomeRepository {
     }
   }
 
+  static bool _hasName(String? name) => name != null && name.trim().isNotEmpty;
+
   @override
   Future<Either<Failure, List<FavoriteProvider>>> getFavoriteProviders(String customerId) async {
     try {
       final dtos = await remoteDataSource.getFavoriteProviders(customerId);
-      final providers = dtos.map((dto) => FavoriteProvider(
+      // Rows without a salon name are left out, as for recent visits.
+      final providers = dtos
+          .where((dto) => _hasName(dto.providerName))
+          .map((dto) => FavoriteProvider(
         providerId: dto.providerId,
-        providerName: dto.providerName,
+        providerName: dto.providerName!,
         providerType: dto.providerType,
         logoUrl: dto.logoUrl,
         city: dto.city,
