@@ -46,7 +46,39 @@ public sealed class DatabaseReset
         // columns in the model (BreakPeriods.Id, staff_working_days.id); CASCADE is a no-op today
         // (no FK references a truncated table from outside this list) and is cheap insurance.
         command.CommandText = $"TRUNCATE TABLE {string.Join(", ", tables)} RESTART IDENTITY CASCADE";
-        await command.ExecuteNonQueryAsync(cancellationToken);
+        await RetryingDeadlocksAsync(() => command.ExecuteNonQueryAsync(cancellationToken));
+    }
+
+    /// <summary>How many times a deadlocked reset is re-run before the failure is let through.</summary>
+    public const int MaxDeadlockRetries = 5;
+
+    /// <summary>
+    /// Runs <paramref name="action"/>, re-running it when Postgres picks it as a deadlock victim (40P01).
+    /// </summary>
+    /// <remarks>
+    /// The host under test keeps timer-driven services running (the notification outbox sweep, payment
+    /// reconciliation, ledger maintenance), and they query while this TRUNCATE takes AccessExclusive locks table
+    /// by table. When a tick lands on a reset, the two lock in opposite orders and Postgres kills one — any test,
+    /// at random, always green alone (four FULL runs lost on 2026-09-22/23 before IncludeErrorDetail named it).
+    /// Postgres rolls back only the victim and truncating test data is idempotent, so re-running is correct; it
+    /// is immediate because the deadlock is already resolved by the time the error arrives. Only 40P01 is
+    /// retried — anything else is a real failure — and a deadlock that keeps coming back still surfaces.
+    /// </remarks>
+    public static async Task RetryingDeadlocksAsync(Func<Task> action)
+    {
+        for (var attempt = 0; ; attempt++)
+        {
+            try
+            {
+                await action();
+                return;
+            }
+            catch (PostgresException e) when (e.SqlState == PostgresErrorCodes.DeadlockDetected
+                                              && attempt < MaxDeadlockRetries)
+            {
+                // The competing transaction has been let through; the next attempt normally succeeds.
+            }
+        }
     }
 
     /// <summary>
