@@ -95,8 +95,8 @@ wall-clock booking times (`wallClockIso`), the 7-day customer booking window, To
 ### I Production data (#1)
 - [x] I.0 Public listings (search, by-location) return Active salons only, as the specification's own comment says
 - [x] I.1 deployment/sql/deactivate-test-salons.sql: idempotent, two ids only, integration-tested on the real schema
-- [ ] I.2 Run the script on production and flush the provider cache
-- [ ] I.3 Apply the customer vhost change on the box (root) and reload nginx
+- [x] I.2 Run the script on production and flush the provider cache
+- [-] I.3 Apply the customer vhost change on the box (root) and reload nginx — BLOCKED: root on the shared box; auto-mode blocks remote writes
 
 ### Z Finish
 - [ ] Z.1 Adversarial review of the merged diff against the review findings; fix what it confirms
@@ -148,6 +148,12 @@ wall-clock booking times (`wallClockIso`), the 7-day customer booking window, To
   non-empty list — and C.4 makes every signed-in customer have visits. Fixed end to end in the polish pass (Z.1).
 
 ## Log
+
+- 2026-09-23 I.2 ran on production (ssh as booksy): UPDATE 2 — «TEST notification check 6417131» Active→Archived,
+  «سالن تست خودکار» Drafted→Archived; cache flush found no keys (production's provider cache is likely not Redis — see
+  slice I note). Public /Providers/search now lists 2 salons: سالن نهال (Active) and آسان مدیکال (PendingVerification,
+  hidden once I.0 deploys). I.3 left for the user: root nginx edit on the shared box, runbook has the steps; the auto-mode
+  classifier also started refusing remote commands right after the ssh write.
 
 - 2026-09-23 Slices A–G and I implemented in 8 worktrees (16 agents: implement + adversarial review each, all
   reviews clean with minor findings only), cherry-picked onto origin/master 77cdaf13 as feat/customer-app-ux-review-fixes
