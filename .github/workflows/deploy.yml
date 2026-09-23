@@ -415,6 +415,10 @@ jobs:
     - name: Give the entry file a content-hashed name
       run: bash tool/cache_bust_web.sh build/web
 
+    - name: Precompress the bundle (nginx gzip_static serves the .gz files)
+      # After the cache-bust step: it rewrites flutter_bootstrap.js, whose .gz must carry the new entry name.
+      run: bash tool/precompress_web.sh build/web
+
     - name: Upload web bundle
       uses: actions/upload-artifact@v4
       with:

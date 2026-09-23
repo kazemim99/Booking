@@ -338,6 +338,9 @@ class AppStrings {
   // --- end of slice A ---
 
   // --- slice B: web ---
+  /// The browser tab and installed-app name: the app's existing Persian name and tagline (web/index.html and
+  /// web/manifest.json carry the same text; test/config/web_shell_test.dart keeps them in step).
+  static const String appDocumentTitle = '$homeTitle | $appTagline';
   // --- end of slice B ---
 
   // --- slice C: salon profile ---

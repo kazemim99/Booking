@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="fa" dir="rtl">
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -18,25 +18,74 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- The app's existing Persian name and tagline (AppStrings.homeTitle, AppStrings.appTagline). -->
+  <meta name="description" content="بوکسی، رزرو آنلاین خدمات زیبایی: سالن را پیدا کنید، زمان خالی را ببینید و نوبت بگیرید.">
+  <!-- The browser chrome takes the app bar's blue (AppColors.appBar). -->
+  <meta name="theme-color" content="#3777C0">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="booksy_customer_app">
+  <meta name="apple-mobile-web-app-title" content="بوکسی">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>booksy_customer_app</title>
+  <title>بوکسی | رزرو آنلاین خدمات زیبایی</title>
   <link rel="manifest" href="manifest.json">
+
+  <!--
+    Splash: painted from this file alone (no fonts, images or other requests), so the first visit shows the app's
+    name while the bundle and CanvasKit download instead of a blank white page. Removed on Flutter's first frame.
+  -->
+  <style>
+    html, body { margin: 0; height: 100%; background: #FFFFFF; }
+    #splash {
+      position: fixed; inset: 0; z-index: 10;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+      background: #FFFFFF; color: #4D5E80;
+      font-family: Tahoma, "Segoe UI", system-ui, sans-serif;
+      transition: opacity 200ms ease-out;
+    }
+    #splash .mark {
+      width: 72px; height: 72px; border-radius: 20px; background: #3777C0; color: #FFFFFF;
+      display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: 700;
+    }
+    #splash .name { font-size: 22px; font-weight: 700; margin: 0; }
+    #splash .tagline { font-size: 14px; color: #5A6B8C; margin: 0; }
+    #splash .spinner {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 3px solid #EBEEF3; border-top-color: #3777C0;
+      animation: splash-spin 900ms linear infinite;
+    }
+    #splash.done { opacity: 0; pointer-events: none; }
+    @keyframes splash-spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) {
+      #splash { transition: none; }
+      #splash .spinner { animation: none; border-color: #3777C0; }
+    }
+  </style>
 </head>
 <body>
+  <div id="splash" role="status" aria-live="polite">
+    <div class="mark" aria-hidden="true">ب</div>
+    <p class="name">بوکسی</p>
+    <p class="tagline">رزرو آنلاین خدمات زیبایی</p>
+    <div class="spinner" aria-hidden="true"></div>
+  </div>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var splash = document.getElementById('splash');
+      if (!splash) return;
+      splash.classList.add('done');
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      setTimeout(function () { splash.remove(); }, reduce ? 0 : 250);
+    }, { once: true });
+  </script>
   <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+    flutter_bootstrap.js is built from web/flutter_bootstrap.js (it loads CanvasKit from this site, not gstatic.com).
 
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization

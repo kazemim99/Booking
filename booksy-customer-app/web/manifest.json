@@ -1,11 +1,13 @@
 {
-    "name": "booksy_customer_app",
-    "short_name": "booksy_customer_app",
+    "name": "بوکسی | رزرو آنلاین خدمات زیبایی",
+    "short_name": "بوکسی",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FFFFFF",
+    "theme_color": "#3777C0",
+    "description": "بوکسی، رزرو آنلاین خدمات زیبایی: سالن را پیدا کنید، زمان خالی را ببینید و نوبت بگیرید.",
+    "lang": "fa",
+    "dir": "rtl",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

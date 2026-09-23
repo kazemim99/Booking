@@ -8,7 +8,9 @@ import 'core/push/firebase_push_token_source.dart';
 import 'core/push/push_message_router.dart';
 import 'features/notifications/presentation/inbox_cubit.dart';
 import 'config/theme/app_theme.dart';
+import 'core/constants/app_strings.dart';
 import 'core/di/injection.dart';
+import 'core/widgets/app_viewport_frame.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
 import 'features/home/presentation/bloc/home_bloc.dart';
@@ -67,7 +69,8 @@ class _BooksyCustomerAppState extends State<BooksyCustomerApp> {
             BlocProvider(create: (context) => getIt<HomeBloc>()),
           ],
           child: MaterialApp.router(
-            title: 'Booksy Customer',
+            // On the web this is the browser tab's title once the app runs (index.html has the same text before).
+            title: AppStrings.appDocumentTitle,
             debugShowCheckedModeBanner: false,
             // RTL Support for Persian/Arabic
             locale: const Locale('fa', 'IR'),
@@ -80,12 +83,7 @@ class _BooksyCustomerAppState extends State<BooksyCustomerApp> {
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-            builder: (context, child) {
-              return Directionality(
-                textDirection: TextDirection.rtl,
-                child: child!,
-              );
-            },
+            builder: buildAppShell,
             theme: AppTheme.light,
             routerConfig: _router,
           ),
@@ -93,4 +91,12 @@ class _BooksyCustomerAppState extends State<BooksyCustomerApp> {
       },
     );
   }
+}
+
+/// Wraps every route (MaterialApp.builder): right-to-left throughout, and phone-shaped on wide screens.
+Widget buildAppShell(BuildContext context, Widget? child) {
+  return Directionality(
+    textDirection: TextDirection.rtl,
+    child: AppViewportFrame(child: child!),
+  );
 }

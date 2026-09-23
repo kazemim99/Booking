@@ -213,6 +213,48 @@ incognito window. Now:
 A manual web build must run `bash tool/cache_bust_web.sh build/web` before upload, or the site
 references `main.dart.js` through a bootstrap that still works but caches nothing specially.
 
+### Customer web app delivery (customer.nahalkmi.ir)
+
+The customer app (`booksy-customer-app`, Flutter web) is served by host nginx from
+`/var/www/booksy-customer` through `deployment/nginx/booksy-customer.conf`, with the same content-hashed
+entry file and cache headers as the provider app above. Measured 2026-09-23, the first visit was a blank
+white page for seconds: `main.dart.<hash>.js` (3.9 MB) went out **uncompressed** (the vhost had no
+`gzip_types`, and nginx compresses only `text/html` by default) and CanvasKit (2.3 MB) came from
+`www.gstatic.com`. Since then:
+
+- `web/index.html` paints a Persian splash from the page alone, removed on Flutter's first frame.
+- `web/flutter_bootstrap.js` (a build template) passes `canvasKitBaseUrl: "canvaskit/"`, so CanvasKit
+  loads from the site's own `canvaskit/` folder, which `flutter build web` already ships.
+- CI (`build-customer-web`) runs `tool/precompress_web.sh build/web` right after the cache-bust step: a
+  `gzip -9` copy (`.gz`) next to every `.js/.wasm/.json/.css/.html/.otf/.ttf/.svg` file (the entry file
+  3.9 MB → 1.1 MB, `canvaskit.wasm` 7.2 MB → 2.9 MB).
+- The vhost's 443 block sets `gzip_static on` (serve those `.gz` files as is) and `gzip on` with
+  `gzip_types` for JS, CSS, JSON, the manifest, wasm, SVG and fonts. The cache headers and the SPA
+  fallback are unchanged.
+
+**One-time root step to install the vhost** (the deploy user has no root; the deploy job only copies
+files, so until this runs the `.gz` files sit unused and nothing breaks). From a checkout on the box, as root:
+
+```bash
+# certbot may have edited the live file: compare first, and carry any server-only line into the repo copy
+diff /etc/nginx/sites-available/booksy-customer.conf deployment/nginx/booksy-customer.conf
+cp /etc/nginx/sites-available/booksy-customer.conf /root/booksy-customer.conf.bak-$(date +%F)
+cp deployment/nginx/booksy-customer.conf /etc/nginx/sites-available/booksy-customer.conf
+nginx -t && systemctl reload nginx    # a failed -t changes nothing; the other sites stay up
+```
+
+Check it from anywhere (the entry name comes from the live `flutter_bootstrap.js`):
+
+```bash
+entry=$(curl -s https://customer.nahalkmi.ir/flutter_bootstrap.js | grep -o 'main\.dart\.[0-9a-f]*\.js' | head -1)
+curl -s -o /dev/null -D - -H 'Accept-Encoding: gzip' "https://customer.nahalkmi.ir/$entry" | grep -iE 'content-encoding|content-length|cache-control'
+# expect: content-encoding: gzip, content-length ~1.1 MB (not 3.9 MB), cache-control ... immutable
+curl -s -o /dev/null -D - -H 'Accept-Encoding: gzip' https://customer.nahalkmi.ir/canvaskit/canvaskit.wasm | grep -i content-encoding
+```
+
+To roll back, copy the `.bak` file back and `nginx -t && systemctl reload nginx`. The app itself needs no
+rollback: without the vhost change the same bundle is served uncompressed, as before.
+
 ### Outbound services the API depends on
 
 - **Nominatim** (`nominatim.openstreetmap.org`) — place search and reverse geocoding for the map
