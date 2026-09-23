@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:booksy_customer_app/core/errors/failures.dart';
 import 'package:booksy_customer_app/core/location/geocoding_service.dart';
 import 'package:booksy_customer_app/core/location/location_service.dart';
@@ -52,6 +54,42 @@ void main() {
   });
 
   group('start', () {
+    // QA walkthrough 2026-09-22: "the first time the map opens it does not load; a few seconds later it brings
+    // سالن نهال". The screen waited for the device position before asking for anything, and on the web that wait
+    // is the permission prompt or an IP lookup.
+    test('shows the launch city salons while the position is still being resolved', () async {
+      location.pending = Completer<LocationResult>();
+      repository.result = Right([provider('a')]);
+
+      final cubit = build();
+      final starting = cubit.start();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(cubit.state.status, MapDiscoveryStatus.loaded);
+      expect(cubit.state.providers, hasLength(1), reason: 'the map is useful before the fix arrives');
+      expect(cubit.state.latitude, parsabadLat);
+
+      location.answer(const LocationSuccess(39.70, 47.95, accuracyMeters: 30));
+      await starting;
+
+      expect(cubit.state.latitude, 39.70, reason: 're-centres once the real position is known');
+      expect(repository.lastLatitude, 39.70);
+      await cubit.close();
+    });
+
+    test('a coarse fix does not drag the map to another city', () async {
+      // An IP fix behind a VPN reports tens of kilometres of accuracy.
+      location.result = const LocationSuccess(25.2, 55.3, accuracyMeters: 50000);
+      repository.result = Right([provider('a')]);
+
+      final cubit = build();
+      await cubit.start();
+
+      expect(cubit.state.latitude, parsabadLat);
+      expect(cubit.state.notice, MapNotice.locationImprecise);
+      await cubit.close();
+    });
+
     test('centres on the device position and loads providers around it', () async {
       location.result = const LocationSuccess(39.70, 47.95);
       repository.result = Right([provider('a'), provider('b')]);
@@ -397,8 +435,17 @@ class _FakeRepository implements SearchRepository {
 class _FakeLocationService implements LocationService {
   LocationResult result = const LocationPermissionDenied();
 
+  /// When set, `currentPosition` waits for [answer] — how a browser behaves while the person decides, or while
+  /// an IP lookup runs.
+  Completer<LocationResult>? pending;
+
+  void answer(LocationResult result) => pending!.complete(result);
+
   @override
-  Future<LocationResult> currentPosition() async => result;
+  Future<LocationResult> currentPosition() {
+    final waiting = pending;
+    return waiting == null ? Future.value(result) : waiting.future;
+  }
 }
 
 class _FakeGeocodingService implements GeocodingService {

@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:booksy_customer_app/core/constants/app_strings.dart';
 import 'package:booksy_customer_app/core/errors/failures.dart';
+import 'package:booksy_customer_app/features/booking/domain/entities/booking_entities.dart';
 import 'package:booksy_customer_app/features/booking/domain/repositories/booking_repository.dart';
 import 'package:booksy_customer_app/features/reviews/domain/entities/review.dart';
 import 'package:booksy_customer_app/features/reviews/domain/repositories/review_repository.dart';
@@ -198,6 +201,23 @@ void main() {
     });
   });
 
+  group('opening a salon', () {
+    test('asks for the profile and the reviews at the same time', () async {
+      // The reviews used to be requested only after the profile came back, so the section filled a whole
+      // round-trip later than it had to (QA walkthrough 2026-09-22).
+      final reviews = _FakeReviews()..listing = const ProviderReviews(totalReviews: 0);
+      final booking = _SlowBookings();
+      final cubit = ProviderDetailCubit(booking, reviewRepository: reviews);
+
+      final loading = cubit.load('p1');
+      await Future<void>.delayed(Duration.zero);
+      expect(reviews.listingCalls, 1, reason: 'asked before the profile answered');
+
+      booking.answer();
+      await loading;
+    });
+  });
+
   group('my reviews', () {
     MyReview mine(
       String id,
@@ -288,6 +308,27 @@ class _NoBookings implements BookingRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+/// A profile fetch that answers only when the test says so.
+class _SlowBookings implements BookingRepository {
+  final _completer = Completer<Either<Failure, ProviderDetail>>();
+
+  void answer() => _completer.complete(const Right(ProviderDetail(
+        id: 'p1',
+        businessName: 'سالن نهال',
+        averageRating: 0,
+        totalReviews: 0,
+        businessHours: [],
+        services: [],
+        staff: [],
+      )));
+
+  @override
+  Future<Either<Failure, ProviderDetail>> getProviderDetail(String id) => _completer.future;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 class _FakeReviews implements ReviewRepository {
   ProviderReviews listing = const ProviderReviews();
   ReviewVoteResult? voteResult;
@@ -296,9 +337,13 @@ class _FakeReviews implements ReviewRepository {
   Failure? mineFailure;
   final votes = <(String, bool)>[];
 
+  var listingCalls = 0;
+
   @override
-  Future<Either<Failure, ProviderReviews>> getProviderReviews(String providerId) async =>
-      Right(listing);
+  Future<Either<Failure, ProviderReviews>> getProviderReviews(String providerId) async {
+    listingCalls++;
+    return Right(listing);
+  }
 
   @override
   Future<Either<Failure, ReviewVoteResult>> vote(String reviewId, bool isHelpful) async {

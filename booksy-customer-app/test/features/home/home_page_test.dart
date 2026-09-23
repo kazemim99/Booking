@@ -439,9 +439,11 @@ void main() {
 
       expect(find.text(AppStrings.nearestTitle), findsOneWidget);
       expect(find.byType(NearbyProviderCard), findsNWidgets(2));
-      expect(find.text(AppStrings.viewProfile), findsNWidgets(2));
+      // The card opens the salon by itself. The full-width "مشاهده پروفایل" button it used to repeat on every
+      // card was the biggest thing on it and said nothing the card did not (QA walkthrough 2026-09-22).
+      expect(find.text(AppStrings.viewProfile), findsNothing);
 
-      await tester.tap(find.byKey(const Key('home-nearby-profile-p1')));
+      await tester.tap(find.byType(NearbyProviderCard).first);
       await tester.pumpAndSettle();
       expect(find.text('provider-detail'), findsOneWidget);
     });

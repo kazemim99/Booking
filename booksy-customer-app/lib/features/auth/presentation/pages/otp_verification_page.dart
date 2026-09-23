@@ -8,6 +8,7 @@ import '../../../../config/routes/app_router.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/utils/person_name.dart';
+import '../../../../core/widgets/success_check.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
@@ -97,7 +98,8 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
         child: BlocListener<AuthBloc, AuthState>(
           listener: (context, state) {
             if (state is Authenticated) {
-              AppSnackbar.success(context, AppStrings.loginSuccess);
+              // A quiet tick rather than a toast: the screen is about to change under it anyway.
+              SuccessCheck.show(context);
 
               // Navigate explicitly rather than leaving it to the router's top-level `redirect`.
               //

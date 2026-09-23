@@ -39,6 +39,10 @@ class ProviderDetailCubit extends Cubit<ProviderDetailState> {
 
   Future<void> load(String providerId) async {
     emit(const ProviderDetailState());
+    // Both requests leave together. The reviews used to wait for the profile to come back first, so the section
+    // filled a whole round-trip after the page did — on a slow connection that is the wait the salon's own
+    // reviewer complained about (QA walkthrough 2026-09-22).
+    final reviewsInFlight = reviewRepository?.getProviderReviews(providerId);
     final result = await repository.getProviderDetail(providerId);
     result.fold(
       (failure) => emit(ProviderDetailState(
@@ -51,8 +55,16 @@ class ProviderDetailCubit extends Cubit<ProviderDetailState> {
         reviewsLoading: reviewRepository != null,
       )),
     );
-    if (state.status == ProviderDetailStatus.loaded) {
-      await loadReviews(providerId);
+    if (state.status == ProviderDetailStatus.loaded && reviewsInFlight != null) {
+      final reviews = await reviewsInFlight;
+      if (isClosed) return;
+      emit(ProviderDetailState(
+        status: state.status,
+        provider: state.provider,
+        errorMessage: state.errorMessage,
+        reviews: reviews.fold((_) => null, (r) => r),
+        reviewsLoading: false,
+      ));
     }
   }
 

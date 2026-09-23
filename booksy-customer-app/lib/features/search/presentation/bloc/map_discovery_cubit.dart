@@ -162,12 +162,24 @@ class MapDiscoveryCubit extends Cubit<MapDiscoveryState> {
     String fallbackAreaLabel = '',
   }) : super(MapDiscoveryState(areaLabel: fallbackAreaLabel));
 
-  /// First load: try the device position, fall back to the launch city, then
-  /// query around whichever centre was resolved.
+  /// First load, in two steps: show the launch city's salons at once, then re-centre if the device position
+  /// turns out to be somewhere else.
+  ///
+  /// It used to wait for the position before asking for anything, and on the web that wait is the permission
+  /// prompt or an IP lookup — seconds of empty map before the first salon appeared (QA walkthrough 2026-09-22).
   Future<void> start() async {
-    final location = await locationService.currentPosition();
+    final resolving = locationService.currentPosition();
+    await _loadFallback(MapNotice.none);
+
+    final location = await resolving;
     switch (location) {
-      case LocationSuccess(:final latitude, :final longitude):
+      case LocationSuccess(:final latitude, :final longitude, :final accuracyMeters):
+        // A fix this coarse is the network's guess, not the customer's street; moving the map to it lands them
+        // in another city (measured: a VPN in Dubai while standing in پارس‌آباد).
+        if (accuracyMeters != null && accuracyMeters > maxTrustedAccuracyMeters) {
+          emit(state.copyWith(notice: MapNotice.locationImprecise));
+          return;
+        }
         await _load(
           latitude: latitude,
           longitude: longitude,
@@ -175,11 +187,11 @@ class MapDiscoveryCubit extends Cubit<MapDiscoveryState> {
           moveCamera: true,
         );
       case LocationPermissionDenied():
-        await _loadFallback(MapNotice.permissionDenied);
+        emit(state.copyWith(notice: MapNotice.permissionDenied));
       case LocationServiceDisabled():
-        await _loadFallback(MapNotice.serviceDisabled);
+        emit(state.copyWith(notice: MapNotice.serviceDisabled));
       case LocationError():
-        await _loadFallback(MapNotice.locationUnavailable);
+        emit(state.copyWith(notice: MapNotice.locationUnavailable));
     }
   }
 

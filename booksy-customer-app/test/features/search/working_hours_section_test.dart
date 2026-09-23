@@ -44,6 +44,26 @@ List<BusinessHour> _parsed() => BookingRepositoryImpl.parseBusinessHours([
       },
     ]);
 
+/// The same Tuesday, with the salon shut 13:00–14:00 for its break.
+List<BusinessHour> _parsedWithBreak() => BookingRepositoryImpl.parseBusinessHours([
+      {
+        'dayOfWeek': 2,
+        'isOpen': true,
+        'openTimeHours': 9,
+        'openTimeMinutes': 0,
+        'closeTimeHours': 18,
+        'closeTimeMinutes': 30,
+        'breaks': [
+          {
+            'startTimeHours': 13,
+            'startTimeMinutes': 0,
+            'endTimeHours': 14,
+            'endTimeMinutes': 0,
+          },
+        ],
+      },
+    ]);
+
 /// 2026-08-11 is a Tuesday; 2026-08-14 a Friday; 2026-08-15 a Saturday.
 DateTime _tuesdayAt(int hour, [int minute = 0]) =>
     DateTime(2026, 8, 11, hour, minute);
@@ -162,6 +182,40 @@ void main() {
         tester.element(find.text(AppStrings.workingHoursTitle)),
       );
       expect(direction, TextDirection.rtl);
+    });
+  });
+
+  // QA walkthrough 2026-09-22: "it says open — it might be the break time; put the break here too". A customer
+  // who walks in during it finds the door locked, so "باز است" during a break is simply wrong.
+  group('a salon on its break', () {
+    test('is not open while the break lasts', () {
+      expect(WorkingHoursSection.isOpenNow(_parsedWithBreak(), _tuesdayAt(13, 30)), isFalse);
+      expect(WorkingHoursSection.isOpenNow(_parsedWithBreak(), _tuesdayAt(13)), isFalse);
+    });
+
+    test('is open on either side of it', () {
+      expect(WorkingHoursSection.isOpenNow(_parsedWithBreak(), _tuesdayAt(12, 59)), isTrue);
+      expect(WorkingHoursSection.isOpenNow(_parsedWithBreak(), _tuesdayAt(14)), isTrue);
+    });
+
+    testWidgets('says so at the top, where the badge is', (tester) async {
+      await tester.pumpWidget(_wrap(WorkingHoursSection(
+        hours: _parsedWithBreak(),
+        now: _tuesdayAt(13, 30),
+      )));
+
+      expect(find.byKey(const Key('provider-on-break')), findsOneWidget);
+      expect(find.text(AppStrings.openNow), findsNothing);
+    });
+
+    testWidgets('an open salon shows when the break is today', (tester) async {
+      await tester.pumpWidget(_wrap(WorkingHoursSection(
+        hours: _parsedWithBreak(),
+        now: _tuesdayAt(10),
+      )));
+
+      expect(find.text(AppStrings.openNow), findsOneWidget);
+      expect(find.byKey(const Key('provider-today-break')), findsOneWidget);
     });
   });
 }

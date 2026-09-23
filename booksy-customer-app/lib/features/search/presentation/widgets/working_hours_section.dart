@@ -48,11 +48,40 @@ class WorkingHoursSection extends StatelessWidget {
     return buffer.toString();
   }
 
+  /// Today's row, or null when it cannot be told.
+  static BusinessHour? _today(List<BusinessHour> hours, DateTime when) {
+    final todayName = _weekdayNames[when.weekday];
+    if (todayName == null) return null;
+
+    final target = _normalize(todayName);
+    for (final hour in hours) {
+      if (_normalize(hour.dayOfWeek) == target) return hour;
+    }
+    return null;
+  }
+
+  /// The break today's row is inside at [when], if any — a salon on its break has the door locked, so it is
+  /// not "باز است" (QA walkthrough 2026-09-22).
+  @visibleForTesting
+  static BusinessBreak? breakAt(List<BusinessHour> hours, DateTime when) {
+    final today = _today(hours, when);
+    if (today == null || today.isClosed) return null;
+
+    final nowMinutes = when.hour * 60 + when.minute;
+    for (final rest in today.breaks) {
+      final from = _minutes(rest.startTime);
+      final to = _minutes(rest.endTime);
+      if (from == null || to == null) continue;
+      if (nowMinutes >= from && nowMinutes < to) return rest;
+    }
+    return null;
+  }
+
   /// Whether the provider is open at [when].
   ///
   /// Returns `null` when it cannot be told — today's row is missing, or the row
   /// is open but carries no times. Callers must show no badge in that case
-  /// rather than guessing "closed".
+  /// rather than guessing "closed". A salon inside one of today's breaks is NOT open.
   @visibleForTesting
   static bool? isOpenNow(List<BusinessHour> hours, DateTime when) {
     final todayName = _weekdayNames[when.weekday];
@@ -75,10 +104,11 @@ class WorkingHoursSection extends StatelessWidget {
 
     final nowMinutes = when.hour * 60 + when.minute;
     // A close time at or before the open time means the day runs past midnight.
-    if (close <= open) {
-      return nowMinutes >= open || nowMinutes < close;
-    }
-    return nowMinutes >= open && nowMinutes < close;
+    final withinHours = close <= open
+        ? nowMinutes >= open || nowMinutes < close
+        : nowMinutes >= open && nowMinutes < close;
+
+    return withinHours && breakAt(hours, when) == null;
   }
 
   /// `"09:30"` → 570. Null for anything that is not `HH:mm`.
@@ -95,7 +125,10 @@ class WorkingHoursSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final open = isOpenNow(hours, now ?? DateTime.now());
+    final at = now ?? DateTime.now();
+    final open = isOpenNow(hours, at);
+    final onBreak = breakAt(hours, at);
+    final todaysBreak = _today(hours, at)?.breaks.firstOrNull;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,9 +141,29 @@ class WorkingHoursSection extends StatelessWidget {
                 style: theme.textTheme.titleLarge,
               ),
             ),
-            if (open == true) const _OpenNowBadge(),
+            if (onBreak != null)
+              const _StatusBadge(
+                key: Key('provider-on-break'),
+                label: AppStrings.onBreakNow,
+                background: AppColors.warningTint,
+                foreground: AppColors.warningText,
+              )
+            else if (open == true)
+              const _OpenNowBadge(),
           ],
         ),
+        // The break is part of today's hours, not a detail buried in the table: someone deciding whether to
+        // walk over now needs it.
+        if (onBreak == null && todaysBreak != null)
+          Padding(
+            key: const Key('provider-today-break'),
+            padding: const EdgeInsets.only(top: AppSpacing.xxs),
+            child: Text(
+              AppStrings.todayBreak(todaysBreak.startTime, todaysBreak.endTime),
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ),
         const SizedBox(height: AppSpacing.xs),
         for (final entry in group(hours))
           Padding(
@@ -276,4 +329,49 @@ class DayAt {
   final String name;
 
   const DayAt(this.position, this.name);
+}
+
+/// A small pill in the hours header — the "open now" badge's shape, in whatever colours the status calls for.
+class _StatusBadge extends StatelessWidget {
+  final String label;
+  final Color background;
+  final Color foreground;
+
+  const _StatusBadge({
+    super.key,
+    required this.label,
+    required this.background,
+    required this.foreground,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: label,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xs,
+          vertical: AppSpacing.xxs,
+        ),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(AppRadius.full),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.schedule, size: AppIconSize.sm, color: foreground),
+            const SizedBox(width: AppSpacing.xxs),
+            Text(
+              label,
+              style: AppTextStyles.small.copyWith(
+                color: foreground,
+                fontWeight: AppTextStyles.semibold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

@@ -206,6 +206,16 @@ class _ProfileView extends StatelessWidget {
                           : () => _editProfile(context),
                     ),
                     const Divider(),
+                    // The bell lives in the Home chrome only, so from any other tab there was no way to reach
+                    // the inbox at all — "where do I see a notification if one arrives?" (QA 2026-09-22).
+                    ListTile(
+                      key: const Key('profile-notifications'),
+                      leading: const Icon(Icons.notifications_none),
+                      title: const Text(AppStrings.notificationsTitle),
+                      trailing: const ForwardChevron(),
+                      onTap: () => context.push(Routes.notifications),
+                    ),
+                    const Divider(),
                     ListTile(
                       key: const Key('profile-my-reviews'),
                       leading: const Icon(Icons.rate_review_outlined),

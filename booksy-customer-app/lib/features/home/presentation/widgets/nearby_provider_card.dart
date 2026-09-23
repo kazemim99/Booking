@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../config/routes/app_router.dart';
 import '../../../../config/theme/app_tokens.dart';
-import '../../../../core/constants/app_strings.dart';
+import '../../../../core/widgets/forward_chevron.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../domain/entities/provider_summary.dart';
 
@@ -102,16 +102,14 @@ class NearbyProviderCard extends StatelessWidget {
                     ],
                   ),
                 ],
-                const SizedBox(height: AppSpacing.xs),
-                AppButton.secondary(
-                  key: Key('home-nearby-profile-${provider.id}'),
-                  label: AppStrings.viewProfile,
-                  onPressed: () =>
-                      context.push(Routes.providerDetail(provider.id)),
-                ),
+                // No "مشاهده پروفایل" button: the whole card already opens the salon, and a full-width button
+                // repeated on every card ate the room the rating and the meta line need (QA 2026-09-22). The
+                // chevron at the end of the row says the card opens; it mirrors itself in RTL.
+                const SizedBox(height: AppSpacing.xxs),
               ],
             ),
           ),
+          ForwardChevron(color: theme.colorScheme.onSurfaceVariant),
         ],
       ),
     );

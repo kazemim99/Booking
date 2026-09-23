@@ -242,6 +242,8 @@ class AppStrings {
   static const String closedDay = 'تعطیل';
   static const String contactAndLocationTitle = 'تماس و موقعیت';
   static const String breakTimeLabel = 'استراحت';
+  static const String onBreakNow = 'در زمان استراحت';
+  static String todayBreak(String from, String to) => 'استراحت امروز: $from تا $to';
   static const String mapLocationImpreciseNotice =
       'موقعیت دقیق شما به دست نیامد (اگر VPN روشن است، موقعیت کشور دیگری خوانده می‌شود). نام شهر یا محله را جستجو کنید.';
   // Asking a new customer for their name (QA walkthrough 2026-09-22): sign-up is a phone number only, so the
