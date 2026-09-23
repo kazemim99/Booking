@@ -68,19 +68,23 @@ class AppointmentDetailCubit extends Cubit<AppointmentDetailState> {
       : super(const AppointmentDetailState());
 
   Future<void> load() async {
-    emit(const AppointmentDetailState());
+    // A review saved in this session outlives a reload (retry): the
+    // server's copy may still say canReview, and it refuses a second one.
+    final reviewed = state.reviewed;
+    emit(AppointmentDetailState(reviewed: reviewed));
     final (booking, failure) = await _find();
     if (isClosed) return;
     if (booking != null) {
       emit(AppointmentDetailState(
         status: AppointmentDetailStatus.loaded,
         booking: booking,
-        reviewed: state.reviewed,
+        reviewed: reviewed,
       ));
     } else {
       emit(AppointmentDetailState(
         status: AppointmentDetailStatus.error,
         errorMessage: _messageFor(failure),
+        reviewed: reviewed,
       ));
     }
   }

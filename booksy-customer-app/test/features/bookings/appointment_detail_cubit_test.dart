@@ -138,6 +138,41 @@ void main() {
     await cubit.close();
   });
 
+  test('a review saved in this session stays saved when the booking is read again', () async {
+    // The server's copy can still say canReview for a moment after the review is saved.
+    final repo = FakeBookings(past: [fakeBooking('b0', status: 'Completed')]);
+    final cubit = AppointmentDetailCubit(repo, 'b0')..load();
+    await settled(cubit);
+    cubit.reviewed();
+
+    await cubit.load();
+
+    expect(cubit.state.status, AppointmentDetailStatus.loaded);
+    expect(cubit.state.reviewed, isTrue);
+    expect(cubit.state.canWriteReview, isFalse);
+    await cubit.close();
+  });
+
+  test('a review saved in this session survives a failed read and its retry', () async {
+    final repo = FakeBookings(past: [fakeBooking('b0', status: 'Completed')]);
+    final cubit = AppointmentDetailCubit(repo, 'b0')..load();
+    await settled(cubit);
+    cubit.reviewed();
+
+    repo
+      ..listFailure = const NetworkFailure('offline')
+      ..byIdFailure = const NetworkFailure('offline');
+    await cubit.load();
+    expect(cubit.state.status, AppointmentDetailStatus.error);
+    repo
+      ..listFailure = null
+      ..byIdFailure = null;
+    await cubit.load();
+
+    expect(cubit.state.canWriteReview, isFalse);
+    await cubit.close();
+  });
+
   test('the review action follows the booking\'s canReview', () async {
     final repo = FakeBookings(past: [fakeBooking('b0', status: 'Completed', canReview: false)]);
     final cubit = AppointmentDetailCubit(repo, 'b0')..load();
