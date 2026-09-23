@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// Escapes are spelled out here on purpose: the separator and a comma look alike in most editors,
 /// which is how a wrong one would slip past review.
 void main() {
-  const sep = '٬';
+  const sep = '\u066C';
 
   test('formatNumber groups in threes with U+066C and Persian digits', () {
     expect(PersianFormatter.formatNumber(1234567), '۱$sep۲۳۴$sep۵۶۷');
@@ -24,8 +24,8 @@ void main() {
       PriceFormatter.formatFrom(80000),
       PriceFormatter.formatRange(100000, 500000),
     ]) {
-      expect(s, isNot(contains(',')), reason: s);
-      expect(s, isNot(contains('،')), reason: s);
+      expect(s, isNot(contains('\u002C')), reason: s);
+      expect(s, isNot(contains('\u060C')), reason: s);
       expect(s, contains(sep), reason: s);
     }
   });

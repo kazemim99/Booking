@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/routes/app_router.dart';
+import '../../../../config/theme/app_text_styles.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/widgets/forward_chevron.dart';
 import '../../../../core/widgets/widgets.dart';
@@ -41,14 +42,19 @@ class MapProviderCard extends StatelessWidget {
   /// lines, the address, and room for the raised card's shadow. Never shorter
   /// than the cover image. The carousel is a [PageView], which needs a fixed
   /// height, so the band grows with the text instead of clipping the card.
+  ///
+  /// Line heights come from the text tokens the card is drawn with (the
+  /// theme's `titleMedium` is [AppTextStyles.bodySemibold], its `bodySmall`
+  /// is [AppTextStyles.small]), so a token change moves the band with it
+  /// instead of silently clipping the card.
   static double bandHeight(TextScaler textScaler) {
-    double line(double fontSize, double height) =>
-        textScaler.scale(fontSize) * height;
+    double line(TextStyle style) =>
+        textScaler.scale(style.fontSize!) * style.height!;
     const chrome = 2 * AppSpacing.sm + 2 * 2; // padding + selected border
     const shadow = AppSpacing.xs;
-    final name = line(16, 1.5);
-    final meta = 3 * line(12, 1.3) + 2 * AppSpacing.xxs;
-    final address = line(12, 1.3);
+    final name = line(AppTextStyles.bodySemibold);
+    final meta = 3 * line(AppTextStyles.small) + 2 * AppSpacing.xxs;
+    final address = line(AppTextStyles.small);
     final text = name + AppSpacing.xxs + meta + AppSpacing.xxs + address;
     return (chrome + math.max(_coverSize, text) + shadow).ceilToDouble();
   }

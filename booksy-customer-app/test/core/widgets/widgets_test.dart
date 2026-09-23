@@ -5,9 +5,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:booksy_customer_app/config/theme/app_colors.dart';
 import 'package:booksy_customer_app/config/theme/app_theme.dart';
 import 'package:booksy_customer_app/core/constants/app_strings.dart';
 import 'package:booksy_customer_app/core/widgets/widgets.dart';
+
+import '../../helpers/contrast.dart';
 
 Widget _wrap(Widget child, {double textScale = 1.0}) {
   return MaterialApp(
@@ -71,6 +74,13 @@ void main() {
       final style = tester.widget<ElevatedButton>(find.byType(ElevatedButton)).style!;
       expect(style.backgroundColor!.resolve({}), AppTheme.light.colorScheme.error);
       expect(style.foregroundColor!.resolve({}), AppTheme.light.colorScheme.onError);
+      // Pinning the token alone would also pass with the old coral (#FF6171, 2.9:1 under white); the label must
+      // actually be readable on the fill.
+      expect(style.backgroundColor!.resolve({}), AppColors.errorText);
+      expect(
+        contrastRatio(style.foregroundColor!.resolve({})!, style.backgroundColor!.resolve({})!),
+        greaterThanOrEqualTo(kAaText),
+      );
     });
 
     testWidgets('renders without overflow at 1.3x text scale', (tester) async {

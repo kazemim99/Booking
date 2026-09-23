@@ -130,6 +130,7 @@ class SearchRemoteDataSource {
       message: 'Failed to load providers by location',
     );
   }
+
   /// How soon each of these salons can be booked: per salon, the first day
   /// with free times (`date`) and how many there are (`freeSlotCount`).
   ///
