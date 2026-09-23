@@ -38,6 +38,19 @@ void main() {
     await cubit.close();
   });
 
+  // Review of the merged branch: rescheduling follows the booking flow's rules — the strip starts on the cubit's
+  // today (not the device clock) and the salon's closed weekdays are known.
+  test("the day it opened on and the salon's weekly hours are known to the screen", () async {
+    const friday = BusinessHour(dayOfWeek: 'جمعه', isClosed: true);
+    final cubit = cubitOver(FakeSlots(businessHours: const [friday]));
+
+    final state = await settled(cubit);
+
+    expect(cubit.today, DateTime(2026, 9, 23));
+    expect(state.businessHours, const [friday]);
+    await cubit.close();
+  });
+
   test('the day strip covers the salon\'s booking window', () async {
     final cubit = cubitOver(FakeSlots(maxAdvanceBookingDays: 5));
 

@@ -9,6 +9,9 @@ import 'package:booksy_customer_app/core/di/injection.dart';
 import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:booksy_customer_app/features/bookings/presentation/bloc/appointments_bloc.dart';
 import 'package:booksy_customer_app/features/bookings/presentation/pages/appointments_page.dart';
+import 'package:booksy_customer_app/features/bookings/presentation/pages/reschedule_page.dart';
+import 'package:booksy_customer_app/features/booking/domain/repositories/booking_repository.dart';
+import 'package:booksy_customer_app/features/bookings/domain/repositories/bookings_repository.dart';
 
 import '../../helpers/fake_auth_bloc.dart';
 import 'bookings_fakes.dart';
@@ -63,7 +66,7 @@ Widget _shellApp() {
     initialLocation: '/appointments',
     routes: [
       StatefulShellRoute.indexedStack(
-        builder: (context, state, shell) => shell,
+        builder: (context, state, shell) => Scaffold(body: shell, bottomNavigationBar: const Text('tab-bar')),
         branches: [
           StatefulShellBranch(routes: [
             GoRoute(path: '/home', builder: (context, state) => const Scaffold(body: Text('home'))),
@@ -268,6 +271,26 @@ void main() {
 
     expect(_bookings.listCalls, greaterThan(callsBefore));
     expect(find.text('کوتاهی مو'), findsOneWidget);
+  });
+
+  // Decision 4 (single-purpose tasks leave the tab shell), applied to rescheduling by the review of the merge.
+  testWidgets('reschedule from a card covers the tab bar', (tester) async {
+    _bookings.upcoming = [fakeBooking('b1', start: DateTime(2030, 1, 5, 16, 30))];
+    getIt
+      ..registerSingleton<BookingsRepository>(_bookings)
+      ..registerSingleton<BookingRepository>(FakeSlots());
+    tester.view.physicalSize = const Size(360 * 3, 640 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(_shellApp());
+    await _settle(tester);
+    expect(find.text('tab-bar'), findsOneWidget);
+
+    await tester.tap(find.text(AppStrings.rescheduleBooking));
+    await _settle(tester);
+
+    expect(find.byType(ReschedulePage), findsOneWidget);
+    expect(find.text('tab-bar'), findsNothing);
   });
 
   testWidgets('switching tabs without opening a booking does not re-read the list', (tester) async {

@@ -24,6 +24,10 @@ class RescheduleState extends Equatable {
   /// arrives (the customer booking window).
   final int maxAdvanceBookingDays;
 
+  /// The salon's weekly hours, from its profile — the day strip disables the weekdays it is closed, as the booking
+  /// flow's does. Empty until the profile arrives (no day is treated as closed).
+  final List<BusinessHour> businessHours;
+
   const RescheduleState({
     required this.status,
     required this.selectedDate,
@@ -32,6 +36,7 @@ class RescheduleState extends Equatable {
     this.errorMessage,
     this.slotsReason,
     this.maxAdvanceBookingDays = RescheduleCubit.defaultBookingWindowDays,
+    this.businessHours = const [],
   });
 
   RescheduleState copyWith({
@@ -42,6 +47,7 @@ class RescheduleState extends Equatable {
     String? errorMessage,
     String? Function()? slotsReason,
     int? maxAdvanceBookingDays,
+    List<BusinessHour>? businessHours,
   }) {
     return RescheduleState(
       status: status ?? this.status,
@@ -53,6 +59,7 @@ class RescheduleState extends Equatable {
       slotsReason: slotsReason != null ? slotsReason() : this.slotsReason,
       maxAdvanceBookingDays:
           maxAdvanceBookingDays ?? this.maxAdvanceBookingDays,
+      businessHours: businessHours ?? this.businessHours,
     );
   }
 
@@ -65,6 +72,7 @@ class RescheduleState extends Equatable {
         errorMessage,
         slotsReason,
         maxAdvanceBookingDays,
+        businessHours,
       ];
 }
 
@@ -79,6 +87,9 @@ class RescheduleCubit extends Cubit<RescheduleState> {
 
   /// The first day of the strip (the clock's day when the screen opened).
   late final DateTime _today;
+
+  /// The first day of the strip: the injected clock's day when the screen opened.
+  DateTime get today => _today;
 
   /// The customer booking window, used until the salon's own arrives.
   static const int defaultBookingWindowDays = 7;
@@ -109,11 +120,13 @@ class RescheduleCubit extends Cubit<RescheduleState> {
   Future<void> _loadBookingWindow() async {
     final result = await bookingRepository.getProviderDetail(booking.providerId);
     if (isClosed) return;
-    final days = result.fold((_) => null, (p) => p.maxAdvanceBookingDays);
-    if (days == null) return;
+    final provider = result.fold((_) => null, (p) => p);
+    if (provider == null) return;
+    final days = provider.maxAdvanceBookingDays;
 
     emit(state.copyWith(
       maxAdvanceBookingDays: days,
+      businessHours: provider.businessHours,
       errorMessage: state.errorMessage,
     ));
     final lastDay = DateTime(_today.year, _today.month, _today.day + days);

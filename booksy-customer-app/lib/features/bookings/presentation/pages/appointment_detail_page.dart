@@ -111,7 +111,8 @@ class _DetailContent extends StatelessWidget {
 
   Future<void> _reschedule(BuildContext context) async {
     final cubit = context.read<AppointmentDetailCubit>();
-    final newStartTime = await Navigator.of(context).push<DateTime>(
+    // On the root navigator: rescheduling is a single-purpose task and covers the tab bar, as booking does.
+    final newStartTime = await Navigator.of(context, rootNavigator: true).push<DateTime>(
       MaterialPageRoute(builder: (_) => ReschedulePage(booking: booking)),
     );
     if (newStartTime != null) await cubit.rescheduled(newStartTime);

@@ -210,7 +210,8 @@ class _AppointmentsViewState extends State<_AppointmentsView> {
     BookingSummary booking,
   ) async {
     final bloc = context.read<AppointmentsBloc>();
-    final newStartTime = await Navigator.of(context).push<DateTime>(
+    // On the root navigator: rescheduling is a single-purpose task and covers the tab bar, as booking does.
+    final newStartTime = await Navigator.of(context, rootNavigator: true).push<DateTime>(
       MaterialPageRoute(
         builder: (_) => ReschedulePage(booking: booking),
       ),

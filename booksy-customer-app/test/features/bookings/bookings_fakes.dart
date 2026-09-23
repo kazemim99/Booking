@@ -132,6 +132,7 @@ class FakeSlots implements BookingRepository {
 
   FakeSlots({
     int maxAdvanceBookingDays = 7,
+    List<BusinessHour> businessHours = const [],
     this.day = const DaySlots(),
     Failure? providerFailure,
   }) : provider = providerFailure != null
@@ -142,7 +143,7 @@ class FakeSlots implements BookingRepository {
                 averageRating: 0,
                 totalReviews: 0,
                 maxAdvanceBookingDays: maxAdvanceBookingDays,
-                businessHours: const [],
+                businessHours: businessHours,
                 services: const [],
                 staff: const [],
               ));

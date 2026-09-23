@@ -8,6 +8,7 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/utils/jalali_formatter.dart';
 import '../../../../core/widgets/widgets.dart';
+import '../../../booking/domain/business_days.dart';
 import '../../../booking/presentation/widgets/slot_picker.dart';
 import '../../domain/entities/booking_summary.dart';
 import '../bloc/reschedule_cubit.dart';
@@ -18,7 +19,10 @@ import '../bloc/reschedule_cubit.dart';
 class ReschedulePage extends StatelessWidget {
   final BookingSummary booking;
 
-  const ReschedulePage({super.key, required this.booking});
+  /// The clock the day strip starts from; the device clock unless a test fixes it.
+  final DateTime Function()? now;
+
+  const ReschedulePage({super.key, required this.booking, this.now});
 
   /// Height the header and slot picker need at 1x text; scaled with the
   /// text before it is compared with the screen.
@@ -31,13 +35,14 @@ class ReschedulePage extends StatelessWidget {
         bookingRepository: getIt(),
         bookingsRepository: getIt(),
         booking: booking,
+        now: now,
       ),
       child: BlocConsumer<RescheduleCubit, RescheduleState>(
         listenWhen: (prev, next) => prev.status != next.status,
         listener: (context, state) {
           if (state.status == RescheduleStatus.success) {
             AppSnackbar.success(context, AppStrings.rescheduleSuccess);
-            // Pushed with Navigator.push by both callers (list and detail).
+            // Pushed with Navigator.push, on the root navigator, by both callers (list and detail).
             Navigator.of(context).pop(state.selectedSlot!.startTime);
           } else if (state.status == RescheduleStatus.failure) {
             AppSnackbar.error(
@@ -109,6 +114,8 @@ class ReschedulePage extends StatelessWidget {
                       ),
                       Expanded(
                         child: SlotPicker(
+                          // The cubit's day, not the device clock's: the strip and the times asked for agree.
+                          today: cubit.today,
                           selectedDate: state.selectedDate,
                           onDateSelected: cubit.loadSlots,
                           status: switch (state.status) {
@@ -124,6 +131,8 @@ class ReschedulePage extends StatelessWidget {
                           onRetry: () => cubit.loadSlots(state.selectedDate),
                           // The booking flow's window: today plus the salon's days.
                           daysToShow: state.maxAdvanceBookingDays + 1,
+                          // As in the booking flow: the salon's closed weekdays cannot be picked.
+                          closedWeekdays: BusinessDays.closedWeekdays(state.businessHours),
                           emptyReason: state.slotsReason,
                         ),
                       ),

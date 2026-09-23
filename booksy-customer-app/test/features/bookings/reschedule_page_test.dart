@@ -23,7 +23,11 @@ void main() {
   setUpAll(loadVazir);
 
   setUp(() {
-    slots = FakeSlots(maxAdvanceBookingDays: 5, day: const DaySlots(reason: 'مجموعه در این روز تعطیل است.'));
+    slots = FakeSlots(
+      maxAdvanceBookingDays: 5,
+      businessHours: const [BusinessHour(dayOfWeek: 'جمعه', isClosed: true)],
+      day: const DaySlots(reason: 'مجموعه در این روز تعطیل است.'),
+    );
     getIt
       ..registerSingleton<BookingsRepository>(FakeBookings(upcoming: [booking]))
       ..registerSingleton<BookingRepository>(slots);
@@ -41,7 +45,7 @@ void main() {
         data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
         child: Directionality(textDirection: TextDirection.rtl, child: child!),
       ),
-      home: ReschedulePage(booking: booking),
+      home: ReschedulePage(booking: booking, now: () => DateTime(2026, 9, 23, 10, 15)),
     ));
     for (var i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 50));
@@ -58,6 +62,16 @@ void main() {
     await open(tester);
 
     expect(tester.widget<SlotPicker>(find.byType(SlotPicker)).daysToShow, 6);
+  });
+
+  // Review of the merged branch: the same rules as booking — the strip starts on the screen's own today, and the
+  // salon's closed weekdays cannot be picked.
+  testWidgets("the strip starts on the screen's today and marks the salon's closed weekdays", (tester) async {
+    await open(tester);
+
+    final picker = tester.widget<SlotPicker>(find.byType(SlotPicker));
+    expect(picker.today, DateTime(2026, 9, 23));
+    expect(picker.closedWeekdays, {DateTime.friday});
   });
 
   testWidgets("an empty day shows the salon's reason", (tester) async {

@@ -50,14 +50,22 @@ late FakeBookings _bookings;
 late FakeSlots _slots;
 late _FakeReviews _reviews;
 
-Widget _app(String bookingId, {double textScale = 1.0}) {
+Widget _app(String bookingId, {double textScale = 1.0, bool inTabs = false}) {
+  final detail = GoRoute(
+    path: '/appointments/:id',
+    builder: (context, state) => AppointmentDetailPage(bookingId: state.pathParameters['id']!),
+  );
   final router = GoRouter(
     initialLocation: '/appointments/$bookingId',
     routes: [
-      GoRoute(
-        path: '/appointments/:id',
-        builder: (context, state) => AppointmentDetailPage(bookingId: state.pathParameters['id']!),
-      ),
+      // In the app the detail is inside the tab shell, under the tab bar.
+      if (inTabs)
+        ShellRoute(
+          builder: (context, state, child) => Scaffold(body: child, bottomNavigationBar: const Text('tab-bar')),
+          routes: [detail],
+        )
+      else
+        detail,
       GoRoute(
         path: '/providers/:id',
         builder: (context, state) => Scaffold(body: Text('salon ${state.pathParameters['id']}')),
@@ -94,9 +102,15 @@ Future<void> _phone(WidgetTester tester, {double width = 360}) async {
   addTearDown(tester.view.reset);
 }
 
-Future<void> _open(WidgetTester tester, String id, {double textScale = 1.0, double width = 360}) async {
+Future<void> _open(
+  WidgetTester tester,
+  String id, {
+  double textScale = 1.0,
+  double width = 360,
+  bool inTabs = false,
+}) async {
   await _phone(tester, width: width);
-  await tester.pumpWidget(_app(id, textScale: textScale));
+  await tester.pumpWidget(_app(id, textScale: textScale, inTabs: inTabs));
   await _settle(tester);
 }
 
@@ -221,6 +235,19 @@ void main() {
       expect(find.byType(ReschedulePage), findsNothing);
       expect(find.text(JalaliFormatter.formatTime(newStart)), findsOneWidget);
       expect(find.text(JalaliFormatter.formatDate(newStart)), findsOneWidget);
+    });
+
+    // Decision 4 (single-purpose tasks leave the tab shell), applied to rescheduling by the review of the merge.
+    testWidgets('reschedule covers the tab bar', (tester) async {
+      _bookings.upcoming = [upcoming];
+      await _open(tester, 'b1', inTabs: true);
+      expect(find.text('tab-bar'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('appointment-reschedule')));
+      await _settle(tester);
+
+      expect(find.byType(ReschedulePage), findsOneWidget);
+      expect(find.text('tab-bar'), findsNothing);
     });
   });
 
