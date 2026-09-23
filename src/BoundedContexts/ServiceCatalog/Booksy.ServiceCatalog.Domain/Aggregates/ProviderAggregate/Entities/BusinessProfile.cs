@@ -62,6 +62,18 @@ namespace Booksy.ServiceCatalog.Domain.Entities
             };
         }
 
+        /// <summary>
+        /// Changes the name and description in place. Edits must never replace the profile: a new instance
+        /// carries an empty gallery, and persistence deletes every photo row missing from it — renaming a salon
+        /// used to remove all its photos (openspec/changes/_inline/salon-images-load).
+        /// </summary>
+        public void UpdateDetails(string businessName, string description)
+        {
+            BusinessName = businessName;
+            BusinessDescription = description;
+            LastUpdatedAt = DateTime.UtcNow;
+        }
+
         public void UpdateLogo(string logoUrl)
         {
             LogoUrl = logoUrl;

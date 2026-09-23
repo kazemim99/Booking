@@ -240,14 +240,13 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
 
         public void UpdateBusinessProfile(string businessName, string description, string? profileImageUrl)
         {
-            // Preserve existing LogoUrl and ProfileImageUrl when updating profile
-            var existingLogoUrl = Profile.LogoUrl;
-            var existingProfileImageUrl = Profile.ProfileImageUrl;
+            // In place, never a new BusinessProfile: that dropped the gallery, tags and social links, and the
+            // write repository then deleted every photo row (salon-images-load).
+            Profile.UpdateDetails(businessName, description);
 
             // Only update ProfileImageUrl if a new one is provided, otherwise keep existing
-            var updatedProfileImageUrl = profileImageUrl ?? existingProfileImageUrl;
-
-            Profile = BusinessProfile.Create(businessName, description, logoUrl: existingLogoUrl, profileImageUrl: updatedProfileImageUrl);
+            if (profileImageUrl is not null)
+                Profile.UpdateProfileImage(profileImageUrl);
 
             RaiseDomainEvent(new BusinessProfileUpdatedEvent(Id, businessName, description, DateTime.UtcNow));
         }
@@ -303,7 +302,10 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
 
             OwnerFirstName = ownerFirstName;
             OwnerLastName = ownerLastName;
-            Profile = BusinessProfile.Create(businessName, description, logoUrl);
+            // In place, so photos uploaded at a later step survive going back; an omitted logo keeps the stored one.
+            Profile.UpdateDetails(businessName, description);
+            if (logoUrl is not null)
+                Profile.UpdateLogo(logoUrl);
             PrimaryCategory = primaryCategory;
             ContactInfo = contactInfo;
             Address = address;
