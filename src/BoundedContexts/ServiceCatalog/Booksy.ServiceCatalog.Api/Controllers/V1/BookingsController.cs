@@ -286,6 +286,9 @@ public class BookingsController : ControllerBase
         [FromBody] ConfirmBookingRequest request,
         CancellationToken cancellationToken = default)
     {
+        if (!await CanManageBookingAsync(id, cancellationToken))
+            return Forbid();
+
         var command = new ConfirmBookingCommand(
             BookingId: id,
             PaymentIntentId: request.PaymentMethodId);
@@ -394,6 +397,9 @@ public class BookingsController : ControllerBase
         [FromBody] CompleteBookingRequest request,
         CancellationToken cancellationToken = default)
     {
+        if (!await CanManageBookingAsync(id, cancellationToken))
+            return Forbid();
+
         var command = new CompleteBookingCommand(
             BookingId: id,
             StaffNotes: request.CompletionNotes);
@@ -426,6 +432,9 @@ public class BookingsController : ControllerBase
         [FromBody] MarkNoShowRequest request,
         CancellationToken cancellationToken = default)
     {
+        if (!await CanManageBookingAsync(id, cancellationToken))
+            return Forbid();
+
         var command = new MarkNoShowCommand(
             BookingId: id,
             Notes: request.Notes);
@@ -458,6 +467,9 @@ public class BookingsController : ControllerBase
         [FromRoute] Guid staffId,
         CancellationToken cancellationToken = default)
     {
+        if (!await CanManageBookingAsync(id, cancellationToken))
+            return Forbid();
+
         var command = new AssignStaffToBookingCommand(
             BookingId: id,
             StaffId: staffId);
@@ -676,6 +688,27 @@ public class BookingsController : ControllerBase
     /// salon owner. Access now comes from an active membership of the salon, which is
     /// what the membership model made the source of truth.
     /// </remarks>
+    /// <summary>
+    /// Confirming, completing, marking a no-show or assigning staff is the salon's call on its OWN bookings. The
+    /// endpoints only required a provider token, so any salon's owner could act on another salon's booking (found
+    /// 2026-09-23 while wiring the customer's «تأیید شد» notice). Same rule as the salon's booking list:
+    /// <see cref="CanManageProvider"/> on the booking's salon. An unknown booking answers 403, not 404, so the
+    /// endpoint does not confirm which booking ids exist.
+    /// </summary>
+    private async Task<bool> CanManageBookingAsync(Guid bookingId, CancellationToken cancellationToken)
+    {
+        var booking = await _mediator.Send(new GetBookingDetailsQuery(BookingId: bookingId), cancellationToken);
+        if (booking is null)
+            return false;
+
+        if (await CanManageProvider(booking.ProviderId))
+            return true;
+
+        _logger.LogWarning("User {UserId} attempted to act on booking {BookingId} of provider {ProviderId} without permission",
+            GetCurrentUserId(), bookingId, booking.ProviderId);
+        return false;
+    }
+
     private async Task<bool> CanManageProvider(Guid providerId)
     {
         var currentUserId = GetCurrentUserId();
