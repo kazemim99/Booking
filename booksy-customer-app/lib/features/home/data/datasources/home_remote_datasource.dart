@@ -261,11 +261,12 @@ class HomeRemoteDataSource {
     );
   }
 
-  /// The ids of the customer's favourite salons.
+  /// The ids of the customer's favourite salons (the profile's heart).
   ///
-  /// Parsed by hand from `FavoriteProviderViewModel`, which carries only
-  /// `providerId`, `notes` and `addedAt` — [getFavoriteProviders]'s generated
-  /// parser also demands a `providerName` the server never sends.
+  /// The same endpoint as [getFavoriteProviders]: `FavoriteProviderViewModel`
+  /// rows now carry the salon's card (name, logo, city, rating) as well, but
+  /// the heart needs only `providerId`, so only that is read. The server lists
+  /// favourites of Active salons only.
   Future<Set<String>> getFavoriteProviderIds(String customerId) async {
     final response = await userManagementDio.get(
       ApiConstants.customerFavorites(customerId),
