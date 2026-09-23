@@ -1,4 +1,4 @@
-Status: ACTIVE
+Status: DONE
 Verify: FULL
 
 User report (2026-09-23 evening): a 5:12 screen recording (20:46–20:51 Tehran) of production BEFORE the
@@ -33,7 +33,8 @@ required at booking confirmation (the login stays phone-only). Each surface — 
 - [x] 12 Only the salon (owner / booking-managing member / admin) can confirm, complete, no-show or staff its bookings
 - [?] 13 DECISION: GET /providers/{id}/hierarchy/members only requires sign-in — any signed-in user can read any
       salon's member list WITH phone numbers. Restrict to the salon (CanManageProvider) and drop phones for others?
-- [ ] 11 FULL verify green; deploy after the user's go
+- [x] 11 FULL verify green
+- [?] 14 DECISION: deploy — push fix/qa-walkthrough-2026-09-23b to master (protected; the 3h30 display bug is live)
 
 ## Decisions
 
@@ -46,6 +47,11 @@ required at booking confirmation (the login stays phone-only). Each surface — 
   at booking confirmation, not at login.
 
 ## Log
+
+- 2026-09-24 FULL PASS (20 steps, 402 s): 1,306 unit/architecture, integration 828/828, Vue web + admin, customer 792,
+  salon 715. The run before failed one test — NotificationOutboxTests.Two_concurrent_sweeps… (intents left Claimed),
+  4/4 green alone and green in the runs either side; the same test flaked with 40P01 on 2026-09-23 before this change.
+  Flaky under parallel load, not a regression; worth its own fix.
 
 - 2026-09-23 6a done by an agent (c2f9900f.. cherry-picked): builds without the dart-defines are unchanged. Every hop of
   web push goes through Google (gstatic, googleapis, fcm) — often unreachable from Iran; the box itself may not reach
