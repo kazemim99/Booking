@@ -3,6 +3,9 @@
 // ========================================
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.ServiceCatalog.Application.Abstractions;
+using Booksy.ServiceCatalog.Domain.Repositories;
+using Booksy.UserManagement.Application.CQRS.Queries.Customer.GetCustomerFavoriteProviders;
 using Booksy.UserManagement.Domain.Repositories;
 using Microsoft.Extensions.Logging;
 
@@ -14,13 +17,19 @@ namespace Booksy.UserManagement.Application.CQRS.Queries.Customer.GetRecentlyVis
     public sealed class GetRecentlyVisitedProvidersQueryHandler : IQueryHandler<GetRecentlyVisitedProvidersQuery, List<RecentlyVisitedProviderViewModel>>
     {
         private readonly ICustomerRepository _customerRepository;
+        private readonly IProviderReadRepository _providers;
+        private readonly IUrlService _urls;
         private readonly ILogger<GetRecentlyVisitedProvidersQueryHandler> _logger;
 
         public GetRecentlyVisitedProvidersQueryHandler(
             ICustomerRepository customerRepository,
+            IProviderReadRepository providers,
+            IUrlService urls,
             ILogger<GetRecentlyVisitedProvidersQueryHandler> logger)
         {
             _customerRepository = customerRepository;
+            _providers = providers;
+            _urls = urls;
             _logger = logger;
         }
 
@@ -43,15 +52,44 @@ namespace Booksy.UserManagement.Application.CQRS.Queries.Customer.GetRecentlyVis
                     throw new InvalidOperationException($"Customer not found with ID: {request.CustomerId}");
                 }
 
-                // Get recently visited providers using the aggregate method
-                var recentlyVisited = customer.GetRecentlyVisitedProviders(request.Limit);
-
-                var result = recentlyVisited
-                    .Select(rv => new RecentlyVisitedProviderViewModel
+                // The whole stored history (the aggregate caps it), newest first, one row per salon.
+                // The limit is applied only after hidden salons are dropped, so a gone or inactive
+                // salon never costs the customer a row they could have seen.
+                var visits = customer.GetRecentlyVisitedProviders(int.MaxValue)
+                    .GroupBy(rv => rv.ProviderId)
+                    .Select(g => new
                     {
-                        ProviderId = rv.ProviderId,
-                        VisitedAt = rv.VisitedAt,
-                        ViewSource = rv.ViewSource
+                        Newest = g.OrderByDescending(rv => rv.VisitedAt).First(),
+                        Count = g.Count()
+                    })
+                    .OrderByDescending(v => v.Newest.VisitedAt)
+                    .ToList();
+
+                var salons = await SalonSummaryLookup.FindActiveAsync(
+                    _providers,
+                    _urls,
+                    visits.Select(v => v.Newest.ProviderId),
+                    cancellationToken);
+
+                var result = visits
+                    .Where(v => salons.ContainsKey(v.Newest.ProviderId))
+                    .Take(request.Limit)
+                    .Select(v =>
+                    {
+                        var salon = salons[v.Newest.ProviderId];
+                        return new RecentlyVisitedProviderViewModel
+                        {
+                            ProviderId = v.Newest.ProviderId,
+                            VisitedAt = v.Newest.VisitedAt,
+                            ViewSource = v.Newest.ViewSource,
+                            ProviderName = salon.Name,
+                            LogoUrl = salon.LogoUrl,
+                            City = salon.City,
+                            AverageRating = salon.AverageRating,
+                            TotalReviews = salon.TotalReviews,
+                            LastVisitedAt = v.Newest.VisitedAt,
+                            VisitCount = v.Count
+                        };
                     })
                     .ToList();
 

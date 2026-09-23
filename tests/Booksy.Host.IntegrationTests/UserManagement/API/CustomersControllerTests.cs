@@ -163,8 +163,15 @@ public class CustomersControllerTests : UserManagementIntegrationTestBase
     [Fact]
     public async Task GetFavoriteProviders_ShouldReturnAllFavorites()
     {
-        // Arrange
-        var customer = await CreateCustomerWithFavoritesAsync(favoriteCount: 3);
+        // Arrange — real Active salons: since customer-app-ux-review-fixes P1 the list carries each
+        // salon's name and leaves out ids that match no salon, so random ids would read back empty.
+        var customer = await CreateTestCustomerAsync();
+        for (var i = 1; i <= 3; i++)
+        {
+            var salon = await CustomerSalonSeeding.CreateActiveSalonAsync(Scope.ServiceProvider, $"Salon {i}");
+            customer.AddFavoriteProvider(salon.Id.Value, $"Favorite provider {i}");
+        }
+        await UpdateEntityAsync(customer);
         AuthenticateAsCustomer(customer);
 
         // Act
@@ -444,7 +451,8 @@ public class CustomersControllerTests : UserManagementIntegrationTestBase
     public async Task RecordProviderVisit_IsPersisted_AndListedByRecentlyVisited()
     {
         var customer = await CreateAndAuthenticateAsCustomerAsync();
-        var providerId = Guid.NewGuid();
+        // A real Active salon: the list leaves out ids that match no salon (customer-app-ux-review-fixes P1).
+        var providerId = (await CustomerSalonSeeding.CreateActiveSalonAsync(Scope.ServiceProvider, "Visited Salon")).Id.Value;
 
         var post = await Client.PostAsJsonAsync(
             $"/api/v1/customers/{customer.Id.Value}/recently-visited",
