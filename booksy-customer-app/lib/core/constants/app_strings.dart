@@ -328,4 +328,30 @@ class AppStrings {
   static String mapClusterLabel(String count) => '$count سالن';
   static String mapPinLabel(String name) => 'نشانگر $name';
   static const String mapProvidersCarouselLabel = 'فهرست سالن‌های روی نقشه';
+
+  // ---------------------------------------------------------------------
+  // UX review 2026-09-23 (openspec/changes/customer-app-ux-review-fixes).
+  // One block per slice so the slices never edit the same lines.
+  // ---------------------------------------------------------------------
+
+  // --- slice A: theme, navigation, formatting ---
+  // --- end of slice A ---
+
+  // --- slice B: web ---
+  // --- end of slice B ---
+
+  // --- slice C: salon profile ---
+  // --- end of slice C ---
+
+  // --- slice D: booking wizard ---
+  // --- end of slice D ---
+
+  // --- slice E: appointments ---
+  // --- end of slice E ---
+
+  // --- slice F: discovery cards, map, home ---
+  // --- end of slice F ---
+
+  // --- slice G: reviews, inbox, profile, auth ---
+  // --- end of slice G ---
 }

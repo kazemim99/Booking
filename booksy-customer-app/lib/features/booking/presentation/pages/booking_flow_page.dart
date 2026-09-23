@@ -23,7 +23,14 @@ import '../../../../core/utils/price_formatter.dart';
 class BookingFlowPage extends StatefulWidget {
   final String providerId;
 
-  const BookingFlowPage({super.key, required this.providerId});
+  /// A service to start with (tapped on the salon's profile, or a past visit booked again); null starts empty.
+  final String? initialServiceId;
+
+  const BookingFlowPage({
+    super.key,
+    required this.providerId,
+    this.initialServiceId,
+  });
 
   @override
   State<BookingFlowPage> createState() => _BookingFlowPageState();

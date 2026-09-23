@@ -1,9 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:booksy_customer_app/config/feature_flags.dart';
 import 'package:booksy_customer_app/config/routes/app_router.dart';
 import 'package:booksy_customer_app/features/auth/domain/entities/user.dart';
 import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_state.dart';
+
+import '../../helpers/fake_auth_bloc.dart';
 
 void main() {
   group('AppRouter.redirectFor', () {
@@ -236,6 +239,52 @@ void main() {
           isAuthenticated: false,
         ),
         startsWith('${Routes.login}?redirect='),
+      );
+    });
+  });
+
+  // UX review 2026-09-23, decision 4: booking is a single-purpose task, so it runs without the tab bar — the same
+  // reason checkout sits outside the shell. The URL does not change: deep links and return-to-intent keep working.
+  group('booking flow outside the tab shell', () {
+    GoRoute findRoute(List<RouteBase> routes, String path) {
+      for (final route in routes) {
+        if (route is GoRoute && route.path == path) return route;
+        final nested = route.routes;
+        if (nested.isEmpty) continue;
+        try {
+          return findRoute(nested, path);
+        } on StateError {
+          continue;
+        }
+      }
+      throw StateError('no route $path');
+    }
+
+    test('the booking route is drawn on the root navigator, above the shell', () {
+      final router = AppRouter.create(FakeAuthBloc());
+      addTearDown(router.dispose);
+
+      final book = findRoute(router.configuration.routes, 'book');
+
+      expect(book.parentNavigatorKey, isNotNull);
+      expect(book.parentNavigatorKey, same(router.configuration.navigatorKey));
+    });
+
+    test('the booking URL is unchanged, and can name the service to start with', () {
+      expect(Routes.bookingFlow('p1'), '/providers/p1/book');
+      expect(Routes.bookingFlow('p1', serviceId: 's1'), '/providers/p1/book?service=s1');
+      expect(Routes.bookingFlow('p1', serviceId: ''), '/providers/p1/book');
+    });
+
+    test('a guest may start a booking; only its confirmation is gated', () {
+      expect(
+        AppRouter.redirectFor(
+          location: '/providers/p1/book',
+          uri: Uri.parse('/providers/p1/book?service=s1'),
+          sessionResolved: true,
+          isAuthenticated: false,
+        ),
+        isNull,
       );
     });
   });

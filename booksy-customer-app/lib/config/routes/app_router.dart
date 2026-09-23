@@ -65,7 +65,13 @@ class Routes {
       '$checkout/$bookingId?providerId=$providerId';
 
   static String providerDetail(String id) => '/providers/$id';
-  static String bookingFlow(String providerId) => '/providers/$providerId/book';
+
+  /// The booking flow for a salon, optionally starting with one of its services already chosen (a service tapped on
+  /// the salon's profile, or a past visit booked again).
+  static String bookingFlow(String providerId, {String? serviceId}) =>
+      serviceId == null || serviceId.isEmpty
+          ? '/providers/$providerId/book'
+          : '/providers/$providerId/book?service=${Uri.encodeComponent(serviceId)}';
   static String appointmentDetail(String id) => '/appointments/$id';
 }
 
@@ -163,8 +169,11 @@ class AppRouter {
 
   static GoRouter create(AuthBloc authBloc) {
     final auth = AuthNotifier(authBloc);
+    // Routes that must cover the tab bar (single-purpose tasks) are drawn on this navigator, above the shell.
+    final rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
     return GoRouter(
+      navigatorKey: rootNavigatorKey,
       initialLocation: Routes.splash,
       refreshListenable: auth,
       redirect: (context, state) => redirectFor(
@@ -229,8 +238,13 @@ class AppRouter {
                 routes: [
                   GoRoute(
                     path: 'book',
+                    // Booking is a single-purpose task, like checkout: it covers the tab bar instead of sharing the
+                    // screen with it (UX review 2026-09-23, decision 4). The URL is unchanged, so deep links and
+                    // return-to-intent after sign-in still land here.
+                    parentNavigatorKey: rootNavigatorKey,
                     builder: (context, state) => BookingFlowPage(
                       providerId: state.pathParameters['id']!,
+                      initialServiceId: state.uri.queryParameters['service'],
                     ),
                   ),
                 ],
