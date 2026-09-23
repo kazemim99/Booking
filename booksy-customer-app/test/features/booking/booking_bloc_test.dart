@@ -86,6 +86,11 @@ class FakeBookingRepository implements BookingRepository {
   /// Holds a day's answer back until the test releases it (stale-result cover).
   Map<int, Completer<void>> gates = {};
 
+  /// Other salons by id (the default [provider] answers every id not here), and salons whose profile answers only
+  /// once the test releases it (a slow salon the customer backed out of).
+  Map<String, ProviderDetail> otherProviders = {};
+  Map<String, Completer<void>> providerGates = {};
+
   FakeBookingRepository({
     required this.provider,
     required this.slotsResult,
@@ -94,8 +99,11 @@ class FakeBookingRepository implements BookingRepository {
   });
 
   @override
-  Future<Either<Failure, ProviderDetail>> getProviderDetail(String id) async =>
-      Right(provider);
+  Future<Either<Failure, ProviderDetail>> getProviderDetail(String id) async {
+    final gate = providerGates[id];
+    if (gate != null) await gate.future;
+    return Right(otherProviders[id] ?? provider);
+  }
 
   @override
   Future<Either<Failure, DaySlots>> getAvailableSlots({
@@ -655,6 +663,52 @@ void main() {
       expect(bloc.state.services, [_service2]);
       expect(bloc.state.step, BookingStep.time);
       expect(bloc.state.slot, isNull);
+    });
+
+    // Review of the merged branch: the bloc is app-scoped, so the customer can open salon X, back out while it
+    // loads, and open salon Y. X's late answer must not land under Y (nor preselect X's service and ask Y for times).
+    test("a salon the customer backed out of does not answer for the next one", () async {
+      const otherService = ServiceItem(
+        id: 'x-s1',
+        name: 'اصلاح',
+        price: 100000,
+        currency: 'تومان',
+        durationMinutes: 30,
+      );
+      const slowSalon = ProviderDetail(
+        id: 'px',
+        businessName: 'سالن کند',
+        averageRating: 0,
+        totalReviews: 0,
+        businessHours: [],
+        services: [otherService],
+        staff: [_staffA],
+      );
+      final gate = Completer<void>();
+      final repo = FakeBookingRepository(
+        provider: _provider(),
+        slotsResult: Right(DaySlots(slots: [_slot(10)])),
+        createResults: [const Right('b1')],
+      )
+        ..otherProviders = {'px': slowSalon}
+        ..providerGates = {'px': gate};
+      final bloc = BookingBloc(repo);
+      addTearDown(bloc.close);
+
+      bloc.add(const BookingStarted('px', serviceId: 'x-s1'));
+      await _flush();
+      bloc.add(const BookingStarted('p1'));
+      await _flush();
+      expect(bloc.state.provider?.id, 'p1');
+
+      gate.complete();
+      await _flush();
+
+      expect(bloc.state.providerId, 'p1');
+      expect(bloc.state.provider?.id, 'p1');
+      expect(bloc.state.services, isEmpty);
+      expect(bloc.state.step, BookingStep.service);
+      expect(repo.slotsCalls, 0);
     });
   });
 

@@ -322,6 +322,10 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
   /// flight, so a late answer never lands on a newer choice.
   int _slotsRequestId = 0;
 
+  /// Bumped by every start that loads a salon and by a reset: the bloc is app-scoped, so a customer can back out of
+  /// a salon still loading and open another, and the first salon's late answer must not land under the second.
+  int _startId = 0;
+
   BookingBloc(this.repository, {DateTime Function()? now})
       : _now = now ?? DateTime.now,
         super(const BookingState()) {
@@ -385,8 +389,10 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     }
 
     _slotsRequestId++;
+    final start = ++_startId;
     emit(BookingState(providerId: event.providerId));
     final result = await repository.getProviderDetail(event.providerId);
+    if (start != _startId) return;
     result.fold(
       (failure) => emit(state.copyWith(
         providerStatus: BookingProviderStatus.error,
@@ -705,6 +711,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
 
   void _onReset(BookingReset event, Emitter<BookingState> emit) {
     _slotsRequestId++;
+    _startId++;
     emit(const BookingState());
   }
 }
