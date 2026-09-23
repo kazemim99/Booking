@@ -1,4 +1,4 @@
-Status: ACTIVE
+Status: DONE
 Verify: FULL
 
 Source: the 2026-09-23 UI/UX review (numbers #1–#21 below refer to it) and the user's answers the same day — see
@@ -100,7 +100,7 @@ wall-clock booking times (`wallClockIso`), the 7-day customer booking window, To
 
 ### Z Finish
 - [x] Z.1 Adversarial review of the merged diff against the review findings; fix what it confirms
-- [ ] Z.2 FULL verify green; runbook and memory updated
+- [x] Z.2 FULL verify green; runbook and memory updated
 
 ### Parked
 - [?] P.1 DECISION: account deletion — what happens to a deleted customer's bookings, reviews, ledger rows and phone?
@@ -157,6 +157,10 @@ wall-clock booking times (`wallClockIso`), the 7-day customer booking window, To
   (GetActiveSalonCardsAsync), implemented in the Host; a new architecture test forbids UserManagement.Application from
   depending on ServiceCatalog assemblies. Runbook: install the customer vhost BEFORE deploying this change.
 ## Log
+
+- 2026-09-23 Z.2 FULL verify PASS on 88704f65 (13 steps, 309 s): build, 9 unit/architecture projects (1,266 tests),
+  integration 809/809, flutter analyze clean, flutter test 653/653. Branch feat/customer-app-ux-review-fixes is NOT pushed
+  (P.3); I.3 needs root on the box and must precede that deploy (runbook).
 
 - 2026-09-23 Z.1: polish pass (5 groups, 20 commits) merged; two read-only reviewers over the whole merged diff found
   1 blocking (push-while-booking crash) + 13 should-fix/nits (Flutter) and 2 should-fix + 4 nits (backend). All fixed or
