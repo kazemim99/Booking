@@ -11,6 +11,10 @@ class BookingSummary extends Equatable {
   final String serviceId;
   final String serviceName;
   final String? staffId;
+
+  /// Who does the work, when the booking names someone — null when nobody was named, or when all the API has is
+  /// an OTP placeholder or a phone number (QA recording 2026-09-23 #8).
+  final String? staffName;
   final DateTime startTime;
   final int durationMinutes;
   final double price;
@@ -29,6 +33,7 @@ class BookingSummary extends Equatable {
     required this.serviceId,
     required this.serviceName,
     this.staffId,
+    this.staffName,
     required this.startTime,
     required this.durationMinutes,
     required this.price,
@@ -61,6 +66,7 @@ class BookingSummary extends Equatable {
       serviceId: serviceId,
       serviceName: serviceName,
       staffId: staffId,
+      staffName: staffName,
       startTime: startTime ?? this.startTime,
       durationMinutes: durationMinutes,
       price: price,
@@ -82,6 +88,7 @@ class BookingSummary extends Equatable {
         serviceId,
         serviceName,
         staffId,
+        staffName,
         startTime,
         durationMinutes,
         price,

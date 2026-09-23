@@ -1,3 +1,4 @@
+import '../../../core/utils/person_name.dart';
 import '../../../core/utils/wall_clock.dart';
 import '../domain/entities/booking_summary.dart';
 
@@ -25,6 +26,7 @@ class BookingSummaryJson {
       serviceId: json['serviceId'],
       serviceName: json['serviceName'],
       staffId: json['staffId'],
+      staffName: json['staffName'],
       startTime: json['startTime'] as String,
       durationMinutes: json['durationMinutes'],
       price: json['totalPrice'] ?? json['totalAmount'],
@@ -53,6 +55,7 @@ class BookingSummaryJson {
       serviceId: json['serviceId'],
       serviceName: json['serviceName'],
       staffId: json['staffProviderId'] ?? json['staffId'],
+      staffName: json['staffName'],
       startTime: json['startTime'] as String,
       durationMinutes: json['durationMinutes'],
       price: payment['totalAmount'] ?? json['totalPrice'],
@@ -71,6 +74,7 @@ class BookingSummaryJson {
     required Object? serviceId,
     required Object? serviceName,
     required Object? staffId,
+    required Object? staffName,
     required String startTime,
     required Object? durationMinutes,
     required Object? price,
@@ -96,6 +100,8 @@ class BookingSummaryJson {
       serviceName: serviceName as String? ?? '',
       staffId:
           staff == null || staff.isEmpty || staff == _emptyGuid ? null : staff,
+      // Optional on the wire: an API without it, or a booking with nobody named, has no staff name.
+      staffName: staffName is String ? realFullNameOrNull(staffName) : null,
       startTime: start,
       durationMinutes: (durationMinutes as num?)?.toInt() ?? 0,
       price: (price as num?)?.toDouble() ?? 0,

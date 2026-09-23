@@ -20,3 +20,18 @@ String? realNameOrNull(String? firstName, String? lastName) {
   final full = '$first $last'.trim();
   return full.isEmpty ? null : full;
 }
+
+/// A name sent whole — the booking APIs' `staffName`, «مریم احمدی» — or null when it is only the OTP placeholder
+/// («ارائه‌دهنده 9123135143», QA recording 2026-09-23 #8) or a phone number standing where the name should be.
+String? realFullNameOrNull(String? fullName) {
+  var text = fullName?.trim() ?? '';
+  for (final word in _placeholderFirstNames) {
+    if (text == word || text.startsWith('$word ')) {
+      text = text.substring(word.length).trim();
+      break;
+    }
+  }
+  // Nothing left, or only a number: Latin, Persian or Arabic-Indic digits with the usual phone separators.
+  if (RegExp(r'^[\d\u06F0-\u06F9\u0660-\u0669+\-\s()]*$').hasMatch(text)) return null;
+  return text;
+}

@@ -7,6 +7,7 @@ import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/utils/jalali_formatter.dart';
+import '../../../../core/utils/person_name.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../../reviews/domain/repositories/review_repository.dart';
@@ -122,10 +123,14 @@ class _DetailContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final status = StatusBadge.tryParse(booking.status);
+    // Who does the work, when the booking names someone. A placeholder or a phone number is no name to show
+    // (QA recording 2026-09-23 #8: the confirm step read «ارائه‌دهنده 9123135143»).
+    final staffName = realFullNameOrNull(booking.staffName);
 
     final rows = <(String, String)>[
       (AppStrings.bookingProvider, booking.providerName),
       (AppStrings.bookingService, booking.serviceName),
+      if (staffName != null) (AppStrings.bookingStaff, staffName),
       (
         AppStrings.bookingDate,
         JalaliFormatter.formatDate(booking.startTime),
@@ -157,10 +162,24 @@ class _DetailContent extends StatelessWidget {
             children: [
               if (status != null) ...[
                 StatusBadge(status: status),
+                // The badge alone did not say what a request is waiting for (QA recording 2026-09-23 #8).
+                if (status == BookingStatus.pending) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    AppStrings.appointmentPendingExplanation,
+                    key: const Key('appointment-pending-note'),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: AppSpacing.sm),
               ],
               for (final (label, value) in rows)
                 Padding(
+                  key: label == AppStrings.bookingStaff
+                      ? const Key('appointment-staff')
+                      : null,
                   padding:
                       const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                   child: Row(

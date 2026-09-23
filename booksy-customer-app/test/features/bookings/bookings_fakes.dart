@@ -19,6 +19,7 @@ BookingSummary fakeBooking(
   String providerId = 'p1',
   String serviceId = 's1',
   String? staffId,
+  String? staffName,
 }) {
   final active = actionable ?? const {'confirmed', 'pending', 'requested'}.contains(status.toLowerCase());
   return BookingSummary(
@@ -28,6 +29,7 @@ BookingSummary fakeBooking(
     serviceId: serviceId,
     serviceName: 'کوتاهی مو',
     staffId: staffId,
+    staffName: staffName,
     startTime: start ?? DateTime(2026, 9, 25, 16, 30),
     durationMinutes: 45,
     price: 250000,

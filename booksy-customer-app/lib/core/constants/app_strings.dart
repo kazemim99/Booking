@@ -370,6 +370,9 @@ class AppStrings {
   // --- slice E: appointments ---
   static const String appointmentDetailTitle = 'جزئیات نوبت';
   static const String appointmentViewSalon = 'مشاهده سالن';
+  // What «در انتظار تایید» means (QA recording 2026-09-23 #8).
+  static const String appointmentPendingExplanation =
+      'سالن هنوز درخواست شما را تأیید نکرده؛ پس از تأیید به شما خبر می‌دهیم.';
   static const String appointmentsPastEmptyTitle = 'نوبت گذشته‌ای ندارید';
   static const String appointmentsPastEmptySubtitle =
       'نوبت‌هایی که انجام شوند اینجا نمایش داده می‌شوند';

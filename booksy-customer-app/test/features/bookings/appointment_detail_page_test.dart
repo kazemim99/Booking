@@ -300,6 +300,65 @@ void main() {
     });
   });
 
+  // QA recording 2026-09-23 #8: the detail said nothing about who would do the work, and «در انتظار تأیید» was a
+  // badge with no word on what it means.
+  group('who does the work', () {
+    testWidgets('a named staff member is shown as the provider', (tester) async {
+      _bookings.upcoming = [fakeBooking('b1', staffId: 'st1', staffName: 'مریم احمدی')];
+      await _open(tester, 'b1');
+
+      final row = find.byKey(const Key('appointment-staff'));
+      expect(row, findsOneWidget);
+      expect(find.descendant(of: row, matching: find.text(AppStrings.bookingStaff)), findsOneWidget);
+      expect(find.descendant(of: row, matching: find.text('مریم احمدی')), findsOneWidget);
+    });
+
+    for (final name in <String?>[null, '', 'ارائه‌دهنده 9123135143', '09123135143']) {
+      testWidgets('no row for staff name ${name == null ? 'null' : '«$name»'}', (tester) async {
+        _bookings.upcoming = [fakeBooking('b1', staffId: 'st1', staffName: name)];
+        await _open(tester, 'b1');
+
+        expect(find.byKey(const Key('appointment-staff')), findsNothing);
+        expect(find.text(AppStrings.bookingStaff), findsNothing);
+      });
+    }
+  });
+
+  group('a request the salon has not accepted yet', () {
+    for (final status in ['Requested', 'Pending']) {
+      testWidgets('$status says, under the badge, what it is waiting for', (tester) async {
+        _bookings.upcoming = [fakeBooking('b1', status: status)];
+        await _open(tester, 'b1');
+
+        final badge = find.byType(StatusBadge);
+        final note = find.text(AppStrings.appointmentPendingExplanation);
+        expect(find.text(AppStrings.statusPending), findsOneWidget);
+        expect(note, findsOneWidget);
+        expect(tester.getTopLeft(note).dy, greaterThan(tester.getTopLeft(badge).dy));
+      });
+    }
+
+    for (final status in ['Confirmed', 'Completed', 'Cancelled']) {
+      testWidgets('$status has no such note', (tester) async {
+        _bookings.upcoming = [fakeBooking('b1', status: status)];
+        await _open(tester, 'b1');
+
+        expect(find.text(AppStrings.appointmentPendingExplanation), findsNothing);
+      });
+    }
+
+    testWidgets('the note and the provider row fit a 360x640 phone at 1.3x text', (tester) async {
+      _bookings.upcoming = [
+        fakeBooking('b1', status: 'Requested', staffId: 'st1', staffName: 'مریم سادات حسینی‌نژاد'),
+      ];
+      await _open(tester, 'b1', textScale: 1.3);
+
+      expect(tester.takeException(), isNull);
+      expect(find.text(AppStrings.appointmentPendingExplanation), findsOneWidget);
+      expect(find.byKey(const Key('appointment-staff')), findsOneWidget);
+    });
+  });
+
   testWidgets('a booking older than both lists still opens', (tester) async {
     _bookings.onlyById = {'b-old': completed.copyWithId('b-old')};
     await _open(tester, 'b-old');
