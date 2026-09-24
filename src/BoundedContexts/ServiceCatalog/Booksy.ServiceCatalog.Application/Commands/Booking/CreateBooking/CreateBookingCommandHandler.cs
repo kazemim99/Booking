@@ -8,6 +8,7 @@ using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
 using Booksy.Core.Application.Services.Notifications;
+using Booksy.ServiceCatalog.Application.Abstractions.Identity;
 using Booksy.ServiceCatalog.Application.Services;
 using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate;
@@ -41,6 +42,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
         private readonly ILogger<CreateBookingCommandHandler> _logger;
 
         private readonly IBookingNotificationParameters _bookingParameters;
+        private readonly IPersonDirectory _people;
 
         public CreateBookingCommandHandler(
             IBookingWriteRepository bookingWriteRepository,
@@ -56,9 +58,11 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             INotificationRaiser notifications,
             IBookingReminderScheduler reminders,
             ILogger<CreateBookingCommandHandler> logger,
-            IBookingNotificationParameters bookingParameters)
+            IBookingNotificationParameters bookingParameters,
+            IPersonDirectory people)
         {
             _bookingParameters = bookingParameters;
+            _people = people;
             _bookingWriteRepository = bookingWriteRepository;
             _bookingReadRepository = bookingReadRepository;
             _providerRepository = providerRepository;
@@ -246,6 +250,10 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             {
                 throw new ForbiddenException("Only the salon can book for a customer in its customer book");
             }
+            else
+            {
+                await GiveTheSalonTheirOwnNameAsync(provider.Id, callerId, cancellationToken);
+            }
 
             // Save booking
             await _bookingWriteRepository.SaveBookingAsync(booking, cancellationToken);
@@ -421,6 +429,39 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
                 Domain.Enums.CustomerSource.Booking);
             await _providerCustomers.AddAsync(customer, cancellationToken);
             return customer;
+        }
+
+        /// <summary>
+        /// The customer booked this salon themselves, so the salon's client-book entry for their number (if it has
+        /// one) takes the name they gave — replacing whatever the salon first called them, typically a contacts label
+        /// like «Mostafa Cell» (QA 2026-09-24). Only this salon's entry: booking is how the customer shares their
+        /// name with it. Only a real first AND last name, the same bar the booking screen sets; a placeholder name
+        /// never overwrites the salon's label. Never fatal: the appointment matters more than the label.
+        /// </summary>
+        private async Task GiveTheSalonTheirOwnNameAsync(
+            ProviderId providerId, UserId customerId, CancellationToken cancellationToken)
+        {
+            var people = await _people.FindByIdsAsync(new[] { customerId.Value }, cancellationToken);
+            if (!people.TryGetValue(customerId.Value, out var person) || string.IsNullOrWhiteSpace(person.PhoneNumber))
+                return;
+
+            var (first, last) = PersonName.RealParts(person.FirstName, person.LastName);
+            if (first.Length == 0 || last.Length == 0)
+                return;
+
+            try
+            {
+                var entry = await _providerCustomers.GetByPhoneAsync(
+                    providerId, Core.Domain.ValueObjects.PhoneNumber.From(person.PhoneNumber), cancellationToken);
+                if (entry is null || (entry.FirstName == first && entry.LastName == last))
+                    return;
+
+                entry.Update(first, last, entry.PhoneNumber, entry.Notes);
+            }
+            catch (Exception ex) when (ex is ArgumentException or DomainValidationException)
+            {
+                _logger.LogWarning(ex, "Kept the salon's own label for customer {CustomerId}", customerId.Value);
+            }
         }
 
         /// <summary>
