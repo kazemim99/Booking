@@ -231,5 +231,47 @@ void main() {
       final current = (await repo.getCurrentSession()).getOrElse(() => throw StateError('expected Right'))!;
       expect(current.user.realName, 'مصطفی کاظمی', reason: 'the header re-reads this session');
     });
+
+    // QA 2026-09-24: onboarding asks the owner's name and the server saves it on their account, but the app kept
+    // the sign-in token (placeholder name) and then asked «نام شما ثبت نشده» — for a name it had just been given.
+    test('after onboarding, the refreshed session carries the name onboarding gave', () async {
+      final placeholder =
+          _token({_givenName: 'ارائه‌دهنده', _surname: '9123135143', _name: 'ارائه‌دهنده 9123135143'});
+      when(() => api.completeProviderAuth(any())).thenAnswer((_) async => ApiResponse<CompleteProviderAuthResponse>(
+            success: true,
+            data: CompleteProviderAuthResponse(
+              isNewProvider: true,
+              userId: 'u-1',
+              phoneNumber: '09123135143',
+              fullName: 'ارائه‌دهنده 9123135143',
+              accessToken: placeholder,
+              refreshToken: 'refresh',
+              expiresIn: 86400,
+              requiresOnboarding: true,
+              message: 'ok',
+            ),
+          ));
+      await repo.completeProviderAuthentication(phoneNumber: '09123135143', code: '123456');
+
+      final named = _token({_givenName: 'مصطفی', _surname: 'کاظمی', _name: 'مصطفی کاظمی'});
+      when(() => storage.getRefreshToken()).thenAnswer((_) async => 'refresh');
+      when(() => storage.saveAccessToken(any())).thenAnswer((_) async {});
+      when(() => storage.saveRefreshToken(any())).thenAnswer((_) async {});
+      when(() => storage.saveProviderState(
+            providerId: any(named: 'providerId'),
+            providerStatus: any(named: 'providerStatus'),
+          )).thenAnswer((_) async {});
+      when(() => api.refreshToken(any())).thenAnswer((_) async => ApiResponse<RefreshTokenResponse>(
+            success: true,
+            data: RefreshTokenResponse(accessToken: named, refreshToken: 'refresh-2', expiresIn: 86400),
+          ));
+      when(() => api.getCurrentProviderStatus())
+          .thenAnswer((_) async => (providerId: 'p-1', status: 'PendingVerification'));
+
+      final session =
+          (await repo.refreshProviderStatus()).getOrElse(() => throw StateError('expected Right'));
+
+      expect(session.user.realName, 'مصطفی کاظمی');
+    });
   });
 }

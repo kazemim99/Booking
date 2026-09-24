@@ -96,11 +96,20 @@ class _RequestRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Who is asking comes first and stands out — "how do I know who I'm confirming?" (QA 2026-09-24).
           Text(
-            [booking.clientName, booking.serviceName, _when]
-                .where((s) => s.isNotEmpty)
-                .join(' · '),
-            style: const TextStyle(fontSize: 14, color: AppColors.ink),
+            booking.clientName.trim().isNotEmpty
+                ? booking.clientName.trim()
+                : AppStrings.memberNameMissing,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: AppColors.ink,
+            ),
+          ),
+          Text(
+            [booking.serviceName, _when].where((s) => s.isNotEmpty).join(' · '),
+            style: const TextStyle(fontSize: 13, color: AppColors.muted),
           ),
           const SizedBox(height: AppSpacing.sm),
           // Constrained via Expanded — never a bare themed button in a Row.

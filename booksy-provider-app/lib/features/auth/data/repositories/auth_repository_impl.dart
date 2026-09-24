@@ -246,6 +246,11 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, ProviderSession>> refreshProviderStatus() async {
     try {
+      // Re-mint the token first: it carries the person's name, and onboarding has just saved one on the server.
+      // Kept as-is, the sign-in token's placeholder made the app ask «نام شما ثبت نشده» for the name onboarding had
+      // taken a minute earlier (QA 2026-09-24). Best-effort: a failed refresh leaves the session as it was.
+      await refreshToken();
+
       final result = await _api.getCurrentProviderStatus();
 
       // Persist the server-authoritative status so it survives restarts and

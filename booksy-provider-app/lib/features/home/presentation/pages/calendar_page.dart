@@ -435,13 +435,22 @@ void showCalendarBookingSheet(
                 ],
               ),
               const SizedBox(height: AppSpacing.sm),
+              // The customer on a line of their own, so the salon sees who it is confirming (QA 2026-09-24).
               Text(
-                [
-                  booking.clientName,
-                  booking.serviceName,
-                ].where((s) => s.isNotEmpty).join(' · '),
-                style: const TextStyle(fontSize: 15, color: AppColors.ink),
+                booking.clientName.trim().isNotEmpty
+                    ? booking.clientName.trim()
+                    : AppStrings.memberNameMissing,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.ink,
+                ),
               ),
+              if (booking.serviceName.isNotEmpty)
+                Text(
+                  booking.serviceName,
+                  style: const TextStyle(fontSize: 14, color: AppColors.ink),
+                ),
               const SizedBox(height: AppSpacing.xs),
               Text(
                 _DayTimeline._statusLabel(booking.status),
