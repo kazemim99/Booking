@@ -1,4 +1,4 @@
-Status: ACTIVE
+Status: DONE
 Verify: FULL
 
 User report (2026-09-24 evening): a 3:14 screen recording (23:35–23:38 Tehran) of production after the 09-24 deploy: a
@@ -44,7 +44,7 @@ provider app, then two reschedule attempts fail. User said "go" on the triage.
 - [x] 4 F3 Persian messages for the booking/cancel/reschedule errors
 - [x] 5 F4 salon's booking list carries the customer's real name
 - [x] 6 F5 profile shows the saved name after the post-signup save
-- [ ] 7 FULL verify
+- [x] 7 FULL verify
 
 ## Decisions
 
@@ -65,4 +65,6 @@ provider app, then two reschedule attempts fail. User said "go" on the triage.
 - Vue BookingCard.vue is unreferenced dead code (its own «تغییر زمان» left alone); the live web reschedule is the
   My Bookings sidebar (now RescheduleAction).
 
+- FULL PASS on 2ef9d7c8 (20 steps, 725 s): integration 851/851, Vue web+admin, customer + provider apps.
+  Not pushed or deployed: waits for the user's "deploy and push".
 - 2026-09-25 branch fix/qa-walkthrough-2026-09-25 on 64e1d3d1 (deployed master) in worktree .claude/worktrees/qa0924.
