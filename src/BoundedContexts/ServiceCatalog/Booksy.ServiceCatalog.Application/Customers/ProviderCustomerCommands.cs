@@ -256,7 +256,7 @@ namespace Booksy.ServiceCatalog.Application.Customers
         {
             var providerId = ProviderId.From(request.ProviderId);
             var customers = await _customers.ListAsync(providerId, request.Search, cancellationToken);
-            var stats = await _customers.BookingStatsAsync(providerId, DateTime.UtcNow, cancellationToken);
+            var stats = await _customers.BookingStatsAsync(providerId, SalonTime.Now, cancellationToken);
             return customers.Select(c => ProviderCustomerDto.From(c, stats.GetValueOrDefault(c.Id))).ToList();
         }
     }

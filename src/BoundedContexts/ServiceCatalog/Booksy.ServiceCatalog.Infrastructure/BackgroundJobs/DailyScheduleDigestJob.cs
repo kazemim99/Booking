@@ -26,8 +26,9 @@ namespace Booksy.ServiceCatalog.Infrastructure.BackgroundJobs
     ///
     /// <para><b>Salon-local.</b> There is no provider timezone anywhere in this system; booking times are
     /// salon wall-clock values in a single frame (FOLLOW-UPS #63). So <see cref="SendAt"/> is 08:00 in the
-    /// same frame the bookings live in, which is the only reading available today. If #63 is resolved with a
-    /// real per-provider timezone, this is the place that converts.</para>
+    /// same frame the bookings live in: <see cref="RunAsync"/> takes the salon's clock, and
+    /// <see cref="ExecuteAsync"/> reads its UTC clock through <see cref="SalonTime"/>. Passing the UTC clock
+    /// straight through sent the "08:00" digest at 11:30 salon time (QA 2026-09-24).</para>
     /// </remarks>
     public sealed class DailyScheduleDigestJob
     {
@@ -75,7 +76,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.BackgroundJobs
         }
 
         public Task<int> ExecuteAsync(CancellationToken cancellationToken = default) =>
-            RunAsync(_clock.UtcNow, cancellationToken);
+            RunAsync(SalonTime.FromUtc(_clock.UtcNow), cancellationToken);
 
         /// <summary>
         /// One pass at an explicit moment. Public so the behaviour under test — which morning, and whether

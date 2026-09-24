@@ -51,7 +51,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                 .ToListAsync(cancellationToken);
 
         public async Task<IReadOnlyDictionary<Guid, ProviderCustomerBookingStats>> BookingStatsAsync(
-            ProviderId providerId, DateTime nowUtc, CancellationToken cancellationToken = default)
+            ProviderId providerId, DateTime salonNow, CancellationToken cancellationToken = default)
         {
             var rows = await _context.Bookings.AsNoTracking()
                 .Where(b => b.ProviderId == providerId && b.ProviderCustomerId != null && b.Status != BookingStatus.Cancelled)
@@ -64,7 +64,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
                     g => g.Key,
                     g => new ProviderCustomerBookingStats(
                         g.Count(),
-                        g.Count(r => r.StartTime >= nowUtc && r.Status is BookingStatus.Requested or BookingStatus.Confirmed),
+                        g.Count(r => r.StartTime >= salonNow && r.Status is BookingStatus.Requested or BookingStatus.Confirmed),
                         g.Max(r => (DateTime?)r.StartTime)));
         }
 

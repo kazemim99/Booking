@@ -1,6 +1,7 @@
 // ========================================
 // Booksy.UserManagement.Application/CQRS/Queries/Customer/GetUpcomingBookings/GetUpcomingBookingsQueryHandler.cs
 // ========================================
+using Booksy.Core.Domain.ValueObjects;
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Abstractions.Services;
 using Booksy.UserManagement.Domain.Repositories;
@@ -35,7 +36,7 @@ namespace Booksy.UserManagement.Application.CQRS.Queries.Customer.GetUpcomingBoo
             CancellationToken cancellationToken)
         {
             var entries = await _history.GetUpcomingAsync(
-                request.CustomerId, _clock.UtcNow, request.Limit, cancellationToken);
+                request.CustomerId, SalonTime.FromUtc(_clock.UtcNow), request.Limit, cancellationToken);
 
             _logger.LogInformation(
                 "Found {Count} upcoming bookings for CustomerId: {CustomerId}",

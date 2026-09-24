@@ -14,7 +14,7 @@ namespace Booksy.UserManagement.Domain.Repositories
         /// </summary>
         Task<IReadOnlyList<CustomerBookingHistoryEntry>> GetUpcomingAsync(
             Guid customerId,
-            DateTime nowUtc,
+            DateTime salonNow,
             int limit,
             CancellationToken cancellationToken = default);
 

@@ -116,9 +116,9 @@ public class RescheduleNotificationTests : ServiceCatalogIntegrationTestBase
         var due = await ReminderDueTimesAsync(successorId!.Value);
 
         due[NotificationEventCode.BookingReminder24h]
-            .Should().BeCloseTo(newStart.AddHours(-24), TimeSpan.FromMinutes(1));
+            .Should().BeCloseTo(Core.Domain.ValueObjects.SalonTime.ToUtc(newStart.AddHours(-24)), TimeSpan.FromMinutes(1));
         due[NotificationEventCode.BookingReminder2h]
-            .Should().BeCloseTo(newStart.AddHours(-2), TimeSpan.FromMinutes(1));
+            .Should().BeCloseTo(Core.Domain.ValueObjects.SalonTime.ToUtc(newStart.AddHours(-2)), TimeSpan.FromMinutes(1));
     }
 
     // ── helpers ──

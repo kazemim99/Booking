@@ -261,6 +261,29 @@ public class CustomersControllerTests : UserManagementIntegrationTestBase
     }
 
     [Fact]
+    public async Task An_appointment_that_started_an_hour_ago_at_the_salon_is_not_upcoming()
+    {
+        // Booking times are the salon's wall clock; "now" must be the salon's clock too. Against UTC (3:30
+        // behind), an appointment already under way stayed "upcoming" for three and a half hours (QA 2026-09-24).
+        var customer = await CreateAndAuthenticateAsCustomerAsync();
+        var providerId = Guid.NewGuid();
+
+        await CreateBookingHistoryEntryAsync(
+            customer.Id.Value, providerId, "Test Provider", "Started An Hour Ago",
+            SalonTime.Now.AddHours(-1), "Confirmed", 30m);
+        await CreateBookingHistoryEntryAsync(
+            customer.Id.Value, providerId, "Test Provider", "Starts In An Hour",
+            SalonTime.Now.AddHours(1), "Confirmed", 30m);
+
+        var response = await GetUpcomingBookingsAsync(customer.Id.Value, limit: 5);
+
+        response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Contain("Starts In An Hour");
+        content.Should().NotContain("Started An Hour Ago");
+    }
+
+    [Fact]
     public async Task GetBookingHistory_ShouldReturnPaginatedHistory()
     {
         // Arrange

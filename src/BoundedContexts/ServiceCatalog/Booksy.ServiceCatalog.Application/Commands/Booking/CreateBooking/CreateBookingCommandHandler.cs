@@ -150,7 +150,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             // of the salon could make it bookable. It used to fall through to the constraint check
             // below, whose failures are all reported as 409 Conflict, so asking for yesterday got
             // the same answer as asking for a slot someone else had taken.
-            if (request.StartTime <= DateTime.UtcNow)
+            if (request.StartTime <= SalonTime.Now)
                 throw new DomainValidationException(
                     nameof(request.StartTime), "Cannot create a booking in the past");
 

@@ -1,3 +1,4 @@
+using Booksy.Core.Domain.ValueObjects;
 using Booksy.Core.Domain.Exceptions;
 using Booksy.ServiceCatalog.API.Models.Requests;
 using Booksy.ServiceCatalog.Api.Models.Responses;
@@ -45,7 +46,7 @@ public class AvailabilityController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         // Validate date is not in the past
-        if (request.Date.Date < DateTime.UtcNow.Date)
+        if (request.Date.Date < SalonTime.Now.Date)
         {
             throw new DomainValidationException("Date", "Cannot check availability for past dates");
         }
@@ -117,7 +118,7 @@ public class AvailabilityController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         // Validate start time is not in the past
-        if (startTime < DateTime.UtcNow)
+        if (startTime < SalonTime.Now)
         {
             throw new DomainValidationException("StartTime", "Cannot check availability for past times");
         }
@@ -169,7 +170,7 @@ public class AvailabilityController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         // Validate date range
-        if (fromDate.Date < DateTime.UtcNow.Date)
+        if (fromDate.Date < SalonTime.Now.Date)
         {
             throw new DomainValidationException("FromDate", "From date cannot be in the past");
         }

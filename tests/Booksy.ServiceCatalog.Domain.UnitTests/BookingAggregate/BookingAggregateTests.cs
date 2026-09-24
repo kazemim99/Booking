@@ -139,7 +139,7 @@ public class BookingAggregateTests
         // Deposit + min-advance rules protect the provider FROM customers;
         // they must not block the provider recording their own appointment —
         // e.g. a walk-in starting in 10 minutes under a 2h-advance policy.
-        var imminentStart = DateTime.UtcNow.AddMinutes(10);
+        var imminentStart = SalonTime.Now.AddMinutes(10);
 
         var booking = Booking.CreateConfirmedByProvider(
             _customerId,
@@ -427,7 +427,7 @@ public class BookingAggregateTests
     public void Complete_Should_Throw_When_Too_Early()
     {
         // Arrange
-        var futureTime = DateTime.UtcNow.AddHours(2);
+        var futureTime = SalonTime.Now.AddHours(2);
         var booking = Booking.CreateBookingRequest(
             _customerId,
             _providerId,
@@ -606,7 +606,7 @@ public class BookingAggregateTests
     public void IsUpcoming_Should_Return_True_For_Bookings_Within_24_Hours()
     {
         // Arrange
-        var soonTime = DateTime.UtcNow.AddHours(12);
+        var soonTime = SalonTime.Now.AddHours(12);
         var booking = Booking.CreateBookingRequest(
             _customerId,
             _providerId,
@@ -644,7 +644,7 @@ public class BookingAggregateTests
     public void IsInPast_Should_Return_True_For_Past_Bookings()
     {
         // Arrange
-        var pastTime = DateTime.UtcNow.AddHours(-3);
+        var pastTime = SalonTime.Now.AddHours(-3);
         var booking = Booking.CreateBookingRequest(
             _customerId,
             _providerId,

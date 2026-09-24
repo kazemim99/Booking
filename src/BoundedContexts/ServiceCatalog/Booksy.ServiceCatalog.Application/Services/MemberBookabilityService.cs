@@ -193,7 +193,7 @@ public sealed class MemberBookabilityService : IMemberBookabilityService
             : null;
 
         var membershipId = membership.Id;
-        var today = DateTime.UtcNow.Date;
+        var today = SalonTime.Now.Date;
         var generated = 0;
 
         for (var offset = 0; offset < AvailabilityDaysAhead; offset++)

@@ -160,8 +160,8 @@ namespace Booksy.ServiceCatalog.Application.Services
         {
             var errors = new List<string>();
 
-            // Ensure startTime is in UTC for proper comparison
-            // If DateTimeKind is Unspecified, assume it's already meant to be UTC
+            // The digits are the salon's wall clock whatever the Kind; the time checks below compare them with
+            // SalonTime.Now. The Kind is normalised only because this value goes on into queries.
             if (startTime.Kind == DateTimeKind.Unspecified)
             {
                 startTime = DateTime.SpecifyKind(startTime, DateTimeKind.Utc);
@@ -190,21 +190,21 @@ namespace Booksy.ServiceCatalog.Application.Services
             }
 
             // Check minimum advance booking time
-            var hoursUntilBooking = (startTime - DateTime.UtcNow).TotalHours;
+            var hoursUntilBooking = (startTime - SalonTime.Now).TotalHours;
             if (service.MinAdvanceBookingHours.HasValue && hoursUntilBooking < service.MinAdvanceBookingHours.Value)
             {
                 errors.Add($"رزرو باید حداقل {service.MinAdvanceBookingHours.Value} ساعت زودتر انجام شود.");
             }
 
             // Check maximum advance booking time
-            var daysUntilBooking = (startTime - DateTime.UtcNow).TotalDays;
+            var daysUntilBooking = (startTime - SalonTime.Now).TotalDays;
             if (service.MaxAdvanceBookingDays.HasValue && daysUntilBooking > service.MaxAdvanceBookingDays.Value)
             {
                 errors.Add($"رزرو بیش از {service.MaxAdvanceBookingDays.Value} روز آینده امکان‌پذیر نیست.");
             }
 
             // Check if booking is in the past
-            if (startTime < DateTime.UtcNow)
+            if (startTime < SalonTime.Now)
             {
                 errors.Add("امکان رزرو در گذشته وجود ندارد.");
             }
@@ -299,14 +299,14 @@ namespace Booksy.ServiceCatalog.Application.Services
             }
 
             // Check maximum advance booking time (DATE-LEVEL only, not time-level)
-            var daysUntilBooking = (date.Date - DateTime.UtcNow.Date).TotalDays;
+            var daysUntilBooking = (date.Date - SalonTime.Now.Date).TotalDays;
             if (service.MaxAdvanceBookingDays.HasValue && daysUntilBooking > service.MaxAdvanceBookingDays.Value)
             {
                 errors.Add($"رزرو بیش از {service.MaxAdvanceBookingDays.Value} روز آینده امکان‌پذیر نیست.");
             }
 
             // Check if date is in the past
-            if (date.Date < DateTime.UtcNow.Date)
+            if (date.Date < SalonTime.Now.Date)
             {
                 errors.Add("امکان رزرو در گذشته وجود ندارد.");
             }
@@ -410,16 +410,12 @@ namespace Booksy.ServiceCatalog.Application.Services
                     return slotStart < bookingEnd && slotEnd > bookingStart;
                 });
 
-                // Ensure slotStart is in UTC for comparison
-                var slotStartUtc = slotStart.Kind == DateTimeKind.Unspecified
-                    ? DateTime.SpecifyKind(slotStart, DateTimeKind.Utc)
-                    : slotStart.ToUniversalTime();
-
-                // Only add slot if it's in the future and has no conflicts.
-                // `DateTime.Now` here compared a UTC instant against the machine's LOCAL clock, so
-                // on this machine (+03:30) it silently discarded every genuinely-free slot in the
-                // next three and a half hours — the same-day slots a customer is most likely to want.
-                if (!hasConflict && slotStartUtc > DateTime.UtcNow)
+                // Only add slot if it's in the future and has no conflicts. A slot is the salon's wall clock,
+                // so "future" is measured on the salon's clock. `DateTime.Now` (the machine's zone) and then
+                // `DateTime.UtcNow` (3:30 behind the salon) were both wrong: the first hid the next three and a
+                // half hours of free slots on a +03:30 dev box, the second offered the last three and a half
+                // hours, already gone, on the UTC server (QA 2026-09-24).
+                if (!hasConflict && slotStart > SalonTime.Now)
                 {
                     availableSlots.Add(new AvailableTimeSlot(
                         slotStart,

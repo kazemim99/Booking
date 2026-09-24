@@ -261,7 +261,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
                     new DepositMustBePaidBeforeConfirmationRule());
 
             // Check if booking time is still valid
-            if (!Policy.IsWithinBookingWindow(TimeSlot.StartTime, DateTime.UtcNow))
+            if (!Policy.IsWithinBookingWindow(TimeSlot.StartTime, SalonTime.Now))
                 throw new BusinessRuleViolationException(
                     new BookingMustBeWithinValidTimeWindowRule(Policy));
 
@@ -292,7 +292,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
                     new BookingCannotBeCancelledRule(Status));
 
             var now = DateTime.UtcNow;
-            var canCancelWithoutFee = Policy.CanCancelWithoutFee(TimeSlot.StartTime, now);
+            var canCancelWithoutFee = Policy.CanCancelWithoutFee(TimeSlot.StartTime, SalonTime.FromUtc(now));
 
             Money? cancellationFee = null;
             if (!canCancelWithoutFee && !byProvider && PaymentInfo.IsDepositPaid())
@@ -336,7 +336,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
                     new BookingCannotBeRescheduledRule(Status, Policy));
 
             var now = DateTime.UtcNow;
-            if (!Policy.CanReschedule(TimeSlot.StartTime, now))
+            if (!Policy.CanReschedule(TimeSlot.StartTime, SalonTime.FromUtc(now)))
                 throw new BusinessRuleViolationException(
                     new RescheduleWindowExpiredRule(Policy, TimeSlot.StartTime));
 
@@ -403,9 +403,10 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
                 throw new BusinessRuleViolationException(
                     new BookingCanOnlyBeCompletedFromConfirmedStateRule(Status));
 
-            // Booking should be completed only after or near the scheduled time
+            // Booking should be completed only after or near the scheduled time — on the salon's clock, which
+            // is what the booking's time is written in (QA 2026-09-24: UtcNow refused a 10:00 booking at 10:33).
             var now = DateTime.UtcNow;
-            if (now < TimeSlot.StartTime.AddMinutes(-15)) // Allow 15 min early completion
+            if (SalonTime.FromUtc(now) < TimeSlot.StartTime.AddMinutes(-15)) // Allow 15 min early completion
                 throw new BusinessRuleViolationException(
                     new BookingCannotBeCompletedBeforeScheduledTimeRule(TimeSlot.StartTime));
 
@@ -437,7 +438,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
 
             // Can only mark as no-show after the scheduled time
             var now = DateTime.UtcNow;
-            if (now < TimeSlot.EndTime)
+            if (SalonTime.FromUtc(now) < TimeSlot.EndTime)
                 throw new BusinessRuleViolationException(
                     new CannotMarkNoShowBeforeEndTimeRule(TimeSlot.EndTime));
 
@@ -585,7 +586,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
         /// </summary>
         public bool IsInPast()
         {
-            return TimeSlot.EndTime < DateTime.UtcNow;
+            return TimeSlot.EndTime < SalonTime.Now;
         }
 
         /// <summary>
@@ -593,7 +594,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
         /// </summary>
         public bool IsUpcoming()
         {
-            var now = DateTime.UtcNow;
+            var now = SalonTime.Now;
             return TimeSlot.StartTime > now && TimeSlot.StartTime <= now.AddHours(24);
         }
 

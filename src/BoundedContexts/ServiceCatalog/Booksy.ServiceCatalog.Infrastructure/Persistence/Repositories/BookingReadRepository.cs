@@ -102,7 +102,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
             UserId customerId,
             CancellationToken cancellationToken = default)
         {
-            var now = DateTime.UtcNow;
+            var now = SalonTime.Now;
             return await DbSet
                 .Where(b => b.CustomerId == customerId &&
                            b.TimeSlot.StartTime > now &&
@@ -115,7 +115,7 @@ namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories
             ProviderId providerId,
             CancellationToken cancellationToken = default)
         {
-            var now = DateTime.UtcNow;
+            var now = SalonTime.Now;
             return await DbSet
                 .Where(b => b.ProviderId == providerId &&
                            b.TimeSlot.StartTime > now &&

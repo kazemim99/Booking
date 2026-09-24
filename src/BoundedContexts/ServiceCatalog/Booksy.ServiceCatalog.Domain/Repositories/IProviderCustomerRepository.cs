@@ -29,7 +29,7 @@ namespace Booksy.ServiceCatalog.Domain.Repositories
 
         /// <summary>Per customer: the salon's bookings made for them (cancelled ones not counted).</summary>
         Task<IReadOnlyDictionary<Guid, ProviderCustomerBookingStats>> BookingStatsAsync(
-            ProviderId providerId, DateTime nowUtc, CancellationToken cancellationToken = default);
+            ProviderId providerId, DateTime salonNow, CancellationToken cancellationToken = default);
     }
 
     public sealed record ProviderCustomerBookingStats(int Total, int Upcoming, DateTime? LastBookingAt);

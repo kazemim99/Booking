@@ -81,7 +81,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderProfile
             var completedBookings = allBookings.Where(b => b.Status == BookingStatus.Completed).ToList();
 
             // Get availability summary for next 7 days
-            var startDate = DateTime.UtcNow.Date;
+            var startDate = SalonTime.Now.Date;
             var endDate = startDate.AddDays(request.AvailabilityDays);
             var availabilitySlots = await _availabilityRepository.GetAvailabilityByDateRangeAsync(
                 providerId,
@@ -180,7 +180,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderProfile
                 {
                     NextAvailableSlot = availabilitySlots
                         .Where(slot => slot.Status == AvailabilityStatus.Available &&
-                                     slot.Date.Add(slot.StartTime.ToTimeSpan()) > DateTime.UtcNow)
+                                     slot.Date.Add(slot.StartTime.ToTimeSpan()) > SalonTime.Now)
                         .OrderBy(slot => slot.Date)
                         .ThenBy(slot => slot.StartTime)
                         .Select(slot => slot.Date.Add(slot.StartTime.ToTimeSpan()))

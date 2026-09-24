@@ -286,7 +286,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.ProviderAvailabilityAggregate
             if (startTime >= endTime)
                 throw new DomainValidationException("Start time must be before end time");
             
-            if (date.Date < DateTime.UtcNow.Date)
+            if (date.Date < SalonTime.Now.Date)
                 throw new DomainValidationException("Cannot create availability for past dates");
             
             var duration = (endTime - startTime).TotalMinutes;

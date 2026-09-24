@@ -1,4 +1,6 @@
+using Booksy.Core.Application.Abstractions.Services;
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
@@ -7,6 +9,8 @@ using Booksy.ServiceCatalog.Infrastructure.Persistence.Context;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
+using NSubstitute;
 using Xunit;
 
 namespace Booksy.ServiceCatalog.IntegrationTests.Notifications;
@@ -48,6 +52,31 @@ public class DailyScheduleDigestTests : ServiceCatalogIntegrationTestBase
         var digest = (await RaisedForAsync(provider.OwnerId.Value)).Should().ContainSingle().Subject;
         digest.Code.Should().Be(NotificationEventCode.DailyScheduleDigest);
         digest.Count.Should().Be("3");
+    }
+
+    [Fact]
+    public async Task The_timer_reads_eight_oclock_on_the_salons_clock()
+    {
+        // The job's own clock is UTC. 04:35 UTC is 08:05 at the salon: the digest is due. Read as-is it was
+        // "04:35", before the morning, and the digest went out at 11:30 salon time (QA 2026-09-24).
+        var provider = await CreateTestProviderWithServicesAsync();
+        var day = PickDay();
+        await SeedConfirmedBookingsAsync(provider, day, count: 2);
+
+        var clock = Substitute.For<IDateTimeProvider>();
+        clock.UtcNow.Returns(SalonTime.ToUtc(Morning(day)));
+        using (var scope = Factory.Services.CreateScope())
+        {
+            var job = new DailyScheduleDigestJob(
+                scope.ServiceProvider.GetRequiredService<ServiceCatalogDbContext>(),
+                scope.ServiceProvider.GetRequiredService<INotificationRaiser>(),
+                clock,
+                NullLogger<DailyScheduleDigestJob>.Instance);
+            await job.ExecuteAsync(CancellationToken.None);
+        }
+
+        var digest = (await RaisedForAsync(provider.OwnerId.Value)).Should().ContainSingle().Subject;
+        digest.Count.Should().Be("2");
     }
 
     [Fact]

@@ -80,7 +80,7 @@ namespace Booksy.ServiceCatalog.Application.Queries.Provider.GetProviderAvailabi
                 if (service == null)
                     return none;
 
-                var day = DateTime.UtcNow.Date;
+                var day = SalonTime.Now.Date;
                 for (var i = 0; i < daysAhead; i++, day = day.AddDays(1))
                 {
                     var slots = await _availability.GetAvailableTimeSlotsAsync(

@@ -64,7 +64,7 @@ namespace Booksy.ServiceCatalog.Application.EventHandlers.IntegrationEventHandle
             var refundAmount = refundPolicy.CalculateRefundAmount(
                 payment.Amount,
                 integrationEvent.BookingStartTime,
-                integrationEvent.CancelledAt);
+                SalonTime.FromUtc(integrationEvent.CancelledAt));
 
             if (refundAmount.Amount <= 0)
             {

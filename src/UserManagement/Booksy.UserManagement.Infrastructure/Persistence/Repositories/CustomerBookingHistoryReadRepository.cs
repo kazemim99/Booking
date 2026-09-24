@@ -20,14 +20,14 @@ namespace Booksy.UserManagement.Infrastructure.Persistence.Repositories
 
         public async Task<IReadOnlyList<CustomerBookingHistoryEntry>> GetUpcomingAsync(
             Guid customerId,
-            DateTime nowUtc,
+            DateTime salonNow,
             int limit,
             CancellationToken cancellationToken = default)
         {
             return await _context.CustomerBookingHistory
                 .AsNoTracking()
                 .Where(e => e.CustomerId == customerId
-                            && e.StartTime >= nowUtc
+                            && e.StartTime >= salonNow
                             && e.Status != CancelledStatus)
                 .OrderBy(e => e.StartTime)
                 .Take(Math.Max(1, limit))

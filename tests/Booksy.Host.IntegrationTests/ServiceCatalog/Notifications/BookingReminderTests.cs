@@ -68,6 +68,22 @@ public class BookingReminderTests : ServiceCatalogIntegrationTestBase
     }
 
     [Fact]
+    public async Task The_two_hour_reminder_goes_out_two_hours_before_on_the_salons_clock()
+    {
+        // A 10:00 appointment is ten o'clock at the salon; two hours before it is 08:00 there, 04:30 UTC. The
+        // reminder was queued for "08:00 UTC" — 11:30 at the salon, an hour and a half AFTER the appointment
+        // (QA 2026-09-24).
+        var start = SalonTime.Now.Date.AddDays(3).AddHours(10);
+        var booking = await BookingForAsync(start);
+        await ScheduleAsync(booking);
+
+        var twoHour = (await RowsForAsync(booking.Id.Value))
+            .Single(r => r.EventCode == NotificationEventCode.BookingReminder2h);
+
+        twoHour.ScheduledFor.Should().Be(SalonTime.ToUtc(start.AddHours(-2)));
+    }
+
+    [Fact]
     public async Task Scheduling_twice_does_not_double_the_reminders()
     {
         // A re-confirmed or retried booking must not give the customer two of everything.
@@ -102,7 +118,7 @@ public class BookingReminderTests : ServiceCatalogIntegrationTestBase
 
     private async Task<Booking> GivenConfirmedBookingAsync(TimeSpan startsIn)
     {
-        var booking = await BookingForAsync(DateTime.UtcNow.Add(startsIn));
+        var booking = await BookingForAsync(SalonTime.Now.Add(startsIn));
         await ScheduleAsync(booking);
         return booking;
     }

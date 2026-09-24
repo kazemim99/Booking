@@ -74,13 +74,13 @@ namespace Booksy.UserManagement.Domain.ReadModels
 
         public bool IsUpcoming()
         {
-            return StartTime > DateTime.UtcNow &&
+            return StartTime > SalonTime.Now &&
                    (Status == "Confirmed" || Status == "Pending");
         }
 
         public bool IsPast()
         {
-            return StartTime <= DateTime.UtcNow ||
+            return StartTime <= SalonTime.Now ||
                    Status == "Completed" ||
                    Status == "Cancelled";
         }

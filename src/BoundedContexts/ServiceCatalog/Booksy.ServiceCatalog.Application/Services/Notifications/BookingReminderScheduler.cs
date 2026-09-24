@@ -91,7 +91,9 @@ namespace Booksy.ServiceCatalog.Application.Services.Notifications
 
             foreach (var (code, before, toCustomer) in Offsets)
             {
-                var due = start - before;
+                // The appointment is the salon's wall clock; the outbox sends at a UTC instant. Queued as the
+                // wall-clock digits, "2h before 10:00" went out at 11:30 salon time (QA 2026-09-24).
+                var due = SalonTime.ToUtc(start - before);
 
                 // A booking made an hour beforehand must not immediately fire the reminder meant for the
                 // day before. Skipping is the only sensible reading: the moment for that message has passed.
