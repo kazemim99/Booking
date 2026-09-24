@@ -33,6 +33,7 @@ class BookingSummaryJson {
       currency: json['currency'],
       status: json['status'],
       cancellationReason: json['cancellationReason'] as String?,
+      rescheduleBlockedReason: json['rescheduleBlockedReason'],
       now: now,
     );
   }
@@ -62,6 +63,7 @@ class BookingSummaryJson {
       currency: payment['currency'] ?? json['currency'],
       status: json['status'],
       cancellationReason: json['cancellationReason'] as String?,
+      rescheduleBlockedReason: json['rescheduleBlockedReason'],
       now: now,
     );
   }
@@ -81,6 +83,7 @@ class BookingSummaryJson {
     required Object? currency,
     required Object? status,
     required String? cancellationReason,
+    required Object? rescheduleBlockedReason,
     required DateTime now,
   }) {
     // The salon's wall clock: the digits are the time, whatever zone the server wrote (QA 2026-09-23).
@@ -111,6 +114,10 @@ class BookingSummaryJson {
       canReschedule: actionable,
       canReview: statusText.toLowerCase() == 'completed',
       cancellationReason: cancellationReason,
+      // Optional and additive; blank is none.
+      rescheduleBlockedReason: rescheduleBlockedReason is String && rescheduleBlockedReason.trim().isNotEmpty
+          ? rescheduleBlockedReason.trim()
+          : null,
     );
   }
 }

@@ -82,14 +82,11 @@
                   >
                     لغو رزرو
                   </button>
-                  <button
+                  <RescheduleAction
                     v-if="booking.canReschedule"
-                    @click="handleRescheduleBooking(booking)"
-                    class="btn-reschedule"
-                    data-testid="booking-reschedule-button"
-                  >
-                    تغییر زمان
-                  </button>
+                    :reschedule-blocked-reason="booking.rescheduleBlockedReason"
+                    @reschedule="handleRescheduleBooking(booking)"
+                  />
                 </div>
               </div>
             </div>
@@ -188,6 +185,7 @@ import { useNotification } from '@/core/composables/useNotification'
 import CancelBookingModal from './CancelBookingModal.vue'
 import RescheduleBookingModal from './RescheduleBookingModal.vue'
 import ProfileEditModal from './ProfileEditModal.vue'
+import RescheduleAction from './RescheduleAction.vue'
 import { useNameBeforeBooking } from '@/modules/booking/composables/useNameBeforeBooking'
 
 interface Props {

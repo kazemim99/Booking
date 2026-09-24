@@ -53,6 +53,15 @@ class ProfileCubit extends Cubit<ProfileState> {
           lastName: initialLastName,
         ));
 
+  /// Takes the name the session now holds, unless a save is under way (its own answer is about to say what the name
+  /// is) or the session has no real name to offer.
+  void followSessionName({required String firstName, required String lastName}) {
+    if (state.editStatus == ProfileEditStatus.saving) return;
+    if (firstName.isEmpty && lastName.isEmpty) return;
+    if (state.firstName == firstName && state.lastName == lastName) return;
+    emit(state.copyWith(firstName: firstName, lastName: lastName));
+  }
+
   Future<void> saveProfile({
     required String firstName,
     required String lastName,

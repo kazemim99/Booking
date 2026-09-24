@@ -36,6 +36,33 @@ void main() {
         ...extra,
       };
 
+  // QA 2026-09-24: the 24-hour reschedule rule worked, but the customer met it only at the very end. The server now
+  // says up front why an active booking cannot be moved (Persian), on both shapes; absent means it can be.
+  group('why a booking cannot be moved', () {
+    const reason = 'تغییر زمان تا 24 ساعت پیش از نوبت ممکن است؛ برای تغییر با سالن تماس بگیرید.';
+
+    test('a list item carries the reason the server sent', () {
+      final booking = BookingSummaryJson.fromListItem(listItem({'rescheduleBlockedReason': reason}), now: now);
+      expect(booking.rescheduleBlockedReason, reason);
+      expect(booking.canReschedule, isTrue, reason: 'the button stays, disabled, so the reason has a place');
+    });
+
+    test('a booking read by id carries it too', () {
+      final booking = BookingSummaryJson.fromDetails(details({'rescheduleBlockedReason': reason}), now: now);
+      expect(booking.rescheduleBlockedReason, reason);
+    });
+
+    test('without the field the booking can be moved as before', () {
+      expect(BookingSummaryJson.fromListItem(listItem(), now: now).rescheduleBlockedReason, isNull);
+      expect(BookingSummaryJson.fromDetails(details(), now: now).rescheduleBlockedReason, isNull);
+    });
+
+    test('a blank reason is no reason', () {
+      expect(BookingSummaryJson.fromListItem(listItem({'rescheduleBlockedReason': '  '}), now: now).rescheduleBlockedReason,
+          isNull);
+    });
+  });
+
   group('a list item', () {
     test('carries the staff member\'s name', () {
       final booking = BookingSummaryJson.fromListItem(listItem({'staffName': 'مریم احمدی'}), now: now);

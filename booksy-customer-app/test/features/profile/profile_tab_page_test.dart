@@ -3,6 +3,7 @@ import 'package:booksy_customer_app/core/constants/app_strings.dart';
 import 'package:booksy_customer_app/core/di/injection.dart';
 import 'package:booksy_customer_app/core/storage/secure_storage_service.dart';
 import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_event.dart';
 import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_state.dart';
 import 'package:booksy_customer_app/features/profile/data/datasources/profile_remote_datasource.dart';
 import 'package:booksy_customer_app/features/profile/presentation/pages/profile_tab_page.dart';
@@ -95,6 +96,34 @@ void main() {
     expect(names.firstName, 'سارا');
     expect(sessionName(), 'سارا احمدی');
     expect(auth.rememberedNames, [('سارا', 'احمدی')]);
+  });
+
+  // QA 2026-09-24: the post-signup «نام شما» page saved the name (the session learned it), yet the profile tab — already
+  // built underneath — kept showing only the phone, and «ویرایش پروفایل» opened with empty fields, as if nothing had
+  // been saved. The tab follows the session's name.
+  testWidgets('a name the session learns elsewhere shows on the open profile and prefills the edit sheet', (tester) async {
+    await tester.pumpWidget(BlocProvider<AuthBloc>.value(
+      value: auth,
+      child: MaterialApp(
+        theme: AppTheme.light,
+        home: const Directionality(textDirection: TextDirection.rtl, child: ProfileTabPage()),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('ناصر عابدی'), findsNothing);
+
+    auth.add(const UserNameChangedEvent(firstName: 'ناصر', lastName: 'عابدی'));
+    // The bloc hands its new state to listeners a microtask later; frames alone do not wait for it.
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ناصر عابدی'), findsOneWidget);
+
+    await tester.tap(find.text(AppStrings.profileEditTitle));
+    await tester.pumpAndSettle();
+    final fields = tester.widgetList<TextFormField>(find.byType(TextFormField)).toList();
+    expect(fields[0].controller?.text, 'ناصر');
+    expect(fields[1].controller?.text, 'عابدی');
   });
 
   testWidgets('a failed save leaves the session as it was', (tester) async {

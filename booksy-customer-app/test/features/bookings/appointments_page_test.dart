@@ -151,6 +151,27 @@ void main() {
     });
   });
 
+  group('a booking inside its reschedule window', () {
+    const reason = 'تغییر زمان تا 24 ساعت پیش از نوبت ممکن است؛ برای تغییر با سالن تماس بگیرید.';
+
+    testWidgets('shows «تغییر زمان» disabled with the reason, not a dead end at the end', (tester) async {
+      _bookings.upcoming = [fakeBooking('b1', rescheduleBlockedReason: reason)];
+      await _open(tester);
+
+      expect(find.text(reason), findsOneWidget);
+      final button = tester.widget<TextButton>(find.widgetWithText(TextButton, AppStrings.rescheduleBooking));
+      expect(button.onPressed, isNull);
+    });
+
+    testWidgets('a booking that can be moved has no reason and an enabled button', (tester) async {
+      _bookings.upcoming = [fakeBooking('b1')];
+      await _open(tester);
+
+      final button = tester.widget<TextButton>(find.widgetWithText(TextButton, AppStrings.rescheduleBooking));
+      expect(button.onPressed, isNotNull);
+    });
+  });
+
   group('book again', () {
     testWidgets('a completed visit\'s card opens the booking flow with its service chosen', (tester) async {
       _bookings.past = [fakeBooking('b0', status: 'Completed', start: DateTime(2026, 5, 10, 14), actionable: false)];

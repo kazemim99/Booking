@@ -73,7 +73,18 @@ class ProfilePage extends StatelessWidget {
             );
           }
         },
-        child: const _ProfileView(),
+        // The cubit is made once, from the name the session had then. A name the session learns LATER (saved on the
+        // post-signup page, QA 2026-09-24) would never reach it — so the page kept showing only the phone and the
+        // edit sheet opened empty. It follows the session.
+        child: BlocListener<AuthBloc, AuthState>(
+          listenWhen: (prev, next) => next is Authenticated,
+          listener: (context, state) {
+            final user = (state as Authenticated).session.user;
+            final learned = realNameParts(user.firstName, user.lastName);
+            context.read<ProfileCubit>().followSessionName(firstName: learned.first, lastName: learned.last);
+          },
+          child: const _ProfileView(),
+        ),
       ),
     );
   }

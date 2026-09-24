@@ -215,8 +215,21 @@ class _DetailContent extends StatelessWidget {
             key: const Key('appointment-reschedule'),
             label: AppStrings.rescheduleBooking,
             icon: Icons.edit_calendar_outlined,
-            onPressed: state.cancelling ? null : () => _reschedule(context),
+            // Inside the salon's window it is disabled, and says why right here (QA 2026-09-24).
+            onPressed: state.cancelling || booking.rescheduleBlockedReason != null
+                ? null
+                : () => _reschedule(context),
           ),
+          if (booking.rescheduleBlockedReason != null)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.xs),
+              child: Text(
+                booking.rescheduleBlockedReason!,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            ),
           const SizedBox(height: AppSpacing.sm),
         ],
         if (booking.canRebook) ...[

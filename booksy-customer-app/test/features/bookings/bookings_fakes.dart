@@ -20,6 +20,7 @@ BookingSummary fakeBooking(
   String serviceId = 's1',
   String? staffId,
   String? staffName,
+  String? rescheduleBlockedReason,
 }) {
   final active = actionable ?? const {'confirmed', 'pending', 'requested'}.contains(status.toLowerCase());
   return BookingSummary(
@@ -38,6 +39,7 @@ BookingSummary fakeBooking(
     canCancel: active,
     canReschedule: active,
     canReview: canReview ?? status.toLowerCase() == 'completed',
+    rescheduleBlockedReason: rescheduleBlockedReason,
   );
 }
 

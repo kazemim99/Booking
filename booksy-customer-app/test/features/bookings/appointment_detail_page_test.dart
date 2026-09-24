@@ -164,6 +164,17 @@ void main() {
       expect(find.byKey(const Key('appointment-book-again')), findsNothing);
     });
 
+    testWidgets('inside the reschedule window «تغییر زمان» is disabled and says why', (tester) async {
+      const reason = 'تغییر زمان تا 24 ساعت پیش از نوبت ممکن است؛ برای تغییر با سالن تماس بگیرید.';
+      _bookings.upcoming = [fakeBooking('b1', start: DateTime(2030, 1, 5, 16, 30), rescheduleBlockedReason: reason)];
+      await _open(tester, 'b1');
+
+      final button = tester.widget<AppButton>(find.byKey(const Key('appointment-reschedule')));
+      expect(button.onPressed, isNull);
+      expect(find.text(reason), findsOneWidget);
+      expect(find.byKey(const Key('appointment-cancel')), findsOneWidget, reason: 'cancelling is a separate rule');
+    });
+
     testWidgets('cancel asks first, then says so and shows the booking cancelled', (tester) async {
       _bookings.upcoming = [upcoming];
       await _open(tester, 'b1');

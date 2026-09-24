@@ -409,7 +409,8 @@ class _BookingCard extends StatelessWidget {
                 if (booking.canReschedule)
                   AppButton.text(
                     label: AppStrings.rescheduleBooking,
-                    onPressed: onReschedule,
+                    // Inside the salon's window the button stays, disabled, with the reason below (QA 2026-09-24).
+                    onPressed: booking.rescheduleBlockedReason == null ? onReschedule : null,
                   ),
                 if (booking.canCancel)
                   TextButton(
@@ -421,6 +422,14 @@ class _BookingCard extends StatelessWidget {
                   ),
               ],
             ),
+            if (booking.canReschedule && booking.rescheduleBlockedReason != null)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.xs),
+                child: Text(
+                  booking.rescheduleBlockedReason!,
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ),
           ],
           // A visit that took place can be booked again: same salon, same
           // service already chosen.

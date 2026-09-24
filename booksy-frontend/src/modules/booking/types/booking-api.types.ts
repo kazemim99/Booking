@@ -27,6 +27,8 @@ export interface CustomerBookingDto {
   requestedAt: string // ISO 8601 DateTime
   confirmedAt: string | null // ISO 8601 DateTime
   customerNotes: string | null
+  /** Why the customer cannot move this booking now (Persian); absent/null when they can. */
+  rescheduleBlockedReason?: string | null
 }
 
 /**

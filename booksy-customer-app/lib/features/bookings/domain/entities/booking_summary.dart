@@ -25,6 +25,11 @@ class BookingSummary extends Equatable {
   final bool canReview;
   final String? cancellationReason;
 
+  /// Why an active booking cannot be moved right now (the salon's rule, in Persian), or null when it can. The
+  /// screens show «تغییر زمان» disabled with this instead of letting the customer choose a slot and only then
+  /// learn the window has closed (QA 2026-09-24).
+  final String? rescheduleBlockedReason;
+
   const BookingSummary({
     required this.id,
     required this.providerId,
@@ -43,6 +48,7 @@ class BookingSummary extends Equatable {
     required this.canReschedule,
     required this.canReview,
     this.cancellationReason,
+    this.rescheduleBlockedReason,
   });
 
   bool get isUpcoming => startTime.isAfter(DateTime.now());
@@ -76,6 +82,7 @@ class BookingSummary extends Equatable {
       canReschedule: canReschedule ?? this.canReschedule,
       canReview: canReview,
       cancellationReason: cancellationReason,
+      rescheduleBlockedReason: rescheduleBlockedReason,
     );
   }
 
@@ -98,5 +105,6 @@ class BookingSummary extends Equatable {
         canReschedule,
         canReview,
         cancellationReason,
+        rescheduleBlockedReason,
       ];
 }
