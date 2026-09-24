@@ -173,8 +173,11 @@
     :is-open="showRebookModal"
     :booking="bookingToRebook"
     @close="closeRebookModal"
-    @confirm="confirmRebookBooking"
+    @confirm="(time: string) => requireName(() => confirmRebookBooking(time))"
   />
+
+  <!-- A rebooking needs the customer's real name too, asked for only when missing (QA 2026-09-24) -->
+  <ProfileEditModal :is-open="nameFormOpen" @close="onNameFormClosed" />
 </template>
 
 <script setup lang="ts">
@@ -184,6 +187,8 @@ import { mapToEnrichedBookingView, type EnrichedBookingView } from '@/modules/bo
 import { useNotification } from '@/core/composables/useNotification'
 import CancelBookingModal from './CancelBookingModal.vue'
 import RescheduleBookingModal from './RescheduleBookingModal.vue'
+import ProfileEditModal from './ProfileEditModal.vue'
+import { useNameBeforeBooking } from '@/modules/booking/composables/useNameBeforeBooking'
 
 interface Props {
   isOpen: boolean
@@ -210,6 +215,7 @@ const bookingToReschedule = ref<EnrichedBookingView | null>(null)
 
 // Rebook modal state
 const showRebookModal = ref(false)
+const { nameFormOpen, requireName, onNameFormClosed } = useNameBeforeBooking()
 const bookingToRebook = ref<EnrichedBookingView | null>(null)
 
 // Bookings data

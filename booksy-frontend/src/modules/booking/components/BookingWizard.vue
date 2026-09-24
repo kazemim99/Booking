@@ -136,7 +136,7 @@
           class="btn-primary"
           data-testid="booking-confirm"
           :disabled="isSubmitting"
-          @click="submitBooking"
+          @click="confirmBooking"
         >
           <span v-if="!isSubmitting">تایید و رزرو نهایی</span>
           <span v-else class="loading-text">
@@ -146,6 +146,9 @@
         </button>
       </div>
     </div>
+
+    <!-- The customer's name, asked for at the booking and only when they have none (QA 2026-09-24) -->
+    <ProfileEditModal :is-open="nameFormOpen" @close="onNameFormClosed" />
 
     <!-- Success Modal -->
     <Teleport to="body">
@@ -184,6 +187,8 @@ import BookingConfirmation from './BookingConfirmation.vue'
 import { bookingService } from '@/modules/booking/api/booking.service'
 import type { CreateBookingRequest } from '@/modules/booking/api/booking.service'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
+import ProfileEditModal from '@/modules/customer/components/modals/ProfileEditModal.vue'
+import { useNameBeforeBooking } from '@/modules/booking/composables/useNameBeforeBooking'
 
 const router = useRouter()
 const route = useRoute()
@@ -378,6 +383,10 @@ const reviewBooking = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 }
+
+// A booking needs the customer's real first AND last name, asked for here only when missing (QA 2026-09-24).
+const { nameFormOpen, requireName, onNameFormClosed } = useNameBeforeBooking()
+const confirmBooking = () => requireName(submitBooking)
 
 const submitBooking = async () => {
   isSubmitting.value = true

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { personNameOrNull, realNameOrNull, userNames } from '../person-name'
+import { hasFullName, personNameOrNull, realNameOrNull, userNames } from '../person-name'
 
 // Production QA 2026-09-23: a person signed up by phone is «مشتری 9384444636» / «ارائه‌دهنده 9123135143» until they
 // give a name, and the apps printed that — "the number must never be written anywhere". Mirrors the API's PersonName.
@@ -54,5 +54,21 @@ describe('userNames — what the header calls the signed-in person', () => {
 
   it('nobody signed in has none', () => {
     expect(userNames(null)).toEqual({ first: null, full: null })
+  })
+})
+
+// QA 2026-09-24: a salon cannot tell who it is confirming. A booking needs a real first AND last name.
+describe('hasFullName — enough of a name to book with', () => {
+  it('a real first and last name is enough', () => {
+    expect(hasFullName('مصطفی', 'کاظمی')).toBe(true)
+  })
+
+  it('the phone sign-up placeholder is not', () => {
+    expect(hasFullName('مشتری', '9384444636')).toBe(false)
+  })
+
+  it('a first name alone, or a last name alone, is not', () => {
+    expect(hasFullName('مصطفی', '')).toBe(false)
+    expect(hasFullName(null, 'کاظمی')).toBe(false)
   })
 })

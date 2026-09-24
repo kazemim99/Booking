@@ -73,3 +73,14 @@ export function userNames(user?: NamedUser | null): { first: string | null; full
   const first = personNameOrNull(user.firstName) ?? full?.split(' ')[0] ?? null
   return { first, full }
 }
+
+/**
+ * Enough of a name to book with: a real first name AND a real last name. A salon has to know who it is confirming
+ * (QA 2026-09-24); the sign-up placeholder, or half a name, is not enough.
+ */
+export function hasFullName(firstName?: string | null, lastName?: string | null): boolean {
+  const first = personNameOrNull(firstName)
+  const rawLast = lastName?.trim() ?? ''
+  const last = isDigitGroup(rawLast) ? null : personNameOrNull(rawLast)
+  return first !== null && last !== null
+}

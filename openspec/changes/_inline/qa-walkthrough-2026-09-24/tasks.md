@@ -41,6 +41,8 @@ re-prompt and the confirm-screen customer name; push delivery and "name right af
 - [x] 4 POST /bookings/{id}/complete at 33 minutes past start succeeds (integration)
 - [x] 5 A customer's confirmed real name reaches the salon's client-book entry for them
 - [x] 6 Provider name re-prompt after onboarding (fixed); customer name headline on the salon's request row + sheet
+- [x] 8 Vue web: a booking (wizard confirm, My Bookings rebook) needs a real first AND last name, asked for then
+  and only when missing — the Flutter app already did (user, 2026-09-24: keep sign-up phone-only; no name after OTP)
 - [ ] 7 FULL verify
 
 ## Decisions
@@ -59,6 +61,12 @@ re-prompt and the confirm-screen customer name; push delivery and "name right af
 - Surfaces: time rules and client-book naming are server-side; customer apps compare wall-clock times with the
   device clock, correct on Iranian devices, so nothing needed there. The request-row/sheet change is the Flutter
   provider app (the live salon surface); admin: nothing needed.
+- User 2026-09-24: sign-up stays phone-only (no mandatory name after OTP); the name is required when a booking
+  is completed, only if missing. Client-list follow-ups stay as they are (no propagation of later renames; own
+  bookings do not add the customer to the salon's list). Push: do not change the implementation; first test the
+  FCM token and direct delivery with and without VPN — works only with VPN = network/Google FCM reachability.
+- D6 (tier 2) No server-side name check on POST /bookings: the rule is enforced in both customer UIs; a server check
+  would need every test fixture to create named users. Flagged, not done.
 - D3 (tier 2) Refund-on-cancel measures the same stated policy in salon time; this corrects the measurement, not the
   policy (no deposit flow is live).
 
@@ -69,3 +77,5 @@ re-prompt and the confirm-screen customer name; push delivery and "name right af
   silent at 08:05, 09:00 slots offered at 11:34, 201 for an hour ago, started appointment still upcoming), client-book
   rename, provider session name after onboarding, request-row name headline. RescheduleNotificationTests expected the
   old wall-clock send time; corrected. Targeted runs: 731 domain, 311+22 integration, 283 provider-app tests green.
+- FULL run 1: backend all green (integration 843/843); customer app and both Vue apps not run — fresh worktree had
+  no pub packages / node_modules (environment). Vue name gate: wizard + composable tests seen failing first.
