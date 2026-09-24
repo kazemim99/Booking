@@ -355,14 +355,15 @@ jobs:
 
     - name: Build web bundle
       # Web push is configured at build time. The five FIREBASE_WEB_* values are public identifiers (they ship in
-      # every bundle), so they are repository VARIABLES; a secret of the same name is accepted too. Unset, they are
-      # passed empty and the app is built exactly as before web push: no Firebase load, no prompt.
+      # every bundle), so they are repository VARIABLES; a secret of the same name is accepted too. The four Web-app
+      # values default to the booksy-f324d project; web push turns on once FIREBASE_WEB_VAPID_KEY is set as well
+      # (without it the app is built exactly as before web push: no Firebase load, no prompt).
       # docs/DEPLOYMENT_RUNBOOK.md › Web push says where each value comes from.
       env:
-        FIREBASE_WEB_API_KEY: ${{ vars.FIREBASE_WEB_API_KEY || secrets.FIREBASE_WEB_API_KEY }}
-        FIREBASE_WEB_APP_ID: ${{ vars.FIREBASE_WEB_APP_ID || secrets.FIREBASE_WEB_APP_ID }}
-        FIREBASE_WEB_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_WEB_MESSAGING_SENDER_ID || secrets.FIREBASE_WEB_MESSAGING_SENDER_ID }}
-        FIREBASE_WEB_PROJECT_ID: ${{ vars.FIREBASE_WEB_PROJECT_ID || secrets.FIREBASE_WEB_PROJECT_ID }}
+        FIREBASE_WEB_API_KEY: ${{ vars.FIREBASE_WEB_API_KEY || secrets.FIREBASE_WEB_API_KEY || 'AIzaSyCU0ko40NylNFVHPeW5lmMm4xleMkvJjDk' }}
+        FIREBASE_WEB_APP_ID: ${{ vars.FIREBASE_WEB_APP_ID || secrets.FIREBASE_WEB_APP_ID || '1:208825281492:web:100da293cddac2d4ff8441' }}
+        FIREBASE_WEB_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_WEB_MESSAGING_SENDER_ID || secrets.FIREBASE_WEB_MESSAGING_SENDER_ID || '208825281492' }}
+        FIREBASE_WEB_PROJECT_ID: ${{ vars.FIREBASE_WEB_PROJECT_ID || secrets.FIREBASE_WEB_PROJECT_ID || 'booksy-f324d' }}
         FIREBASE_WEB_VAPID_KEY: ${{ vars.FIREBASE_WEB_VAPID_KEY || secrets.FIREBASE_WEB_VAPID_KEY }}
       run: |
         flutter build web --release --dart-define=API_BASE_URL=https://back.nahalkmi.ir \
@@ -376,7 +377,7 @@ jobs:
       # Unset values are not a failure (the app simply has no web push, as before). A failure means the worker is
       # missing from the bundle, or the values were set and did not reach it.
       env:
-        FIREBASE_WEB_PROJECT_ID: ${{ vars.FIREBASE_WEB_PROJECT_ID || secrets.FIREBASE_WEB_PROJECT_ID }}
+        FIREBASE_WEB_PROJECT_ID: ${{ vars.FIREBASE_WEB_PROJECT_ID || secrets.FIREBASE_WEB_PROJECT_ID || 'booksy-f324d' }}
         FIREBASE_WEB_VAPID_KEY: ${{ vars.FIREBASE_WEB_VAPID_KEY || secrets.FIREBASE_WEB_VAPID_KEY }}
       run: |
         test -f build/web/push/firebase-messaging-sw.js
@@ -443,14 +444,15 @@ jobs:
 
     - name: Build web bundle
       # Web push is configured at build time. The five FIREBASE_WEB_* values are public identifiers (they ship in
-      # every bundle), so they are repository VARIABLES; a secret of the same name is accepted too. Unset, they are
-      # passed empty and the app is built exactly as before web push: no Firebase load, no prompt.
+      # every bundle), so they are repository VARIABLES; a secret of the same name is accepted too. The four Web-app
+      # values default to the booksy-f324d project; web push turns on once FIREBASE_WEB_VAPID_KEY is set as well
+      # (without it the app is built exactly as before web push: no Firebase load, no prompt).
       # docs/DEPLOYMENT_RUNBOOK.md › Web push says where each value comes from.
       env:
-        FIREBASE_WEB_API_KEY: ${{ vars.FIREBASE_WEB_API_KEY || secrets.FIREBASE_WEB_API_KEY }}
-        FIREBASE_WEB_APP_ID: ${{ vars.FIREBASE_WEB_APP_ID || secrets.FIREBASE_WEB_APP_ID }}
-        FIREBASE_WEB_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_WEB_MESSAGING_SENDER_ID || secrets.FIREBASE_WEB_MESSAGING_SENDER_ID }}
-        FIREBASE_WEB_PROJECT_ID: ${{ vars.FIREBASE_WEB_PROJECT_ID || secrets.FIREBASE_WEB_PROJECT_ID }}
+        FIREBASE_WEB_API_KEY: ${{ vars.FIREBASE_WEB_API_KEY || secrets.FIREBASE_WEB_API_KEY || 'AIzaSyCU0ko40NylNFVHPeW5lmMm4xleMkvJjDk' }}
+        FIREBASE_WEB_APP_ID: ${{ vars.FIREBASE_WEB_APP_ID || secrets.FIREBASE_WEB_APP_ID || '1:208825281492:web:100da293cddac2d4ff8441' }}
+        FIREBASE_WEB_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_WEB_MESSAGING_SENDER_ID || secrets.FIREBASE_WEB_MESSAGING_SENDER_ID || '208825281492' }}
+        FIREBASE_WEB_PROJECT_ID: ${{ vars.FIREBASE_WEB_PROJECT_ID || secrets.FIREBASE_WEB_PROJECT_ID || 'booksy-f324d' }}
         FIREBASE_WEB_VAPID_KEY: ${{ vars.FIREBASE_WEB_VAPID_KEY || secrets.FIREBASE_WEB_VAPID_KEY }}
       run: |
         flutter build web --release --dart-define=API_BASE_URL=https://back.nahalkmi.ir \
@@ -464,7 +466,7 @@ jobs:
       # Unset values are not a failure (the app simply has no web push, as before). A failure means the worker is
       # missing from the bundle, or the values were set and did not reach it.
       env:
-        FIREBASE_WEB_PROJECT_ID: ${{ vars.FIREBASE_WEB_PROJECT_ID || secrets.FIREBASE_WEB_PROJECT_ID }}
+        FIREBASE_WEB_PROJECT_ID: ${{ vars.FIREBASE_WEB_PROJECT_ID || secrets.FIREBASE_WEB_PROJECT_ID || 'booksy-f324d' }}
         FIREBASE_WEB_VAPID_KEY: ${{ vars.FIREBASE_WEB_VAPID_KEY || secrets.FIREBASE_WEB_VAPID_KEY }}
       run: |
         test -f build/web/push/firebase-messaging-sw.js
