@@ -11,6 +11,7 @@ using Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking;
 using Booksy.ServiceCatalog.Application.Commands.Booking.MarkNoShow;
 using Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking;
 using Booksy.ServiceCatalog.Application.Queries.Membership.CanManageOrganization;
+using Booksy.ServiceCatalog.Application.Services;
 using Booksy.ServiceCatalog.Application.Queries.Booking.GetAvailableSlots;
 using Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingDetails;
 using Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingStatistics;
@@ -39,12 +40,15 @@ public class BookingsController : ControllerBase
     private readonly ISender _mediator;
     private readonly ILogger<BookingsController> _logger;
     private readonly IBookingReadRepository _bookingReadRepository;
+    private readonly IBookingCustomerNames _customerNames;
 
     public BookingsController(
         ISender mediator,
         ILogger<BookingsController> logger,
-        IBookingReadRepository bookingReadRepository)
+        IBookingReadRepository bookingReadRepository,
+        IBookingCustomerNames customerNames)
     {
+        _customerNames = customerNames ?? throw new ArgumentNullException(nameof(customerNames));
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _bookingReadRepository = bookingReadRepository ?? throw new ArgumentNullException(nameof(bookingReadRepository));
@@ -262,6 +266,12 @@ public class BookingsController : ControllerBase
         }
 
         var response = bookings.Select(MapToBookingResponse).ToList();
+
+        // Who each booking is for — the salon confirms requests by name (QA 2026-09-24).
+        var names = await _customerNames.ForAsync(providerId, bookings.ToList(), cancellationToken);
+        foreach (var (booking, row) in bookings.Zip(response))
+            row.CustomerName = names.GetValueOrDefault(booking.Id.Value);
+
         return Ok(response);
     }
 
@@ -794,6 +804,7 @@ public class BookingsController : ControllerBase
             ServiceId = result.ServiceId,
             StaffProviderId = result.StaffId,
             StaffName = result.StaffName,
+            RescheduleBlockedReason = result.RescheduleBlockedReason,
             ServiceName = result.ServiceName,
             ProviderBusinessName = result.ProviderName,
             StartTime = result.StartTime,

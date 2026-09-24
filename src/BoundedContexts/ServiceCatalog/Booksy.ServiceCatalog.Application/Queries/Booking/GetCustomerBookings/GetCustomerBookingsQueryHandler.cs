@@ -131,7 +131,8 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetCustomerBookings
                     RequestedAt: booking.RequestedAt,
                     ConfirmedAt: booking.ConfirmedAt,
                     CustomerNotes: booking.CustomerNotes,
-                    StaffName: await _staffNames.ForAsync(provider, booking.StaffId, cancellationToken)));
+                    StaffName: await _staffNames.ForAsync(provider, booking.StaffId, cancellationToken),
+                    RescheduleBlockedReason: booking.RescheduleBlockedReason()));
             }
 
             _logger.LogInformation(

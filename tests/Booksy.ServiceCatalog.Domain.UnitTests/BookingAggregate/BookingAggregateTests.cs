@@ -286,7 +286,7 @@ public class BookingAggregateTests
 
         // Act & Assert
         var exception = Assert.Throws<BusinessRuleViolationException>(() => booking.Confirm());
-        Assert.Contains("deposit", exception.Message.ToLower());
+        Assert.Contains("بیعانه", exception.Message);
     }
 
     [Fact]

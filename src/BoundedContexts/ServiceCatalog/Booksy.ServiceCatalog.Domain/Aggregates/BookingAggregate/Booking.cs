@@ -323,6 +323,40 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
         }
 
         /// <summary>
+        /// Why an active booking cannot be moved right now, in words for the customer — null when it can be (or when
+        /// it is no longer active, where there is nothing to move). Lets the apps say so BEFORE the customer picks a
+        /// slot instead of after (QA 2026-09-24).
+        /// </summary>
+        public string? RescheduleBlockedReason()
+        {
+            if (Status != BookingStatus.Requested && Status != BookingStatus.Confirmed)
+                return null;
+
+            if (!Policy.AllowRescheduling)
+                return new BookingCannotBeRescheduledRule(Status, Policy).Message;
+
+            return Policy.CanReschedule(TimeSlot.StartTime, SalonTime.Now)
+                ? null
+                : new RescheduleWindowExpiredRule(Policy, TimeSlot.StartTime).Message;
+        }
+
+        /// <summary>
+        /// Throws the rule that stops this booking being moved — status/policy first, then the window before the
+        /// appointment. Callable ahead of any slot lookup so the customer is told the reason they can act on: the
+        /// window checked after slot availability hid behind «slot not available» (QA 2026-09-24).
+        /// </summary>
+        public void EnsureCanBeRescheduled()
+        {
+            if (!CanBeRescheduled())
+                throw new BusinessRuleViolationException(
+                    new BookingCannotBeRescheduledRule(Status, Policy));
+
+            if (!Policy.CanReschedule(TimeSlot.StartTime, SalonTime.Now))
+                throw new BusinessRuleViolationException(
+                    new RescheduleWindowExpiredRule(Policy, TimeSlot.StartTime));
+        }
+
+        /// <summary>
         /// Reschedule the booking to a new time
         /// </summary>
         public Booking Reschedule(
@@ -330,15 +364,8 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
             Guid newStaffId,
             string? reason = null)
         {
-            // Business rules validation
-            if (!CanBeRescheduled())
-                throw new BusinessRuleViolationException(
-                    new BookingCannotBeRescheduledRule(Status, Policy));
-
+            EnsureCanBeRescheduled();
             var now = DateTime.UtcNow;
-            if (!Policy.CanReschedule(TimeSlot.StartTime, SalonTime.FromUtc(now)))
-                throw new BusinessRuleViolationException(
-                    new RescheduleWindowExpiredRule(Policy, TimeSlot.StartTime));
 
             // Create new booking for the rescheduled time
             var newBooking = new Booking
@@ -672,6 +699,21 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
     // BUSINESS RULES
     // ========================================
 
+    /// <summary>A booking status as the customer or salon reads it.</summary>
+    internal static class BookingStatusLabel
+    {
+        public static string Of(BookingStatus status) => status switch
+        {
+            BookingStatus.Requested => "در انتظار تأیید",
+            BookingStatus.Confirmed => "تأیید شده",
+            BookingStatus.Cancelled => "لغو شده",
+            BookingStatus.Completed => "انجام شده",
+            BookingStatus.NoShow => "عدم حضور",
+            BookingStatus.Rescheduled => "تغییر زمان داده شده",
+            _ => status.ToString(),
+        };
+    }
+
     internal sealed class BookingCanOnlyBeConfirmedFromRequestedStateRule : IBusinessRule
     {
         private readonly BookingStatus _currentStatus;
@@ -681,14 +723,14 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
             _currentStatus = currentStatus;
         }
 
-        public string Message => $"Booking can only be confirmed from Requested state. Current state: {_currentStatus}";
+        public string Message => $"فقط درخواست‌های در انتظار تأیید قابل تأیید هستند؛ وضعیت این نوبت: {BookingStatusLabel.Of(_currentStatus)}.";
         public string ErrorCode => "BOOKING_INVALID_STATE_FOR_CONFIRMATION";
         public bool IsBroken() => _currentStatus != BookingStatus.Requested;
     }
 
     internal sealed class DepositMustBePaidBeforeConfirmationRule : IBusinessRule
     {
-        public string Message => "Deposit must be paid before booking can be confirmed";
+        public string Message => "پیش از تأیید نوبت باید بیعانه پرداخت شود.";
         public string ErrorCode => "BOOKING_DEPOSIT_NOT_PAID";
         public bool IsBroken() => true;
     }
@@ -702,7 +744,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
             _policy = policy;
         }
 
-        public string Message => $"Booking must be made at least {_policy.MinAdvanceBookingHours} hours in advance and no more than {_policy.MaxAdvanceBookingDays} days in advance";
+        public string Message => $"رزرو باید حداقل {_policy.MinAdvanceBookingHours} ساعت زودتر و حداکثر {_policy.MaxAdvanceBookingDays} روز زودتر انجام شود.";
         public string ErrorCode => "BOOKING_OUTSIDE_TIME_WINDOW";
         public bool IsBroken() => true;
     }
@@ -716,7 +758,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
             _status = status;
         }
 
-        public string Message => $"Booking with status {_status} cannot be cancelled";
+        public string Message => $"نوبتی که «{BookingStatusLabel.Of(_status)}» است قابل لغو نیست.";
         public string ErrorCode => "BOOKING_CANNOT_BE_CANCELLED";
         public bool IsBroken() => true;
     }
@@ -733,8 +775,8 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
         }
 
         public string Message => _policy.AllowRescheduling
-            ? $"Booking with status {_status} cannot be rescheduled"
-            : "Rescheduling is not allowed by booking policy";
+            ? $"نوبتی که «{BookingStatusLabel.Of(_status)}» است قابل تغییر زمان نیست."
+            : "این سالن تغییر زمان نوبت را مجاز نکرده است؛ برای تغییر با سالن تماس بگیرید.";
         public string ErrorCode => "BOOKING_CANNOT_BE_RESCHEDULED";
         public bool IsBroken() => true;
     }
@@ -750,7 +792,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
             _bookingStartTime = bookingStartTime;
         }
 
-        public string Message => $"Rescheduling must be done at least {_policy.RescheduleWindowHours} hours before the booking";
+        public string Message => $"تغییر زمان تا {_policy.RescheduleWindowHours} ساعت پیش از نوبت ممکن است؛ برای تغییر با سالن تماس بگیرید.";
         public string ErrorCode => "BOOKING_RESCHEDULE_WINDOW_EXPIRED";
         public bool IsBroken() => true;
     }
@@ -764,7 +806,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
             _status = status;
         }
 
-        public string Message => $"Booking can only be completed from Confirmed state. Current state: {_status}";
+        public string Message => $"فقط نوبت‌های تأیید‌شده قابل ثبت به‌عنوان انجام‌شده هستند؛ وضعیت این نوبت: {BookingStatusLabel.Of(_status)}.";
         public string ErrorCode => "BOOKING_INVALID_STATE_FOR_COMPLETION";
         public bool IsBroken() => true;
     }
@@ -778,7 +820,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
             _scheduledTime = scheduledTime;
         }
 
-        public string Message => $"Booking cannot be completed before scheduled time: {_scheduledTime:yyyy-MM-dd HH:mm}";
+        public string Message => $"نوبت را پیش از زمان آن ({_scheduledTime:yyyy-MM-dd HH:mm}) نمی‌توان انجام‌شده ثبت کرد.";
         public string ErrorCode => "BOOKING_TOO_EARLY_TO_COMPLETE";
         public bool IsBroken() => true;
     }
@@ -792,7 +834,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
             _status = status;
         }
 
-        public string Message => $"No-show can only be marked for Confirmed bookings. Current state: {_status}";
+        public string Message => $"عدم حضور فقط برای نوبت‌های تأیید‌شده ثبت می‌شود؛ وضعیت این نوبت: {BookingStatusLabel.Of(_status)}.";
         public string ErrorCode => "BOOKING_INVALID_STATE_FOR_NO_SHOW";
         public bool IsBroken() => true;
     }
@@ -806,7 +848,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
             _endTime = endTime;
         }
 
-        public string Message => $"Cannot mark as no-show before booking end time: {_endTime:yyyy-MM-dd HH:mm}";
+        public string Message => $"عدم حضور را پیش از پایان نوبت ({_endTime:yyyy-MM-dd HH:mm}) نمی‌توان ثبت کرد.";
         public string ErrorCode => "BOOKING_TOO_EARLY_FOR_NO_SHOW";
         public bool IsBroken() => true;
     }
@@ -820,7 +862,7 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
             _status = status;
         }
 
-        public string Message => $"Staff can only be assigned to Requested or Confirmed bookings. Current state: {_status}";
+        public string Message => $"کارمند فقط به نوبت‌های در انتظار تأیید یا تأیید‌شده اختصاص داده می‌شود؛ وضعیت این نوبت: {BookingStatusLabel.Of(_status)}.";
         public string ErrorCode => "BOOKING_INVALID_STATE_FOR_STAFF_ASSIGNMENT";
         public bool IsBroken() => true;
     }

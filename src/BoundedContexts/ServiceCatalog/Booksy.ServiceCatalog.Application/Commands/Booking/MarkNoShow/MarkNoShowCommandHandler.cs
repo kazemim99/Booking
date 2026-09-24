@@ -53,7 +53,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.MarkNoShow
                 cancellationToken);
 
             if (booking == null)
-                throw new NotFoundException($"Booking with ID {request.BookingId} not found");
+                throw new NotFoundException("این نوبت پیدا نشد.");
 
             // Mark as no-show
             booking.MarkAsNoShow(request.Notes);

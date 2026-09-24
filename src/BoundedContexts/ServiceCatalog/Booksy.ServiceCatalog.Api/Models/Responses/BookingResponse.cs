@@ -20,6 +20,12 @@ public class BookingResponse
     public DateTime CreatedAt { get; set; }
 
     /// <summary>
+    /// Who the booking is for: the customer's real name, or the salon's own book name for a walk-in. Null when
+    /// there is no real name (a placeholder or a phone is never sent as one). Filled on the salon's booking list.
+    /// </summary>
+    public string? CustomerName { get; set; }
+
+    /// <summary>
     /// Names of every service bundled in the visit (multi-service bookings).
     /// Empty on rows written before line items existed.
     /// </summary>

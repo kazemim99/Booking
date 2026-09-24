@@ -51,7 +51,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.AssignStaff
                 cancellationToken);
 
             if (booking == null)
-                throw new NotFoundException($"Booking with ID {request.BookingId} not found");
+                throw new NotFoundException("این نوبت پیدا نشد.");
 
             var previousStaffId = booking.StaffId;
 

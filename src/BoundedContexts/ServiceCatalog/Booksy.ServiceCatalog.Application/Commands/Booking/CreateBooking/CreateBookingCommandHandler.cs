@@ -90,7 +90,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
                 cancellationToken);
 
             if (provider == null)
-                throw new NotFoundException($"Provider with ID {request.ProviderId} not found");
+                throw new NotFoundException("این کسب‌وکار پیدا نشد.");
 
             // Load every service in the visit. ServiceIds supersedes the
             // single ServiceId (kept for caller compatibility); duplicates are
@@ -110,16 +110,16 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
                     cancellationToken);
 
                 if (loaded == null)
-                    throw new NotFoundException($"Service with ID {id} not found");
+                    throw new NotFoundException("این خدمت پیدا نشد.");
 
                 if (loaded.ProviderId != provider.Id)
                     throw new ConflictException(
-                        "Service does not belong to the specified provider");
+                        "این خدمت متعلق به این کسب‌وکار نیست.");
 
                 if (services.Count > 0 &&
                     loaded.BasePrice.Currency != services[0].BasePrice.Currency)
                     throw new ConflictException(
-                        "All services in one booking must share a currency");
+                        "همهٔ خدمت‌های یک نوبت باید واحد پول یکسان داشته باشند.");
 
                 services.Add(loaded);
             }
@@ -166,7 +166,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
                 cancellationToken);
 
             if (!validationResult.IsValid)
-                throw new ConflictException($"Booking validation failed: {string.Join(", ", validationResult.Errors)}");
+                throw new ConflictException(string.Join("؛ ", validationResult.Errors));
 
             // Check for booking conflicts with existing appointments
             // The same gap the offered slots use (zero today), so the grid and this check cannot disagree: a slot
@@ -180,7 +180,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
                 cancellationToken);
 
             if (conflictingBookings.Any())
-                throw new ConflictException("This time slot conflicts with an existing booking");
+                throw new ConflictException("این زمان دیگر خالی نیست؛ لطفاً زمان دیگری انتخاب کنید.");
 
             // Resolve the *effective* booking policy: a service-level override wins, otherwise the provider's own
             // default, otherwise the platform default (which requires no deposit). The booking snapshots whichever
@@ -248,7 +248,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
             }
             else if (request.ProviderCustomerId is not null)
             {
-                throw new ForbiddenException("Only the salon can book for a customer in its customer book");
+                throw new ForbiddenException("فقط خود سالن می‌تواند برای مشتریِ فهرست مشتریانش نوبت ثبت کند.");
             }
             else
             {
@@ -530,8 +530,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CreateBooking
                         slot.Id);
 
                     throw new ConflictException(
-                        "The selected time slot has just been booked by another customer. " +
-                        "Please select a different time.");
+                        "همین الان مشتری دیگری این زمان را رزرو کرد؛ لطفاً زمان دیگری انتخاب کنید.");
                 }
             }
 

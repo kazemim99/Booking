@@ -17,6 +17,9 @@ public class BookingDetailsResponse
     /// </summary>
     public string? StaffName { get; set; }
 
+    /// <summary>Why the customer cannot move this booking now (Persian); null when they can.</summary>
+    public string? RescheduleBlockedReason { get; set; }
+
     // Service information
     public string ServiceName { get; set; } = string.Empty;
     public string ServiceCategory { get; set; } = string.Empty;

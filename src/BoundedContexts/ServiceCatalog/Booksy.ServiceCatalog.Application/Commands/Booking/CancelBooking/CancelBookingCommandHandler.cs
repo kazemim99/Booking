@@ -52,7 +52,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CancelBooking
                 cancellationToken);
 
             if (booking == null)
-                throw new NotFoundException($"Booking with ID {request.BookingId} not found");
+                throw new NotFoundException("این نوبت پیدا نشد.");
 
             // Captured BEFORE the transition, because both a rejection and a cancellation land on Cancelled
             // and only the starting state tells them apart: a request the salon never accepted was never an

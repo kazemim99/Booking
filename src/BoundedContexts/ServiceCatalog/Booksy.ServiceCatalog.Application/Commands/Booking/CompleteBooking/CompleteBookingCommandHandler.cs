@@ -50,7 +50,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.CompleteBooking
                 cancellationToken);
 
             if (booking == null)
-                throw new NotFoundException($"Booking with ID {request.BookingId} not found");
+                throw new NotFoundException("این نوبت پیدا نشد.");
 
             // Complete booking
             booking.Complete(request.StaffNotes);

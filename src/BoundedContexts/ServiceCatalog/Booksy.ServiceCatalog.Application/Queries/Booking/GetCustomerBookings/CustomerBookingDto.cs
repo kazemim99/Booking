@@ -26,5 +26,8 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetCustomerBookings
         string? CustomerNotes,
         // Who does it: the assigned member's name (real name, else the salon's name for them, else the salon's
         // own name — never a placeholder or a phone); null when the booking is held by the salon itself.
-        string? StaffName = null);
+        string? StaffName = null,
+        // Why the customer cannot move this booking right now, in Persian; null when they can. Said up front so the
+        // apps disable «تغییر زمان» with the reason instead of failing after a slot is chosen.
+        string? RescheduleBlockedReason = null);
 }

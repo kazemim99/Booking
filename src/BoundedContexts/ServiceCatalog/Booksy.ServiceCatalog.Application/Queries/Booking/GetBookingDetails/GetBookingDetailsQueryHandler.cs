@@ -85,7 +85,8 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingDetails
                         h.Status.ToString(),
                         h.OccurredAt))
                     .ToList(),
-                StaffName: await _staffNames.ForAsync(provider, booking.StaffId, cancellationToken));
+                StaffName: await _staffNames.ForAsync(provider, booking.StaffId, cancellationToken),
+                RescheduleBlockedReason: booking.RescheduleBlockedReason());
         }
     }
 }

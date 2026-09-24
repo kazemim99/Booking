@@ -33,8 +33,11 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
         private readonly IServiceCatalogUnitOfWork _unitOfWork;
         private readonly ILogger<RescheduleBookingCommandHandler> _logger;
 
-        /// <summary>Gap kept after an appointment, matching booking creation.</summary>
-        private const int BufferMinutes = 15;
+        /// <summary>
+        /// Gap kept after an appointment: the SAME one booking creation and the free-time grid use, so a slot the
+        /// reschedule screen offers is never then refused as a conflict (QA 2026-09-24: 12:30 offered, refused).
+        /// </summary>
+        private const int BufferMinutes = Services.AvailabilityService.BufferTimeMinutes;
 
         private readonly IBookingNotificationParameters _bookingParameters;
 
@@ -78,7 +81,12 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
                 cancellationToken);
 
             if (existingBooking == null)
-                throw new NotFoundException($"Booking with ID {request.BookingId} not found");
+                throw new NotFoundException("این نوبت پیدا نشد.");
+
+            // The reason the customer can act on comes first: a booking inside its reschedule window cannot be
+            // moved whatever slot is chosen, and checked after slot availability that reason hid behind
+            // «slot not available» (QA 2026-09-24).
+            existingBooking.EnsureCanBeRescheduled();
 
             // Load provider and service for validation
             var provider = await _providerRepository.GetByIdAsync(
@@ -86,14 +94,14 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
                 cancellationToken);
 
             if (provider == null)
-                throw new NotFoundException($"Provider with ID {existingBooking.ProviderId} not found");
+                throw new NotFoundException("این کسب‌وکار پیدا نشد.");
 
             var service = await _serviceRepository.GetByIdAsync(
                 existingBooking.ServiceId,
                 cancellationToken);
 
             if (service == null)
-                throw new NotFoundException($"Service with ID {existingBooking.ServiceId} not found");
+                throw new NotFoundException("این خدمت پیدا نشد.");
 
             // Resolve the bookable resource the SAME way booking creation does: a
             // membership, the organization itself, or a legacy individual sub-provider.
@@ -121,7 +129,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
                 cancellationToken);
 
             if (!validationResult.IsValid)
-                throw new ConflictException($"Booking validation failed: {string.Join(", ", validationResult.Errors)}");
+                throw new ConflictException(string.Join("؛ ", validationResult.Errors));
 
             // Does anything else already occupy the new time for this resource? Keyed by the
             // resolved resource id, mirroring creation — IsTimeSlotAvailableAsync cannot be
@@ -136,7 +144,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
                 cancellationToken);
 
             if (conflicts.Any(b => b.Id != existingBooking.Id))
-                throw new ConflictException("The requested time slot is not available");
+                throw new ConflictException("این زمان دیگر خالی نیست؛ لطفاً زمان دیگری انتخاب کنید.");
 
             // Reschedule the booking (returns new booking)
             var newBooking = existingBooking.Reschedule(
@@ -320,7 +328,7 @@ namespace Booksy.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
                 {
                     // This should not happen if validation passed
                     throw new ConflictException(
-                        $"Availability slot {slot.Id} is already booked. Concurrent booking conflict detected.");
+                        "همین الان مشتری دیگری این زمان را رزرو کرد؛ لطفاً زمان دیگری انتخاب کنید.");
                 }
             }
 
