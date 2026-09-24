@@ -1,4 +1,4 @@
-Status: ACTIVE
+Status: DONE
 Verify: FULL
 
 User report (2026-09-24 morning): a screen recording (10:33–10:40 Tehran) of production after the 2026-09-24 deploy.
@@ -43,7 +43,7 @@ re-prompt and the confirm-screen customer name; push delivery and "name right af
 - [x] 6 Provider name re-prompt after onboarding (fixed); customer name headline on the salon's request row + sheet
 - [x] 8 Vue web: a booking (wizard confirm, My Bookings rebook) needs a real first AND last name, asked for then
   and only when missing — the Flutter app already did (user, 2026-09-24: keep sign-up phone-only; no name after OTP)
-- [ ] 7 FULL verify
+- [x] 7 FULL verify
 
 ## Decisions
 
@@ -79,3 +79,5 @@ re-prompt and the confirm-screen customer name; push delivery and "name right af
   old wall-clock send time; corrected. Targeted runs: 731 domain, 311+22 integration, 283 provider-app tests green.
 - FULL run 1: backend all green (integration 843/843); customer app and both Vue apps not run — fresh worktree had
   no pub packages / node_modules (environment). Vue name gate: wizard + composable tests seen failing first.
+- FULL run 2 on c17f9478: PASS (20 steps, 1,011 s) — integration 843/843, Vue web + admin, customer + provider
+  apps. Not pushed or deployed: waiting for the user's explicit "deploy and push".
