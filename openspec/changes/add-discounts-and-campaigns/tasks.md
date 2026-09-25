@@ -1,4 +1,4 @@
-Status: ACTIVE
+Status: DONE
 Verify: FAST
 
 Change: add-discounts-and-campaigns. User request 2026-09-25: a full discount system — admins run campaigns,
@@ -78,7 +78,7 @@ implementation task. `scripts/verify.sh fast` after each task, `full` to finish.
 
 ## 9. Finish
 - [x] 9.1 openspec validate --strict; project.md / KNOWLEDGE_MAP touch-ups; FOLLOW-UPS rows for out-of-scope items.
-- [ ] 9.2 scripts/verify.sh full; report.
+- [x] 9.2 scripts/verify.sh full; report.
 
 ## Decisions
 
@@ -113,6 +113,11 @@ implementation task. `scripts/verify.sh fast` after each task, `full` to finish.
   unset changes nothing.
 
 ## Log
+
+- 2026-09-25 FULL verify PASS (20 steps, 506 s) on d51a7e5: build, 9 unit/architecture projects, the Host integration
+  suite (880+ tests, real PostgreSQL 16 via ASANREZERVE_TEST_POSTGRES — no Docker daemon here), both Vue apps
+  (type-check, lint, unit) and both Flutter apps (analyze, test). New tests: domain 93+7, application 32, API 12,
+  integration 11, admin 25, web 20, provider app 23+1, customer app 17+5+2.
 
 - 2026-09-25 Investigation: no discount system exists anywhere; price computed once in CreateBookingCommandHandler;
   PaymentInfo forbids zero totals; domain events dispatch in a new scope; online checkout off in prod. Toolchain in
