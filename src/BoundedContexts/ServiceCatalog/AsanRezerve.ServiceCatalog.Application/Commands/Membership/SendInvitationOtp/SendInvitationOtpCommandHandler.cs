@@ -42,7 +42,7 @@ public sealed class SendInvitationOtpCommandHandler
         var phone = invitation.PhoneNumber.Value;
         var code = await _registrationService.GenerateOtpCodeAsync(phone, cancellationToken);
 
-        var message = $"کد تایید بوکسی شما: {code}\nاین کد تا چند دقیقه دیگر معتبر است.";
+        var message = $"کد تایید آسان رزرو شما: {code}\nاین کد تا چند دقیقه دیگر معتبر است.";
         var (success, messageId, errorMessage) = await _smsService.SendSmsAsync(
             phone,
             message,

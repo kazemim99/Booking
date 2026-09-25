@@ -104,7 +104,7 @@ public sealed class SendPhoneVerificationCodeCommandHandler
         await _verificationRepository.AddAsync(verification, cancellationToken);
         await _verificationRepository.SaveChangesAsync(cancellationToken);
 
-        var smsMessage = $"کد تأیید بوکسی: {verification.OtpCode.Value}\nاعتبار: 5 دقیقه";
+        var smsMessage = $"کد تأیید آسان رزرو: {verification.OtpCode.Value}\nاعتبار: 5 دقیقه";
         var (success, messageId, errorMessage) = await _smsService.SendSmsAsync(
             phoneNumber.Value,
             smsMessage,

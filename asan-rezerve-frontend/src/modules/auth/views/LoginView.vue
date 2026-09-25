@@ -18,7 +18,7 @@
 
         <!-- Header -->
         <div class="auth-header">
-          <h1 class="auth-title">به بوکسی خوش آمدید</h1>
+          <h1 class="auth-title">به آسان رزرو خوش آمدید</h1>
           <p class="auth-description">
             برای رزرو نوبت، شماره موبایل خود را وارد کنید
           </p>

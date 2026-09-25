@@ -6,7 +6,7 @@ class AppStrings {
   AppStrings._();
 
   // App
-  static const String appName = 'بوکسی | پنل کسب‌وکار';
+  static const String appName = 'آسان رزرو | پنل کسب‌وکار';
 
   // Login (ProviderLoginView.vue)
   static const String loginTitle = 'ورود به پنل کسب و کار';
@@ -379,7 +379,7 @@ class AppStrings {
   static const String pushEnabledSnack = 'اعلان‌ها فعال شد.';
   static const String pushBlockedTitle = 'اعلان‌ها روی این دستگاه مسدود است';
   static const String pushBlockedHint =
-      'برای دریافت اعلان، از تنظیمات مرورگر یا گوشی اجازهٔ اعلان را برای پنل بوکسی بدهید.';
+      'برای دریافت اعلان، از تنظیمات مرورگر یا گوشی اجازهٔ اعلان را برای پنل آسان رزرو بدهید.';
   static const String pushPromptTitle = 'از نوبت‌های جدید باخبر شوید';
   static const String pushPromptBody =
       'وقتی مشتری نوبت رزرو کرد، روی همین دستگاه خبرتان می‌کنیم تا زود تأییدش کنید.';

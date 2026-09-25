@@ -148,7 +148,7 @@ class AppStrings {
   static const String appointmentsGuestTitle = 'نوبت‌ها';
   static const String appointmentsGuestSubtitle =
       'برای مشاهده نوبت‌های خود وارد شوید';
-  static const String appointmentsGuestQuestion = 'قبلاً از بوکسی استفاده کرده‌اید؟';
+  static const String appointmentsGuestQuestion = 'قبلاً از آسان رزرو استفاده کرده‌اید؟';
   static const String findProviders = 'یافتن سالن‌های نزدیک';
   static const String findProvider = 'یافتن سالن';
   static const String cancelBooking = 'لغو نوبت';
@@ -209,7 +209,7 @@ class AppStrings {
   // ---------------------------------------------------------------------
   // Home — redesigned discovery surface
   // ---------------------------------------------------------------------
-  static const String homeTitle = 'بوکسی';
+  static const String homeTitle = 'آسان رزرو';
   static const String homeSearchHint = 'جستجوی آرایشگاه، سالن، اسپا…';
   static const String mapSearch = 'جستجو روی نقشه';
 
@@ -227,7 +227,7 @@ class AppStrings {
   static const String pushEnabledSnack = 'اعلان‌ها فعال شد.';
   static const String pushBlockedTitle = 'اعلان‌ها روی این دستگاه مسدود است';
   static const String pushBlockedHint =
-      'برای دریافت اعلان، از تنظیمات مرورگر یا گوشی اجازهٔ اعلان را برای بوکسی بدهید.';
+      'برای دریافت اعلان، از تنظیمات مرورگر یا گوشی اجازهٔ اعلان را برای آسان رزرو بدهید.';
   static const String pushPromptTitle = 'از تأیید نوبت باخبر شوید';
   static const String pushPromptBody = 'وقتی سالن نوبت شما را تأیید کرد، روی همین دستگاه خبرتان می‌کنیم.';
   static const String pushPromptLater = 'بعداً';
