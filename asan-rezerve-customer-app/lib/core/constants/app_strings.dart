@@ -133,6 +133,20 @@ class AppStrings {
       'این زمان دیگر در دسترس نیست. لطفاً زمان دیگری انتخاب کنید';
   static const String bookingDuration = 'مدت زمان';
   static const String bookingPrice = 'قیمت';
+
+  // Discounts (add-discounts-and-campaigns)
+  static const String bookingDiscount = 'تخفیف';
+  static const String bookingPayable = 'مبلغ نهایی';
+  static const String bookingSubtotal = 'هزینه خدمات';
+  static const String bookingSaved = 'صرفه‌جویی شما';
+  static const String bookingQuoteLoading = 'در حال محاسبه قیمت…';
+  static const String bookingQuoteFailed = 'قیمت نهایی هنگام ثبت نوبت محاسبه می‌شود.';
+  static const String promoToggle = 'کد تخفیف دارید؟';
+  static const String promoHint = 'کد تخفیف';
+  static const String promoApply = 'اعمال';
+  static const String promoRemove = 'حذف کد';
+  static const String promoCheckFailed = 'بررسی کد انجام نشد؛ دوباره تلاش کنید.';
+  static const String offersTitle = 'تخفیف‌های این سالن';
   static const String bookingDate = 'تاریخ';
   static const String bookingTime = 'ساعت';
   static const String bookingStaff = 'ارائه‌دهنده';

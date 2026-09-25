@@ -45,6 +45,9 @@ namespace AsanRezerve.ServiceCatalog.Application.DependencyInjection
             services.AddScoped<Services.IBookingCustomerNames, Services.BookingCustomerNames>();
             services.AddScoped<Services.IBookingCustomer, Services.BookingCustomer>();
 
+            // Discounts and campaigns: one pricing path for quotes and bookings, on the caller's unit of work.
+            services.AddScoped<Promotions.IPromotionPricingService, Promotions.PromotionPricingService>();
+
             // Register domain event handlers explicitly (NO MediatR!)
             RegisterDomainEventHandlers(services, assembly);
 

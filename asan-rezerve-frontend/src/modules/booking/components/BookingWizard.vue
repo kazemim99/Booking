@@ -86,7 +86,9 @@
           v-if="currentStep === 3"
           :booking-data="confirmationData"
           :provider-id="providerId"
+          :quote-request="quoteRequest"
           @notes-updated="handleNotesUpdated"
+          @promotion-code="(code: string | null) => (promotionCode = code)"
         />
       </div>
 
@@ -184,6 +186,7 @@ import { useRouter, useRoute } from 'vue-router'
 import ServiceSelection from './ServiceSelection.vue'
 import SlotSelection from './SlotSelection.vue'
 import BookingConfirmation from './BookingConfirmation.vue'
+import { wallClockIso } from '../utils/wall-clock'
 import { bookingService } from '@/modules/booking/api/booking.service'
 import type { CreateBookingRequest } from '@/modules/booking/api/booking.service'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
@@ -309,6 +312,19 @@ const canProceed = computed(() => {
 })
 
 // Transform booking data for confirmation component
+// What the server is asked to price — the same services and start the booking will carry, so the quote shown is the
+// price booked (openspec/changes/add-discounts-and-campaigns).
+const promotionCode = ref<string | null>(null)
+const quoteRequest = computed(() => {
+  const startTime = wallClockIso(bookingData.value.date, bookingData.value.startTime)
+  if (!providerId.value || !startTime || bookingData.value.services.length === 0) return null
+  return {
+    providerId: providerId.value,
+    serviceIds: bookingData.value.services.map((s) => s.id),
+    startTime,
+  }
+})
+
 const confirmationData = computed(() => {
   const firstService = bookingData.value.services[0]
   const totalPrice = bookingData.value.services.reduce((sum, s) => sum + s.basePrice, 0)
@@ -467,6 +483,9 @@ const submitBooking = async () => {
       staffProviderId: bookingData.value.staffId || '',
       startTime,
       customerNotes: bookingData.value.customerNotes || undefined,
+      // Every selected service, as shown and quoted — not just the first.
+      serviceIds: bookingData.value.services.map((s) => s.id),
+      promotionCode: promotionCode.value,
     }
 
     console.log('[BookingWizard] Booking request:', request)

@@ -79,6 +79,7 @@ class BookingRemoteDataSource {
     required String staffProviderId,
     required DateTime startTime,
     List<String>? serviceIds,
+    String? promotionCode,
   }) async {
     final response = await serviceCatalogDio.post(
       ApiConstants.createBooking,
@@ -89,6 +90,8 @@ class BookingRemoteDataSource {
         'startTime': wallClockIso(startTime),
         if (serviceIds != null && serviceIds.isNotEmpty)
           'serviceIds': serviceIds,
+        // Only a code the quote accepted; the server prices the visit again and never takes a price from here.
+        if (promotionCode != null && promotionCode.isNotEmpty) 'promotionCode': promotionCode,
       },
     );
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -104,5 +107,32 @@ class BookingRemoteDataSource {
       type: DioExceptionType.badResponse,
       message: 'Failed to create booking',
     );
+  }
+
+  /// A salon's automatic offers. Anonymous on the server; a failure is the caller's to swallow.
+  Future<List<Map<String, dynamic>>> getOffers(String providerId) async {
+    final response = await serviceCatalogDio.get(ApiConstants.providerOffers(providerId));
+    final data = unwrap(response.data);
+    return data is List ? data.whereType<Map>().map((m) => Map<String, dynamic>.from(m)).toList() : const [];
+  }
+
+  /// The server's price for the visit, with [promotionCode] evaluated when given.
+  Future<Map<String, dynamic>> quote({
+    required String providerId,
+    required List<String> serviceIds,
+    required DateTime startTime,
+    String? promotionCode,
+  }) async {
+    final response = await serviceCatalogDio.post(
+      ApiConstants.quoteBooking,
+      data: {
+        'providerId': providerId,
+        'serviceIds': serviceIds,
+        'startTime': wallClockIso(startTime),
+        'promotionCode': (promotionCode?.trim().isEmpty ?? true) ? null : promotionCode!.trim(),
+      },
+    );
+    final data = unwrap(response.data);
+    return data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{};
   }
 }

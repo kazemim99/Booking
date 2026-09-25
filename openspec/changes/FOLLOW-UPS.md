@@ -230,3 +230,20 @@ list), so deserialization most likely throws — caught and counted as a Redis f
 circuit breaker for everything. Unverified (salon-images-load, 2026-09-23): production may not be using Redis for
 this at all (`Cache:RedisConnectionString` defaults to localhost; compose sets only `ConnectionStrings__Redis`).
 Check the API log on the box for "Error during cache get for key Provider:" before changing anything.
+
+## #71 Discounts: what `add-discounts-and-campaigns` deliberately left out
+Carried out of `openspec/changes/add-discounts-and-campaigns` (2026-09-25). None of these blocks the feature; each is
+its own decision or slice.
+- **Platform-funded or co-funded campaigns.** Every discount is salon-funded (user decision 2026-09-25), so the
+  booking's `TotalPrice` is the discounted price and the ledger is untouched. A platform-paid campaign needs a subsidy
+  ledger account, a `Booking` split between what the customer pays and what the salon is owed, and payout settlement
+  — a finance decision first.
+- **Tell salons a campaign exists.** Publishing a campaign notifies nobody; salons find it on the provider app's
+  campaigns tab. A notification event (`CampaignPublished` → every active salon owner) is the natural next step.
+- **Jalali date pickers in the admin form.** The admin's campaign dates use Ant Design's Gregorian picker with the
+  Jalali date written under each field. A Jalali picker needs a calendar dependency (e.g. `jalaliday`).
+- **The customer app's home «پیشنهادهای ویژه» carousel** is still fed by a stub returning `[]`
+  (`home_remote_datasource.dart` `getPromotions`). Discount offers are per salon; a home-level feed of salons with
+  offers is a discovery feature to design, not a rename.
+- **The Vue provider dashboard** has no discounts screen: the live provider surface is the Flutter provider app.
+- **Stacking, category targeting of campaigns, bundles, loyalty** — out of scope by design (one discount per booking).

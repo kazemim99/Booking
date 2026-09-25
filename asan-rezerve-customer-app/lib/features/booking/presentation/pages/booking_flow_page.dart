@@ -19,6 +19,7 @@ import '../../../profile/presentation/bloc/profile_cubit.dart';
 import '../../domain/business_days.dart';
 import '../../domain/entities/booking_entities.dart';
 import '../bloc/booking_bloc.dart';
+import '../bloc/price_quote_cubit.dart';
 import '../widgets/booking_name_sheet.dart';
 import '../widgets/service_selection_step.dart';
 import '../widgets/slot_picker.dart';
@@ -445,13 +446,15 @@ class _ConfirmStep extends StatelessWidget {
       return;
     }
     final bookings = context.read<BookingBloc>();
+    final quote = context.read<PriceQuoteCubit>();
     final user = authState.session.user;
     // First AND last name before a salon receives the request (QA 2026-09-23).
     if (!hasFullName(user.firstName, user.lastName)) {
       final named = await BookingNameSheet.show(context, cubit: profileCubit);
       if (!named) return;
     }
-    bookings.add(const BookingSubmitted());
+    // A code the server accepted rides on the booking; the server prices the visit again all the same.
+    bookings.add(BookingSubmitted(promotionCode: quote.state.appliedCode));
   }
 
   @override
@@ -471,16 +474,31 @@ class _ConfirmStep extends StatelessWidget {
           '${state.totalDurationMinutes} دقیقه',
         ),
       ),
-      (
-        AppStrings.bookingPrice,
-        JalaliFormatter.toPersianDigits(
-          PriceFormatter.format(state.totalPrice.round()),
-        ),
-      ),
     ];
 
-    // A compact card that scrolls with the note under it, and the button pinned below — the card used to stretch to
-    // fill the screen, mostly empty.
+    // The price is the server's (add-discounts-and-campaigns): one quote per visit — services and start — so going
+    // back and changing either prices it afresh.
+    return BlocProvider<PriceQuoteCubit>(
+      key: ValueKey('quote-${state.selectedServiceIds.join(',')}-${slot.startTime.toIso8601String()}'),
+      create: (context) => PriceQuoteCubit(
+        context.read<BookingBloc>().repository,
+        providerId: providerId,
+        serviceIds: state.selectedServiceIds,
+        startTime: slot.startTime,
+      )..load(),
+      child: BlocListener<BookingBloc, BookingState>(
+        // The discount went while the customer was confirming: show the new price before they try again.
+        listenWhen: (previous, current) =>
+            current.submitStatus == SubmitStatus.error && previous.submitStatus != SubmitStatus.error,
+        listener: (context, _) => context.read<PriceQuoteCubit>().load(),
+        child: Builder(builder: (context) => _layout(context, rows)),
+      ),
+    );
+  }
+
+  // A compact card that scrolls with the note under it, and the button pinned below — the card used to stretch to
+  // fill the screen, mostly empty.
+  Widget _layout(BuildContext context, List<(String, String)> rows) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -488,7 +506,17 @@ class _ConfirmStep extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.all(AppSpacing.md),
             children: [
-              AppCard(child: _SummaryRows(rows: rows)),
+              // One compact summary: the visit, then its price as the server quotes it.
+              AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _SummaryRows(rows: rows),
+                    const Divider(height: AppSpacing.lg),
+                    _PriceBreakdown(listPrice: state.totalPrice),
+                  ],
+                ),
+              ),
               const SizedBox(height: AppSpacing.md),
               const _InfoNote(
                 title: AppStrings.bookingWhatNextTitle,
@@ -514,6 +542,169 @@ class _ConfirmStep extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Subtotal, the one discount applied and the total — as the server priced the visit — with a code field folded
+/// away until asked for, so it does not suggest the customer is missing out.
+class _PriceBreakdown extends StatefulWidget {
+  final double listPrice;
+
+  const _PriceBreakdown({required this.listPrice});
+
+  @override
+  State<_PriceBreakdown> createState() => _PriceBreakdownState();
+}
+
+class _PriceBreakdownState extends State<_PriceBreakdown> {
+  final _code = TextEditingController();
+  bool _codeOpen = false;
+
+  @override
+  void dispose() {
+    _code.dispose();
+    super.dispose();
+  }
+
+  String _toman(double amount) =>
+      JalaliFormatter.toPersianDigits(PriceFormatter.format(amount.round()));
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return BlocBuilder<PriceQuoteCubit, PriceQuoteState>(
+      builder: (context, q) {
+        final quote = q.quote;
+        final cubit = context.read<PriceQuoteCubit>();
+        final rows = <(String, String)>[
+          if (quote != null && quote.hasDiscount) ...[
+            (AppStrings.bookingSubtotal, _toman(quote.subtotal)),
+            // The label column does not wrap, so the promotion's name goes on its own line below.
+            (AppStrings.bookingDiscount, '− ${_toman(quote.discount)}'),
+          ],
+          (
+            quote != null && quote.hasDiscount
+                ? AppStrings.bookingPayable
+                : AppStrings.bookingPrice,
+            _toman(quote?.total ?? widget.listPrice),
+          ),
+        ];
+        return Column(
+          key: const Key('booking-price-card'),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _SummaryRows(rows: rows),
+              if (quote != null && quote.hasDiscount && quote.discountTitle != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.xxs),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.local_offer_outlined, size: 16, color: AppColors.success),
+                      const SizedBox(width: AppSpacing.xs),
+                      Expanded(
+                        child: Text(
+                          quote.discountTitle!,
+                          key: const Key('booking-discount-title'),
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            if (quote != null && quote.hasDiscount)
+              Container(
+                key: const Key('booking-price-saving'),
+                margin: const EdgeInsets.only(top: AppSpacing.xs),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+                child: Text(
+                  '${AppStrings.bookingSaved}: ${_toman(quote.discount)}',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                      color: AppColors.success, fontWeight: FontWeight.w700),
+                ),
+              ),
+            if (q.status == QuoteStatus.loading && quote == null)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.xs),
+                child: Text(AppStrings.bookingQuoteLoading,
+                    style: theme.textTheme.bodySmall),
+              )
+            else if (q.status == QuoteStatus.failed && quote == null)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.xs),
+                child: Text(AppStrings.bookingQuoteFailed,
+                    style: theme.textTheme.bodySmall),
+              ),
+            const Divider(height: AppSpacing.lg),
+            if (!_codeOpen && q.appliedCode == null)
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton(
+                  key: const Key('promo-toggle'),
+                  onPressed: () => setState(() => _codeOpen = true),
+                  child: const Text(AppStrings.promoToggle),
+                ),
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: AppTextField(
+                      key: const Key('promo-input'),
+                      controller: _code,
+                      hint: AppStrings.promoHint,
+                      contentDirection: TextDirection.ltr,
+                      enabled: !q.applying && q.appliedCode == null,
+                      onSubmitted: (value) => cubit.applyCode(value,
+                          failedMessage: AppStrings.promoCheckFailed),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  if (q.appliedCode == null)
+                    TextButton(
+                      key: const Key('promo-apply'),
+                      onPressed: q.applying
+                          ? null
+                          : () => cubit.applyCode(_code.text,
+                              failedMessage: AppStrings.promoCheckFailed),
+                      child: q.applying
+                          ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Text(AppStrings.promoApply),
+                    )
+                  else
+                    TextButton(
+                      key: const Key('promo-remove'),
+                      onPressed: () {
+                        _code.clear();
+                        cubit.clearCode();
+                      },
+                      child: const Text(AppStrings.promoRemove),
+                    ),
+                ],
+              ),
+            if (q.message != null)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.xs),
+                child: Text(
+                  q.message!,
+                  key: const Key('promo-message'),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: q.messageOk
+                        ? AppColors.success
+                        : theme.colorScheme.error,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

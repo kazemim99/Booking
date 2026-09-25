@@ -26,6 +26,8 @@ import '../../core/di/injection.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/notifications/presentation/inbox_cubit.dart';
 import '../../features/notifications/presentation/inbox_page.dart';
+import '../../features/promotions/presentation/promotions_cubit.dart';
+import '../../features/promotions/presentation/promotions_page.dart';
 import '../../features/reviews/presentation/reviews_cubit.dart';
 import '../../features/reviews/presentation/reviews_page.dart';
 import '../../core/push/push_open_route.dart';
@@ -54,6 +56,7 @@ class Routes {
   static const String moreServices = '/more/services';
   static const String moreStaff = '/more/staff';
   static const String moreMemberships = '/more/memberships';
+  static const String morePromotions = '/more/promotions';
   static const String acceptInvitation = '/invite'; // + /:invitationId
   static const String newBooking = '/booking/new';
 
@@ -320,6 +323,13 @@ class AppRouter {
         GoRoute(
           path: Routes.moreStaff,
           builder: (_, _) => const StaffPage(),
+        ),
+        GoRoute(
+          path: Routes.morePromotions,
+          builder: (_, _) => BlocProvider<PromotionsCubit>(
+            create: (_) => getIt<PromotionsCubit>()..load(),
+            child: const PromotionsPage(),
+          ),
         ),
         GoRoute(
           path: Routes.moreMemberships,

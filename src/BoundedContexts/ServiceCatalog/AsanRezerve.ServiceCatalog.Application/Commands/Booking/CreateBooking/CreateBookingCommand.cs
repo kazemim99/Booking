@@ -26,5 +26,6 @@ namespace AsanRezerve.ServiceCatalog.Application.Commands.Booking.CreateBooking
         string? WalkInFirstName = null,
         string? WalkInLastName = null,
         string? WalkInPhone = null,
-        bool NotifyCustomer = true) : ICommand<CreateBookingResult>;
+        bool NotifyCustomer = true,
+        string? PromotionCode = null) : ICommand<CreateBookingResult>;
 }

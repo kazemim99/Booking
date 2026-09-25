@@ -115,7 +115,9 @@ for p in tests/AsanRezerve.Core.Domain.UnitTests tests/AsanRezerve.Infrastructur
 done
 
 if [ "$TIER" = full ]; then
-  if docker info >/dev/null 2>&1; then DOCKER=1; else DOCKER=0; fi
+  # ASANREZERVE_TEST_POSTGRES names an already-running server the fixture uses instead of a container
+  # (PostgresTestContainerFixture), so a machine without a Docker daemon can still run the db steps.
+  if docker info >/dev/null 2>&1 || [ -n "${ASANREZERVE_TEST_POSTGRES:-}" ]; then DOCKER=1; else DOCKER=0; fi
   # Clear the previous run, including the GUID folders the blame collector leaves behind.
   TRX_DIR="$VERIFY_DIR/trx"; mkdir -p "$TRX_DIR"; rm -rf "${TRX_DIR:?}"/*
   # One project since docs/TEST_ARCHITECTURE_AUDIT.md Phase 2 slice 4 (was three: SC, UM and

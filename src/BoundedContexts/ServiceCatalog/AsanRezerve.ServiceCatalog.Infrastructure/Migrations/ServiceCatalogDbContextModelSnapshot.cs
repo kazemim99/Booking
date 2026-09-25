@@ -111,6 +111,29 @@ namespace AsanRezerve.ServiceCatalog.Infrastructure.Migrations
                     b.Property<string>("CustomerNotes")
                         .HasColumnType("text");
 
+                    b.Property<decimal?>("DiscountAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("DiscountAmount");
+
+                    b.Property<string>("DiscountCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("DiscountCode");
+
+                    b.Property<string>("DiscountOwner")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("DiscountOwner");
+
+                    b.Property<Guid?>("DiscountPromotionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("DiscountPromotionId");
+
+                    b.Property<string>("DiscountTitle")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("DiscountTitle");
+
                     b.Property<int>("Duration")
                         .HasColumnType("integer")
                         .HasColumnName("DurationMinutes");
@@ -1083,6 +1106,294 @@ namespace AsanRezerve.ServiceCatalog.Infrastructure.Migrations
                         .HasDatabaseName("IX_Payouts_Period");
 
                     b.ToTable("Payouts", "ServiceCatalog");
+                });
+
+            modelBuilder.Entity("AsanRezerve.ServiceCatalog.Domain.Aggregates.PromotionAggregate.CampaignEnrollment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ChangedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("changed_by");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("JoinedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("joined_at");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("LeftAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("left_at");
+
+                    b.Property<Guid>("PromotionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("promotion_id");
+
+                    b.Property<Guid>("ProviderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("provider_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PromotionId", "ProviderId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_campaign_enrollments_promotion_provider");
+
+                    b.HasIndex("ProviderId", "IsActive")
+                        .HasDatabaseName("ix_campaign_enrollments_provider");
+
+                    b.ToTable("campaign_enrollments", "ServiceCatalog");
+                });
+
+            modelBuilder.Entity("AsanRezerve.ServiceCatalog.Domain.Aggregates.PromotionAggregate.Promotion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Activation")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("activation");
+
+                    b.Property<string>("Code")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<TimeOnly?>("DailyEndTime")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("daily_end_time");
+
+                    b.Property<TimeOnly?>("DailyStartTime")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("daily_start_time");
+
+                    b.Property<int>("DaysOfWeekMask")
+                        .HasColumnType("integer")
+                        .HasColumnName("days_of_week_mask");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("DiscountKind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("discount_kind");
+
+                    b.Property<decimal>("DiscountValue")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("discount_value");
+
+                    b.Property<DateTime?>("EndedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ended_at");
+
+                    b.Property<DateTime?>("EndsAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ends_at");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("MaxDiscountAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("max_discount_amount");
+
+                    b.Property<decimal?>("MinimumSubtotal")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("minimum_subtotal");
+
+                    b.Property<bool>("NewCustomersOnly")
+                        .HasColumnType("boolean")
+                        .HasColumnName("new_customers_only");
+
+                    b.Property<string>("Owner")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("owner");
+
+                    b.Property<bool>("PausedByPlatform")
+                        .HasColumnType("boolean")
+                        .HasColumnName("paused_by_platform");
+
+                    b.Property<int?>("PerCustomerLimit")
+                        .HasColumnType("integer")
+                        .HasColumnName("per_customer_limit");
+
+                    b.Property<Guid?>("ProviderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("provider_id");
+
+                    b.Property<int>("RedemptionCount")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("redemption_count");
+
+                    b.Property<DateTime>("StartsAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("starts_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("title");
+
+                    b.Property<int?>("TotalUsageLimit")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_usage_limit");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.PrimitiveCollection<List<Guid>>("_serviceIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("service_ids");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Owner", "Status")
+                        .HasDatabaseName("ix_promotions_owner_status");
+
+                    b.HasIndex("ProviderId", "Status")
+                        .HasDatabaseName("ix_promotions_provider_status");
+
+                    b.HasIndex("Owner", "ProviderId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("ux_promotions_scope_code")
+                        .HasFilter("code IS NOT NULL AND status <> 'Ended'");
+
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("Owner", "ProviderId", "Code"), false);
+
+                    b.ToTable("promotions", "ServiceCatalog");
+                });
+
+            modelBuilder.Entity("AsanRezerve.ServiceCatalog.Domain.Aggregates.PromotionAggregate.PromotionRedemption", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid>("BookingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("booking_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("PromotionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("promotion_id");
+
+                    b.Property<Guid>("ProviderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("provider_id");
+
+                    b.Property<DateTime>("RedeemedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("redeemed_at");
+
+                    b.Property<DateTime?>("ReleasedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("released_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookingId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_promotion_redemptions_applied_booking")
+                        .HasFilter("status = 'Applied'");
+
+                    b.HasIndex("PromotionId", "CustomerId", "Status")
+                        .HasDatabaseName("ix_promotion_redemptions_promotion_customer");
+
+                    b.ToTable("promotion_redemptions", "ServiceCatalog");
                 });
 
             modelBuilder.Entity("AsanRezerve.ServiceCatalog.Domain.Aggregates.Provider", b =>
@@ -3109,6 +3420,24 @@ namespace AsanRezerve.ServiceCatalog.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("NetAmount")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AsanRezerve.ServiceCatalog.Domain.Aggregates.PromotionAggregate.CampaignEnrollment", b =>
+                {
+                    b.HasOne("AsanRezerve.ServiceCatalog.Domain.Aggregates.PromotionAggregate.Promotion", null)
+                        .WithMany()
+                        .HasForeignKey("PromotionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AsanRezerve.ServiceCatalog.Domain.Aggregates.PromotionAggregate.PromotionRedemption", b =>
+                {
+                    b.HasOne("AsanRezerve.ServiceCatalog.Domain.Aggregates.PromotionAggregate.Promotion", null)
+                        .WithMany()
+                        .HasForeignKey("PromotionId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 

@@ -123,7 +123,11 @@ namespace AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetCustomerBook
                     CanReview: review.CanReview,
                     ReviewBlockedReason: review.ReviewBlockedReason,
                     ReviewId: review.ReviewId,
-                    ReviewStatus: review.ReviewStatus));
+                    ReviewStatus: review.ReviewStatus,
+                    Subtotal: booking.SubtotalAmount,
+                    DiscountAmount: booking.DiscountAmount ?? 0m,
+                    DiscountTitle: booking.DiscountTitle,
+                    DiscountCode: booking.DiscountCode));
             }
 
             _logger.LogInformation(

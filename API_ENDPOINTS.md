@@ -17,6 +17,7 @@ Complete reference for all API endpoints across the AsanRezerve platform. All en
   - [Bookings](#bookings)
   - [Reviews](#reviews)
   - [Review Moderation (Admin)](#review-moderation-admin)
+  - [Discounts & Campaigns](#discounts--campaigns)
 - [Host & Routing (Port 5000)](#host--routing-port-5000)
 
 ---
@@ -933,6 +934,83 @@ deploying the review-moderation migration; re-runnable. **Response 200**: `{ pro
 real published count on search, by-location, detail, by-owner and the admin list. Read them together:
 `totalReviews == 0` means "no reviews yet", never "rated zero". Sorting by rating puts unrated providers after all
 rated ones in both directions.
+
+### Discounts & Campaigns
+
+OpenSpec change `add-discounts-and-campaigns`. A **promotion** is owned by a salon (`Provider`) or by the platform
+(`Platform`, an admin campaign). It is **automatic** (applied without a code, listed on the salon page) or needs a
+**code**. Benefit: `Percentage` (1–90, optional `maxDiscountAmount`) or `FixedAmount` (whole Toman). Optional
+conditions: `startsAt`/`endsAt` (UTC instants, checked at booking time), `daysOfWeek` (0 = Sunday … 6 = Saturday)
+and `dailyStartTime`/`dailyEndTime` (`HH:mm`, checked on the appointment's salon-clock start), `minimumSubtotal`,
+`serviceIds` (salon promotions only), `newCustomersOnly` (no earlier non-cancelled booking at that salon),
+`totalUsageLimit`, `perCustomerLimit`.
+
+**Rules the server enforces**: at most **one** discount per booking — the largest eligible one; an entered code
+replaces the automatic offer only when strictly larger. A discount never exceeds 90% of what it applies to and is
+rounded down to a whole Toman. Platform campaigns apply only at salons that **joined** them, and the salon funds
+the discount (the booking's `totalPrice` is simply the discounted price). Salon-entered walk-ins are never
+discounted. Cancelling a booking returns its use; a no-show keeps it. Errors are Persian, by field.
+
+**Promotion body** (create/update, salon and admin): `{ title, description?, activation: "Automatic"|"Code",
+code?, discountKind: "Percentage"|"FixedAmount", discountValue, maxDiscountAmount?, minimumSubtotal?,
+newCustomersOnly, serviceIds?, daysOfWeek?, dailyStartTime?, dailyEndTime?, startsAt?, endsAt?, totalUsageLimit?,
+perCustomerLimit? }` — `startsAt` defaults to now.
+
+**Promotion response**: the body's fields plus `{ id, owner, providerId?, providerName?, status: Active|Paused|Ended,
+state: Scheduled|Active|Paused|Expired|Exhausted|Ended, pausedByPlatform, uses, totalDiscount, joinedSalons?,
+currency, createdAt }`.
+
+#### Salon promotions
+```http
+GET  /api/v1/providers/{providerId}/promotions
+POST /api/v1/providers/{providerId}/promotions
+PUT  /api/v1/providers/{providerId}/promotions/{promotionId}
+POST /api/v1/providers/{providerId}/promotions/{promotionId}/pause | /resume | /end
+```
+**Auth**: admin, the salon's owner (`providerId` claim), or an active member with `ManageOrganization`.
+`400` invalid terms · `404` another salon's promotion · `409` a code the salon already uses, or a changed code on a
+promotion that has been used. A salon cannot resume a promotion an administrator paused.
+
+#### Platform campaigns, as a salon sees them
+```http
+GET    /api/v1/providers/{providerId}/campaigns                          → [{ campaign, isJoined, joinedAt? }]
+POST   /api/v1/providers/{providerId}/campaigns/{campaignId}/enrollment  → join
+DELETE /api/v1/providers/{providerId}/campaigns/{campaignId}/enrollment  → leave
+```
+Same auth as salon promotions. Leaving never changes bookings already made.
+
+#### Public offers
+```http
+GET /api/v1/providers/{providerId}/offers
+```
+**Auth**: anonymous · **Rate limit**: `public-api`. The salon's automatic offers in force now, with their conditions as
+data. Codes are never listed.
+
+#### Price quote
+```http
+POST /api/v1/Bookings/quote
+{ "providerId": "...", "serviceIds": ["..."], "startTime": "2026-10-03T11:00:00", "promotionCode": "LOYAL" }
+```
+**Auth**: required · **Rate limit**: `promotion-quote` (30 per 10 minutes). **Response 200**: `{ subtotal, discount,
+total, currency, appliedDiscount?: { promotionId, title, code?, owner, amount }, codeOutcome:
+None|Applied|NotFound|NotEligible|BetterOfferApplied, codeMessage? }`. An unknown or ineligible code is reported in
+the body, not as an error.
+
+**Booking creation** (`POST /api/v1/Bookings`) takes an optional `promotionCode`, re-prices on the server and returns
+`subtotal`, `discountAmount`, `discountTitle`, `discountCode` next to `totalPrice`; so do booking details, the
+customer's bookings and the salon's bookings. A code the customer cannot have fails the booking with `400` and the
+Persian reason. A discount lost between quote and booking (last use taken, paused) is `409` with error code
+`PROMOTION_UNAVAILABLE` — retry to see the new price; it is not a taken slot.
+
+#### Campaigns & oversight (Admin)
+```http
+GET  /api/v1/admin/promotions?owner=Platform|Provider|all&providerId=&status=&search=&page=&pageSize=
+GET  /api/v1/admin/promotions/{promotionId}          → { promotion, participants: [{ providerId, providerName, joinedAt }] }
+POST /api/v1/admin/promotions                        → create a platform campaign
+PUT  /api/v1/admin/promotions/{promotionId}          → edit a platform campaign (a salon's own: 404)
+POST /api/v1/admin/promotions/{promotionId}/pause | /resume | /end   → any promotion
+```
+**Auth**: `AdminOnly`.
 
 ---
 

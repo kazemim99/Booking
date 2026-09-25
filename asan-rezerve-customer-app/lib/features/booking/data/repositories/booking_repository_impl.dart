@@ -7,6 +7,7 @@ import '../../../../core/errors/dio_failure_mapper.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/utils/person_name.dart';
 import '../../domain/entities/booking_entities.dart';
+import '../../domain/entities/promotion_entities.dart';
 import '../../domain/repositories/booking_repository.dart';
 import '../datasources/booking_remote_datasource.dart';
 
@@ -76,6 +77,7 @@ class BookingRepositoryImpl implements BookingRepository {
     required String staffProviderId,
     required DateTime startTime,
     List<String>? serviceIds,
+    String? promotionCode,
   }) async {
     try {
       final id = await remoteDataSource.createBooking(
@@ -84,10 +86,15 @@ class BookingRepositoryImpl implements BookingRepository {
         staffProviderId: staffProviderId,
         startTime: startTime,
         serviceIds: serviceIds,
+        promotionCode: promotionCode,
       );
       return Right(id);
     } on DioException catch (e) {
       final status = e.response?.statusCode;
+      // The discount went, not the time: stay on the confirm step with the server's own words.
+      if (status == 409 && _errorCode(e) == 'PROMOTION_UNAVAILABLE') {
+        return Left(PromotionUnavailableFailure(_serverMessage(e) ?? AppStrings.genericError));
+      }
       // Conflict: slot got booked between selection and confirmation.
       if (status == 409 || status == 422) {
         return const Left(SlotTakenFailure(AppStrings.bookingSlotTaken));
@@ -274,5 +281,49 @@ class BookingRepositoryImpl implements BookingRepository {
     if (h == null) return null;
     final m = (minutes as num?)?.toInt() ?? 0;
     return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Future<List<PublicOffer>> getOffers(String providerId) async {
+    try {
+      return (await remoteDataSource.getOffers(providerId)).map(PublicOffer.fromJson).toList();
+    } catch (_) {
+      // Offers decorate the salon page; without them it is priced as usual, never broken.
+      return const [];
+    }
+  }
+
+  @override
+  Future<Either<Failure, PriceQuote>> quote({
+    required String providerId,
+    required List<String> serviceIds,
+    required DateTime startTime,
+    String? promotionCode,
+  }) async {
+    try {
+      return Right(PriceQuote.fromJson(await remoteDataSource.quote(
+        providerId: providerId,
+        serviceIds: serviceIds,
+        startTime: startTime,
+        promotionCode: promotionCode,
+      )));
+    } on DioException catch (e) {
+      final message = _serverMessage(e);
+      return Left(message != null && e.response?.statusCode != 401 ? ServerFailure(message) : mapDioFailure(e));
+    } catch (_) {
+      return const Left(ServerFailure(AppStrings.genericError));
+    }
+  }
+
+  static Map? _body(DioException e) => e.response?.data is Map ? e.response!.data as Map : null;
+
+  static String? _errorCode(DioException e) {
+    final error = _body(e)?['error'];
+    return error is Map ? error['code'] as String? : null;
+  }
+
+  static String? _serverMessage(DioException e) {
+    final message = _body(e)?['message'];
+    return message is String && message.isNotEmpty ? message : null;
   }
 }

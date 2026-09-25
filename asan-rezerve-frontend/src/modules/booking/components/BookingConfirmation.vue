@@ -147,23 +147,65 @@
         </div>
       </div>
 
-      <!-- Price Summary -->
-      <div class="summary-card price-card">
+      <!-- Price Summary: the server's quote (openspec/changes/add-discounts-and-campaigns). It used to add a 9% tax
+           the server never charged; the price shown is now the price booked. -->
+      <div class="summary-card price-card" data-testid="price-card">
         <div class="card-header">
           <h3>مبلغ قابل پرداخت</h3>
         </div>
         <div class="card-body">
           <div class="price-row">
-            <span>هزینه خدمت</span>
-            <span>{{ formatPrice(bookingData.servicePrice) }} تومان</span>
+            <span>هزینه خدمات</span>
+            <span data-testid="price-subtotal">{{ formatPrice(quote?.subtotal ?? bookingData.servicePrice) }} تومان</span>
           </div>
-          <div class="price-row subtotal">
-            <span>مالیات (۹٪)</span>
-            <span>{{ formatPrice(Math.round(bookingData.servicePrice * 0.09)) }} تومان</span>
+          <div v-if="quote && quote.discount > 0" class="price-row discount" data-testid="price-discount">
+            <span>
+              تخفیف
+              <small v-if="quote.appliedDiscount" class="discount-title">({{ quote.appliedDiscount.title }})</small>
+            </span>
+            <span>− {{ formatPrice(quote.discount) }} تومان</span>
           </div>
           <div class="price-row total">
-            <span>جمع کل</span>
-            <span>{{ formatPrice(Math.round(bookingData.servicePrice * 1.09)) }} تومان</span>
+            <span>مبلغ نهایی</span>
+            <span data-testid="price-total">{{ formatPrice(quote?.total ?? bookingData.servicePrice) }} تومان</span>
+          </div>
+          <p v-if="quoteLoading" class="quote-note">در حال محاسبه قیمت…</p>
+          <p v-else-if="quoteFailed" class="quote-note">قیمت نهایی هنگام ثبت نوبت محاسبه می‌شود.</p>
+          <p v-if="quote && quote.discount > 0" class="quote-saving" data-testid="price-saving">
+            {{ formatPrice(quote.discount) }} تومان صرفه‌جویی کردید
+          </p>
+
+          <!-- A code: collapsed until asked for, so it does not suggest the customer is missing out. -->
+          <div class="promo" data-testid="promo">
+            <button v-if="!codeOpen" type="button" class="promo-toggle" data-testid="promo-toggle" @click="codeOpen = true">
+              کد تخفیف دارید؟
+            </button>
+            <form v-else class="promo-form" @submit.prevent="applyCode">
+              <input
+                v-model="codeInput"
+                class="promo-input"
+                dir="ltr"
+                maxlength="40"
+                placeholder="کد تخفیف"
+                data-testid="promo-input"
+                :disabled="applying"
+              />
+              <button type="submit" class="promo-apply" data-testid="promo-apply" :disabled="applying || !codeInput.trim()">
+                {{ applying ? '…' : 'اعمال' }}
+              </button>
+              <button v-if="appliedCode" type="button" class="promo-remove" data-testid="promo-remove" @click="removeCode">
+                حذف
+              </button>
+            </form>
+            <p
+              v-if="codeMessage"
+              class="promo-message"
+              :class="{ 'promo-message--ok': codeOk, 'promo-message--error': !codeOk }"
+              data-testid="promo-message"
+              role="status"
+            >
+              {{ codeMessage }}
+            </p>
           </div>
         </div>
       </div>
@@ -191,6 +233,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useProviderStore } from '@/modules/provider/stores/provider.store'
+import { promotionService, type PriceQuote } from '@/modules/booking/api/promotion.service'
 import type { Provider } from '@/modules/provider/types/provider.types'
 import { getNameInitials, formatDate as formatDateUtil, formatTime, toPersianDigits, formatPersianNumber, formatPriceDisplay } from '@/core/utils'
 
@@ -213,16 +256,89 @@ interface BookingData {
   }
 }
 
+interface QuoteRequest {
+  providerId: string
+  serviceIds: string[]
+  startTime: string
+}
+
 interface Props {
   bookingData: BookingData
   providerId: string
+  /** What to price; without it the card shows the list price only. */
+  quoteRequest?: QuoteRequest | null
 }
 
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
   (e: 'notes-updated', notes: string): void
+  /** The code the booking should carry: set when the server applied it, null otherwise. */
+  (e: 'promotion-code', code: string | null): void
 }>()
+
+// ---- Price quote and discount code ----
+const quote = ref<PriceQuote | null>(null)
+const quoteLoading = ref(false)
+const quoteFailed = ref(false)
+const codeOpen = ref(false)
+const codeInput = ref('')
+const appliedCode = ref<string | null>(null)
+const applying = ref(false)
+const codeMessage = ref('')
+const codeOk = ref(false)
+let quoteSeq = 0
+
+async function fetchQuote(code: string | null): Promise<PriceQuote | null> {
+  if (!props.quoteRequest) return null
+  const seq = ++quoteSeq
+  try {
+    const result = await promotionService.quote({ ...props.quoteRequest, promotionCode: code })
+    // A slower, older answer must never overwrite a newer one.
+    return seq === quoteSeq ? result : null
+  } catch {
+    return null
+  }
+}
+
+async function refreshQuote() {
+  if (!props.quoteRequest) return
+  quoteLoading.value = true
+  const result = await fetchQuote(appliedCode.value)
+  quoteLoading.value = false
+  quoteFailed.value = !result
+  if (result) quote.value = result
+}
+
+async function applyCode() {
+  const code = codeInput.value.trim()
+  if (!code) return
+  applying.value = true
+  const result = await fetchQuote(code)
+  applying.value = false
+  if (!result) {
+    codeOk.value = false
+    codeMessage.value = 'بررسی کد انجام نشد؛ دوباره تلاش کنید.'
+    return
+  }
+  quote.value = result
+  quoteFailed.value = false
+  codeMessage.value = result.codeMessage ?? ''
+  codeOk.value = result.codeOutcome === 'Applied' || result.codeOutcome === 'BetterOfferApplied'
+  // Only a code the server applied rides on the booking; a worse or refused one would only fail or change nothing.
+  appliedCode.value = result.codeOutcome === 'Applied' ? code : null
+  emit('promotion-code', appliedCode.value)
+}
+
+async function removeCode() {
+  appliedCode.value = null
+  codeInput.value = ''
+  codeMessage.value = ''
+  emit('promotion-code', null)
+  await refreshQuote()
+}
+
+watch(() => props.quoteRequest, refreshQuote, { immediate: true, deep: true })
 
 const providerStore = useProviderStore()
 const provider = ref<Provider | null>(null)
@@ -286,6 +402,100 @@ const formatPrice = (price: number): string => {
 <style scoped>
 .booking-confirmation {
   padding: 0;
+}
+
+.price-row.discount {
+  color: var(--color-success-700, #047857);
+  font-weight: 600;
+}
+
+.discount-title {
+  font-weight: 400;
+  color: #64748b;
+}
+
+.quote-note {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.quote-saving {
+  margin: 0.5rem 0 0;
+  padding: 0.4rem 0.75rem;
+  border-radius: 10px;
+  background: var(--color-success-50, #ecfdf5);
+  color: var(--color-success-700, #047857);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.promo {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.promo-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-primary-600, #4f46e5);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.promo-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.promo-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-family: monospace;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.promo-apply,
+.promo-remove {
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.promo-apply {
+  background: var(--color-primary-600, #4f46e5);
+  color: white;
+}
+
+.promo-apply:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.promo-remove {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.promo-message {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+}
+
+.promo-message--ok {
+  color: var(--color-success-700, #047857);
+}
+
+.promo-message--error {
+  color: var(--color-danger-600, #dc2626);
 }
 
 .step-header {

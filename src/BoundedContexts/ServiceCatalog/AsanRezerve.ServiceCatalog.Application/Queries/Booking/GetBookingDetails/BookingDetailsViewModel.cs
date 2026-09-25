@@ -37,7 +37,13 @@ namespace AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetBookingDetai
         bool CanReview = false,
         string? ReviewBlockedReason = null,
         Guid? ReviewId = null,
-        string? ReviewStatus = null);
+        string? ReviewStatus = null,
+        // The discount the booking received (openspec/changes/add-discounts-and-campaigns). TotalPrice is already net of
+        // it; Subtotal is the services' list prices.
+        decimal Subtotal = 0m,
+        decimal DiscountAmount = 0m,
+        string? DiscountTitle = null,
+        string? DiscountCode = null);
 
     public sealed record PaymentInfoDto(
         decimal TotalAmount,

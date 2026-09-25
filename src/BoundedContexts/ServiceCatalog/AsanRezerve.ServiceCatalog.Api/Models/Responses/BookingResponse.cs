@@ -25,6 +25,12 @@ public class BookingResponse
     /// </summary>
     public string? CustomerName { get; set; }
 
+    /// <summary>The services' list prices; TotalPrice is this minus DiscountAmount.</summary>
+    public decimal Subtotal { get; set; }
+    public decimal DiscountAmount { get; set; }
+    public string? DiscountTitle { get; set; }
+    public string? DiscountCode { get; set; }
+
     /// <summary>
     /// Names of every service bundled in the visit (multi-service bookings).
     /// Empty on rows written before line items existed.

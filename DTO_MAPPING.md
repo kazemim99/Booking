@@ -526,8 +526,17 @@ public record BookingResponse {
     public string Currency { get; init; }
     public string PaymentStatus { get; init; }
     public DateTime CreatedAt { get; init; }
+    // add-discounts-and-campaigns: TotalPrice is net of the discount; Subtotal is the list prices.
+    public decimal Subtotal { get; init; }
+    public decimal DiscountAmount { get; init; }
+    public string? DiscountTitle { get; init; }
+    public string? DiscountCode { get; init; }
 }
 ```
+
+`CreateBookingRequest` also takes an optional `PromotionCode` (a code the quote accepted); the server re-prices.
+The same four discount fields are on booking details, `my-bookings` and the salon's bookings. Price quotes,
+public offers and the promotion shapes are in `API_ENDPOINTS.md` → *Discounts & Campaigns*.
 
 **Flutter** (`lib/core/api/models/booking_models.dart`):
 ```dart
