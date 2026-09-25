@@ -57,7 +57,8 @@ User request (2026-09-25): «الان من چرا نمیتونم بعنوان م
 - [x] 9 Web: «ثبت نظر» on My Bookings and the bookings sidebar (modal with ReviewForm), states, author name on cards
 - [x] 10 Provider app: «تکمیل»/«عدم حضور» offered only when the server accepts them
 - [?] 11 DECISION: should a confirmed booking complete by itself some hours after its end (unless marked no-show)? (asked)
-- [?] 12 DECISION: put the Nahal demo reviews on production, where real customers would read them as genuine? (asked)
+- [x] 12 DECISION: Nahal demo reviews on the live server — YES while in the test stage (user, 2026-09-25); switch off
+  with SEED_DEMO_REVIEWS=false before real customers arrive
 - [x] 13 FULL verify
 
 ## Decisions
@@ -84,6 +85,13 @@ User request (2026-09-25): «الان من چرا نمیتونم بعنوان م
   the same exception types and status codes; validation errors keep their field key («Rating», «SkillRating», «Comment»).
 
 ## Log
+
+- 2026-09-25 User: the platform is still in its test stage and they want to see the review UI with data on the live
+  server. The live server never got the rename: the deploy job waited for an `asan-rezerve-prod` runner that does not
+  exist (runs #107/#108 queued). Transitional deploy into the existing `/opt/booksy` layout (runbook, "Transitional
+  deploy"): old stack down once without -v (same fixed subnet), old names as network aliases, rollback on a failed
+  health check, `SEED_DEMO_REVIEWS` default on. Rehearsed the switch and the rollback locally with Docker. The
+  seeder now matches the salon however its name was typed (ZWNJ, spaces, Arabic ي/ك) — 12 unit tests.
 
 - 2026-09-25 Merged master (47b0439 + 99321df: rename Booksy → AsanRezerve). Conflicts were import/using blocks only;
   kept this change's additions under the new names, moved the new files into the renamed folders, and fixed

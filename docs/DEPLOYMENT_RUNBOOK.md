@@ -22,6 +22,29 @@ the deploy job's `runs-on: [self-hosted, asan-rezerve-prod]` label matches no re
 under the renamed service keys would create **brand-new, empty** volumes rather than reusing the
 production data — see why below.
 
+### Transitional deploy (2026-09-25, until the migration below runs)
+
+So the renamed app can reach the server before the migration, `deploy.yml`'s deploy job points at the
+**existing** layout: `runs-on: [self-hosted, booksy-prod]`, `DEPLOY_PATH=/opt/booksy`, the
+`/var/www/booksy-*` web roots and `COMPOSE_PROJECT_NAME=booksy` — so the data volumes are still
+`booksy_postgres_data`, `booksy_redis_data`, `booksy_uploads_data`. What it does on the box:
+
+- **First deploy only:** if a `booksy-api` container exists, the old stack is taken down with its own
+  file (`docker-compose.prod.yml.previous`, no `-v`) before `up`. It has to: the renamed network uses
+  the same fixed subnet `172.25.0.0/16`, and `up` fails with "Pool overlaps" while the old one exists.
+  Rehearsed locally on 2026-09-25 (old stack + data → switch → data intact → rollback → data intact).
+- Containers are now `asan-rezerve-*`, but each keeps its old name as a network alias
+  (`booksy-api`, `booksy-postgres`, …), so a `.env` connection string that says `Host=booksy-postgres`
+  still works.
+- If the API does not become healthy, the job brings the previous compose file back up (same volumes).
+- **Demo reviews are ON** (`Database__SeedDemoReviews=${SEED_DEMO_REVIEWS:-true}`): on start the API adds
+  18 reviews by 12 test customers (`+98999000100x`) to «سالن نهال», with salon replies and votes, once.
+  Set `SEED_DEMO_REVIEWS=false` in `/opt/booksy/.env` **before real customers arrive** and remove the
+  reviews (`ModeratedBy = 'DemoSalonReviewsSeeder'`) — they would read them as genuine.
+
+When the migration below runs, change those five values in `deploy.yml` back to the asan-rezerve names
+in the same commit.
+
 ### The one risk that matters: Compose auto-names volumes after the directory
 
 `docker-compose.prod.yml` declares `postgres_data`, `redis_data`, `uploads_data`, etc. with no
