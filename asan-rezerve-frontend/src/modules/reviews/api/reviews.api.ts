@@ -50,9 +50,12 @@ function statistic(v: unknown): DimensionStatistic {
   return { average: numOrNull(s.average), count: num(s.count) }
 }
 
-/** The request body: the overall, the comment if any, and only the dimensions that were rated. */
+/**
+ * The request body: the aspects that were rated, the overall (derived from them by the form — sent so an older server
+ * that still requires it accepts the review), the comment if any, and whether to sign it with the author's name.
+ */
 function body(input: ReviewInput): Json {
-  const out: Json = { rating: input.rating }
+  const out: Json = { rating: input.rating, showName: input.showName !== false }
   if (input.comment) out.comment = input.comment
   for (const d of DIMENSIONS) {
     const value = input.dimensions[d]
@@ -95,6 +98,7 @@ function toMyReview(item: Json): MyReview {
     createdAt: String(item.createdAt ?? ''),
     editedAt: strOrNull(item.editedAt),
     canEdit: item.canEdit === true,
+    showName: item.showName !== false,
   }
 }
 

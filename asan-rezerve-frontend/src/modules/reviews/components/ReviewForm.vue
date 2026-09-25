@@ -1,21 +1,7 @@
 <template>
   <form class="review-form" dir="rtl" @submit.prevent="send">
-    <fieldset class="review-form__overall">
-      <legend>امتیاز کلی شما</legend>
-      <RatingStars v-model="rating" size="lg" label="امتیاز کلی" data-test="overall" />
-    </fieldset>
-
-    <button
-      type="button"
-      class="review-form__toggle"
-      :aria-expanded="showDimensions"
-      data-test="dimensions-toggle"
-      @click="showDimensions = !showDimensions"
-    >
-      {{ showDimensions ? 'بستن جزئیات' : 'جزئیات بیشتر (اختیاری)' }}
-    </button>
-
-    <div v-if="showDimensions" class="review-form__dimensions">
+    <fieldset class="review-form__aspects">
+      <legend>به هر مورد امتیاز دهید</legend>
       <div v-for="d in DIMENSIONS" :key="d" class="review-form__dimension">
         <span>{{ DIMENSION_LABELS[d] }}</span>
         <RatingStars
@@ -25,7 +11,10 @@
           @update:model-value="(v: number) => (dimensions[d] = v)"
         />
       </div>
-    </div>
+      <p v-if="overall !== null" class="review-form__overall" aria-live="polite" data-test="overall-live">
+        امتیاز کلی: {{ toPersianDigits(overall.toFixed(1)) }}
+      </p>
+    </fieldset>
 
     <label class="review-form__comment">
       <span>نظر شما (اختیاری)</span>
@@ -33,6 +22,11 @@
       <small :class="{ 'is-error': commentTooShort }" data-test="comment-hint">
         {{ commentTooShort ? `نظر باید دست‌کم ${toPersianDigits(10)} نویسه باشد` : `${toPersianDigits(trimmed.length)} / ${toPersianDigits(2000)}` }}
       </small>
+    </label>
+
+    <label class="review-form__hide-name" data-test="hide-name">
+      <input v-model="hideName" type="checkbox" />
+      <span>نامم در نظر نمایش داده نشود</span>
     </label>
 
     <p class="review-form__note">نظر شما پس از بررسی نمایش داده می‌شود.</p>
@@ -50,16 +44,28 @@
 import { computed, reactive, ref } from 'vue'
 import { toPersianDigits } from '@/core/utils/persian.service'
 import RatingStars from './RatingStars.vue'
-import { DIMENSIONS, DIMENSION_LABELS, type Dimension, type ReviewInput } from '../types/reviews.types'
+import {
+  DIMENSIONS,
+  DIMENSION_LABELS,
+  overallFromAspects,
+  type Dimension,
+  type ReviewInput,
+} from '../types/reviews.types'
 
 /**
- * Write or edit a review. The overall star is the only required step; the four dimensions sit behind a disclosure
- * because every extra required row measurably costs completion. The overall is never computed from the
- * dimensions — it is the customer's own verdict.
+ * Write or edit a review (reviews-and-reschedule-round2, D1). The customer rates the four aspects — all required —
+ * and the overall is their average to the nearest half star, shown live as «امتیاز کلی: ۴.۵» and sent with them.
+ * A review written before D1 may carry only an overall: its missing aspects open at that overall, rounded, so the
+ * edit starts where the customer left it.
  */
 const props = withDefaults(
   defineProps<{
-    initial?: { rating?: number; comment?: string | null; dimensions?: Partial<Record<Dimension, number | null>> }
+    initial?: {
+      rating?: number
+      comment?: string | null
+      dimensions?: Partial<Record<Dimension, number | null>>
+      showName?: boolean
+    }
     submitting?: boolean
     submitLabel?: string
     cancellable?: boolean
@@ -69,25 +75,37 @@ const props = withDefaults(
 
 const emit = defineEmits<{ submit: [input: ReviewInput]; cancel: [] }>()
 
-const rating = ref<number | null>(props.initial?.rating ?? null)
-const comment = ref(props.initial?.comment ?? '')
-const dimensions = reactive<Partial<Record<Dimension, number>>>(
-  Object.fromEntries(
-    Object.entries(props.initial?.dimensions ?? {}).filter(([, v]) => typeof v === 'number'),
-  ) as Partial<Record<Dimension, number>>,
-)
-const showDimensions = ref(Object.keys(dimensions).length > 0)
+function initialAspects(): Partial<Record<Dimension, number>> {
+  const given = props.initial?.dimensions ?? {}
+  const fallback = typeof props.initial?.rating === 'number' && props.initial.rating >= 1
+    ? Math.min(5, Math.round(props.initial.rating))
+    : undefined
+  const out: Partial<Record<Dimension, number>> = {}
+  for (const d of DIMENSIONS) {
+    const value = given[d]
+    if (typeof value === 'number') out[d] = value
+    else if (fallback !== undefined) out[d] = fallback
+  }
+  return out
+}
 
+const dimensions = reactive<Partial<Record<Dimension, number>>>(initialAspects())
+const comment = ref(props.initial?.comment ?? '')
+/** Ticked = the public review reads «مشتری». Unticked unless the author chose it before. */
+const hideName = ref(props.initial?.showName === false)
+
+const overall = computed(() => overallFromAspects(dimensions))
 const trimmed = computed(() => comment.value.trim())
 const commentTooShort = computed(() => trimmed.value.length > 0 && trimmed.value.length < 10)
-const canSend = computed(() => (rating.value ?? 0) >= 1 && !commentTooShort.value)
+const canSend = computed(() => overall.value !== null && !commentTooShort.value)
 
 function send() {
-  if (!canSend.value || rating.value === null) return
+  if (!canSend.value || overall.value === null) return
   emit('submit', {
-    rating: rating.value,
+    rating: overall.value,
     comment: trimmed.value || undefined,
     dimensions: { ...dimensions },
+    showName: !hideName.value,
   })
 }
 </script>
@@ -96,16 +114,14 @@ function send() {
 .review-form { display: flex; flex-direction: column; gap: 1rem; }
 .review-form fieldset { border: 0; padding: 0; margin: 0; }
 .review-form legend { font-weight: 600; margin-bottom: 0.5rem; }
-.review-form__toggle {
-  align-self: flex-start;
-  background: none;
-  border: 0;
-  color: var(--color-primary, #6c5ce7);
-  cursor: pointer;
-  padding: 0;
-  font-weight: 500;
+.review-form__aspects { display: grid; gap: 0.5rem; }
+.review-form__overall {
+  margin: 0.25rem 0 0;
+  font-weight: 700;
+  color: var(--color-primary, var(--color-primary-500));
 }
-.review-form__dimensions { display: grid; gap: 0.5rem; }
+.review-form__hide-name { display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.9rem; }
+.review-form__hide-name input { accent-color: var(--color-primary, var(--color-primary-500)); }
 .review-form__dimension { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
 .review-form__comment { display: flex; flex-direction: column; gap: 0.35rem; }
 .review-form__comment textarea {

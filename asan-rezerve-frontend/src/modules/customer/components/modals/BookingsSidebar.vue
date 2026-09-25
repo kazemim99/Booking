@@ -128,7 +128,14 @@
                   <p v-if="booking.staffName" class="staff-name">👤 {{ booking.staffName }}</p>
                   <p class="booking-time">🕐 {{ booking.formattedTime }}</p>
                   <p class="booking-price">💰 {{ booking.formattedPrice }}</p>
-                  <p v-if="booking.reviewStatusLabel" class="review-line" data-testid="sidebar-review-state">
+                  <p
+                    v-if="booking.reviewFromOtherVisit"
+                    class="review-line"
+                    data-testid="sidebar-review-other-visit"
+                  >
+                    ⭐ برای این سالن قبلاً نظر داده‌اید
+                  </p>
+                  <p v-else-if="booking.reviewStatusLabel" class="review-line" data-testid="sidebar-review-state">
                     ⭐ نظر شما: {{ booking.reviewStatusLabel }}
                   </p>
                   <p v-else-if="booking.reviewBlockedReason" class="review-line" data-testid="sidebar-review-waiting">
@@ -144,6 +151,14 @@
                     data-testid="sidebar-review-button"
                   >
                     ⭐ ثبت نظر
+                  </button>
+                  <button
+                    v-else-if="booking.canEditReview"
+                    @click="editReview(booking)"
+                    class="btn-review"
+                    data-testid="sidebar-review-edit-button"
+                  >
+                    ✏️ ویرایش نظر
                   </button>
                   <button
                     @click="handleRebookBooking(booking)"
@@ -165,8 +180,9 @@
     v-if="reviewing"
     :is-open="!!reviewing"
     :booking-id="reviewing.bookingId"
+    :review-id="editingReviewId"
     :subject="`${reviewing.providerName} · ${reviewing.serviceName}`"
-    @close="reviewing = null"
+    @close="closeReview"
     @saved="reviewed"
   />
 
@@ -193,6 +209,7 @@
     v-if="showRebookModal"
     :is-open="showRebookModal"
     :booking="bookingToRebook"
+    mode="rebook"
     @close="closeRebookModal"
     @confirm="(time: string) => requireName(() => confirmRebookBooking(time))"
   />
@@ -211,6 +228,7 @@ import RescheduleBookingModal from './RescheduleBookingModal.vue'
 import ProfileEditModal from './ProfileEditModal.vue'
 import RescheduleAction from './RescheduleAction.vue'
 import WriteReviewModal from '@/modules/reviews/components/WriteReviewModal.vue'
+import { withSavedReview } from '@/modules/reviews/utils/bookingReviews'
 import { useNameBeforeBooking } from '@/modules/booking/composables/useNameBeforeBooking'
 
 interface Props {
@@ -245,17 +263,24 @@ const bookingToRebook = ref<EnrichedBookingView | null>(null)
 const upcomingBookings = ref<EnrichedBookingView[]>([])
 const pastBookings = ref<EnrichedBookingView[]>([])
 
-// The past visit being reviewed, while its modal is open.
+// The past visit being reviewed, while its modal is open — and the salon review being edited from it, if so.
 const reviewing = ref<EnrichedBookingView | null>(null)
+const editingReviewId = ref<string | null>(null)
 
-function reviewed(reviewId: string) {
-  const id = reviewing.value?.bookingId
-  pastBookings.value = pastBookings.value.map(b =>
-    b.bookingId === id
-      ? { ...b, canReview: false, reviewId, reviewStatus: 'Pending' as const, reviewStatusLabel: 'در انتظار تأیید' }
-      : b,
-  )
+function editReview(booking: EnrichedBookingView) {
+  editingReviewId.value = booking.reviewId ?? null
+  reviewing.value = booking
+}
+
+function closeReview() {
   reviewing.value = null
+  editingReviewId.value = null
+}
+
+/** Saved (written or edited): every past visit to that salon says so at once. */
+function reviewed(reviewId: string) {
+  if (reviewing.value) pastBookings.value = withSavedReview(pastBookings.value, reviewing.value, reviewId)
+  closeReview()
 }
 
 const loading = ref({
@@ -364,6 +389,9 @@ function closeCancelModal(): void {
   bookingToCancel.value = null
 }
 
+/** The moved booking is a new request the salon confirms again (reviews-and-reschedule-round2). */
+const RESCHEDULED_MESSAGE = 'زمان نوبت تغییر کرد و اکنون در انتظار تأیید سالن است.'
+
 // Reschedule booking handler
 function handleRescheduleBooking(booking: EnrichedBookingView): void {
   bookingToReschedule.value = booking
@@ -381,7 +409,7 @@ async function confirmRescheduleBooking(newStartTime: string, reason?: string): 
       reason: reason || 'درخواست تغییر زمان'
     })
 
-    showSuccessMessage('نوبت با موفقیت تغییر زمان یافت')
+    showSuccessMessage(RESCHEDULED_MESSAGE)
 
     // Refresh bookings
     await fetchUpcomingBookings()

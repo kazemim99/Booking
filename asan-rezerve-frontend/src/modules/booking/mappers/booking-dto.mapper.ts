@@ -139,6 +139,10 @@ export interface EnrichedBookingView extends CustomerBookingDto {
   canReview: boolean
   /** «نظر شما: …» — the written review's state, in Persian; null when there is none. */
   reviewStatusLabel: string | null
+  /** «ویرایش نظر» is offered: the salon has the customer's review and the server says it may still be edited. */
+  canEditReview: boolean
+  /** The salon's review was written on another visit: «برای این سالن قبلاً نظر داده‌اید». */
+  reviewFromOtherVisit: boolean
 }
 
 const REVIEW_STATUS_LABELS: Record<string, string> = {
@@ -197,5 +201,7 @@ export function mapToEnrichedBookingView(dto: CustomerBookingDto): EnrichedBooki
     // The server's word where it gave one; an older server's copy falls back to the status.
     canReview: typeof dto.canReview === 'boolean' ? dto.canReview : dto.status === 'Completed' && !dto.reviewId,
     reviewStatusLabel: dto.reviewId ? (REVIEW_STATUS_LABELS[dto.reviewStatus ?? 'Pending'] ?? null) : null,
+    canEditReview: !!dto.reviewId && dto.reviewEditable === true,
+    reviewFromOtherVisit: !!dto.reviewId && !!dto.reviewBookingId && dto.reviewBookingId !== dto.bookingId,
   }
 }

@@ -194,6 +194,7 @@ class CustomerService {
         rating: request.rating,
         comment: request.text,
         dimensions: request.dimensions ?? {},
+        showName: request.showName !== false,
       })
       const updated = (await reviewsApi.mine()).find((r) => r.reviewId === reviewId)
       if (!updated) throw new Error('Failed to update review')
@@ -329,6 +330,7 @@ function toCustomerReview(r: MyReview): CustomerReview {
     moderationStatus: r.moderationStatus,
     moderationReason: r.moderationReason,
     dimensions: r.dimensions,
+    showName: r.showName !== false,
   }
 }
 

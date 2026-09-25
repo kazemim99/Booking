@@ -64,7 +64,7 @@ User request (2026-09-25, with 5 screenshots of the live customer app): «همه
 - [ ] 6 Seed: Nahal demo — one review per reviewer (18 reviewers)
 - [x] 7 Customer app: review form aspects-only with live overall + «نامم نمایش داده نشود»; edit from booking
 - [x] 8 Customer app: rating · count separator; reply redesign; installed-apps directions first; reschedule notice
-- [ ] 9 Web: review form aspects-only + name choice; shared rating display (+ search card); reply redesign;
+- [x] 9 Web: review form aspects-only + name choice; shared rating display (+ search card); reply redesign;
       directions chooser; reschedule notice; «ویرایش نظر»
 - [x] 10 Docs: runbook note on F0 (docs-site «بوکسی» left: docs/KNOWLEDGE_MAP.md marks docs-site historical)
 - [ ] 11 FULL verify
@@ -84,6 +84,10 @@ User request (2026-09-25, with 5 screenshots of the live customer app): «همه
 - D6 (tier 1) Items 3 (label) and 4 are the stale deploy (F0): no app change.
 
 ## Log
+
+- 2026-09-25 Task 9 (web): type-check clean, lint 0 errors, vitest 259 pass / the same 36 pre-existing failures in
+  the same 5 files (+49 tests). Search `ProviderCard` now shows the rating. The salon settings form's reschedule
+  default (12) set to 2 (D5) so a salon saving untouched settings doesn't undo the platform default.
 
 - 2026-09-25 Tasks 7–8 (customer app): analyze clean, 868 tests. Also: after a reschedule the detail screen and list
   follow the NEW booking (was reloading the closed one); status `Rescheduled` labelled «تغییر زمان داده شد» (fell

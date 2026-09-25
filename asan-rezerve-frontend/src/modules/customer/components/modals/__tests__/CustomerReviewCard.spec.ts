@@ -21,6 +21,7 @@ const review = (overrides: Partial<CustomerReview> = {}): CustomerReview => ({
   moderationStatus: 'Published',
   moderationReason: null,
   dimensions: { cleanliness: null, skill: null, punctuality: null, conduct: null },
+  showName: true,
   ...overrides,
 })
 

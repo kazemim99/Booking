@@ -69,3 +69,39 @@ describe('mapToEnrichedBookingView — where the review stands', () => {
     expect(mapToEnrichedBookingView(dto({ ...past, status: 'Confirmed' })).canReview).toBe(false)
   })
 })
+
+// reviews-and-reschedule-round2: one review per salon, and the booking card offers to edit it while it may be edited.
+describe('mapToEnrichedBookingView — editing the salon review', () => {
+  const past = { startTime: '2020-01-05T10:00:00', endTime: '2020-01-05T10:30:00', status: 'Completed' }
+
+  it('a review the server says is editable offers «ویرایش نظر»', () => {
+    const view = mapToEnrichedBookingView(
+      dto({ ...past, canReview: false, reviewId: 'r1', reviewStatus: 'Pending', reviewEditable: true }),
+    )
+    expect(view.canEditReview).toBe(true)
+    expect(view.canReview).toBe(false)
+  })
+
+  it('past its edit window the review is only shown', () => {
+    const view = mapToEnrichedBookingView(
+      dto({ ...past, canReview: false, reviewId: 'r1', reviewStatus: 'Published', reviewEditable: false }),
+    )
+    expect(view.canEditReview).toBe(false)
+    expect(view.reviewStatusLabel).toBe('منتشر شده')
+  })
+
+  it('a review written on another visit to the salon is told apart from this visit’s own', () => {
+    const other = mapToEnrichedBookingView(dto({ ...past, reviewId: 'r1', reviewBookingId: 'b-earlier' }))
+    const own = mapToEnrichedBookingView(dto({ ...past, reviewId: 'r1', reviewBookingId: 'b1' }))
+    const olderServer = mapToEnrichedBookingView(dto({ ...past, reviewId: 'r1' }))
+
+    expect(other.reviewFromOtherVisit).toBe(true)
+    expect(own.reviewFromOtherVisit).toBe(false)
+    expect(olderServer.reviewFromOtherVisit).toBe(false)
+  })
+
+  it('an older server without the field never offers an edit, and no review means nothing to edit', () => {
+    expect(mapToEnrichedBookingView(dto({ ...past, reviewId: 'r1' })).canEditReview).toBe(false)
+    expect(mapToEnrichedBookingView(dto({ ...past, reviewEditable: true })).canEditReview).toBe(false)
+  })
+})

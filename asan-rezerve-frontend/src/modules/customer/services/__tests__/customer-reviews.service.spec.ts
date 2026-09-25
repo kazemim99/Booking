@@ -39,6 +39,7 @@ const myReview = (overrides: Record<string, unknown> = {}) => ({
   createdAt: '2026-09-20T10:00:00Z',
   editedAt: null,
   canEdit: false,
+  showName: true,
   ...overrides,
 })
 
@@ -67,6 +68,7 @@ describe('customerService reviews', () => {
       canEdit: false,
       moderationStatus: 'Rejected',
       moderationReason: 'contains a phone number',
+      showName: true,
     })
   })
 
@@ -78,12 +80,14 @@ describe('customerService reviews', () => {
       rating: 2,
       text: 'دیر شروع کردند و عجله داشتند',
       dimensions: { punctuality: 1 },
+      showName: false,
     })
 
     expect(edit).toHaveBeenCalledWith('r1', {
       rating: 2,
       comment: 'دیر شروع کردند و عجله داشتند',
       dimensions: { punctuality: 1 },
+      showName: false,
     })
     expect(umPatch).not.toHaveBeenCalled()
     expect(updated.moderationStatus).toBe('Pending')

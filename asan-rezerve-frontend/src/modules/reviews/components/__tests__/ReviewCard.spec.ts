@@ -41,6 +41,26 @@ describe('ReviewCard', () => {
     expect(wrapper.get('[data-test="reply"]').text()).toContain('ممنون از لطف شما')
   })
 
+  // reviews-and-reschedule-round2 item 7: the reply read as a grey note, not as the salon answering THIS review.
+  it('signs the reply with the salon’s name, as an answer nested under the review', () => {
+    const wrapper = mount(ReviewCard, {
+      props: { review: review({ providerResponse: 'ممنون از لطف شما' }), providerName: 'سالن نهال' },
+    })
+
+    const reply = wrapper.get('[data-test="reply"]')
+    expect(reply.get('[data-test="reply-author"]').text()).toBe('پاسخ سالن نهال')
+    expect(reply.find('.review-card__reply-avatar svg').exists()).toBe(true)
+    expect(reply.find('.review-card__reply-icon').exists()).toBe(true)
+    // Inside the review's own article, so it is visibly — and for a screen reader — that review's answer.
+    expect(reply.attributes('aria-label')).toBe('پاسخ سالن نهال به این نظر')
+  })
+
+  it('without the salon’s name the reply is still signed «پاسخ سالن»', () => {
+    const wrapper = mount(ReviewCard, { props: { review: review({ providerResponse: 'ممنون' }) } })
+
+    expect(wrapper.get('[data-test="reply-author"]').text()).toBe('پاسخ سالن')
+  })
+
   it('has no reply block when there is none — the API sends a reply only once it is approved', () => {
     const wrapper = mount(ReviewCard, { props: { review: review() } })
 

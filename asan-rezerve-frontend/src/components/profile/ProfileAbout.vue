@@ -236,7 +236,7 @@
               {{ provider.address.city }}، {{ provider.address.state }}<br />
               کد پستی: {{ convertToPersianNumber(provider.address.postalCode) }}
             </p>
-            <button class="btn-get-directions" @click="getDirections">
+            <button class="btn-get-directions" data-test="get-directions" @click="getDirections">
               مسیریابی
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
@@ -244,6 +244,14 @@
             </button>
           </div>
         </div>
+
+        <DirectionsChooser
+          v-if="coordinates"
+          :is-open="directionsOpen"
+          :latitude="coordinates.latitude"
+          :longitude="coordinates.longitude"
+          @close="directionsOpen = false"
+        />
 
         <!-- Map Placeholder (integrate with Neshan Maps later) -->
         <div class="map-container">
@@ -260,7 +268,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import DirectionsChooser from '@/shared/components/ui/DirectionsChooser.vue'
+import { addressSearchUrl } from '@/core/utils/directions'
 import type { Provider, DayOfWeek, BusinessHours } from '@/modules/provider/types/provider.types'
 import { ProviderCategory } from '@/core/types/enums.types'
 import { getCategoryPersianName, parseCategory } from '@/core/constants/provider-categories'
@@ -354,15 +364,22 @@ const getDefaultBusinessHours = (): BusinessHours[] => {
   ]
 }
 
+/** The salon's coordinates when it has them — then «مسیریابی» asks which app (reviews-and-reschedule-round2 item 5). */
+const coordinates = computed(() => {
+  const latitude = props.provider.address?.latitude
+  const longitude = props.provider.address?.longitude
+  return latitude && longitude ? { latitude: Number(latitude), longitude: Number(longitude) } : null
+})
+const directionsOpen = ref(false)
+
 const getDirections = () => {
-  // TODO: Integrate with Neshan Maps or Google Maps
-  const { latitude, longitude } = props.provider.address
-  if (latitude && longitude) {
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`, '_blank')
-  } else {
-    const address = `${props.provider.address.addressLine1}, ${props.provider.address.city}, ${props.provider.address.state}`
-    window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank')
+  if (coordinates.value) {
+    directionsOpen.value = true
+    return
   }
+  // No coordinates on file: the address text is all there is to search for.
+  const address = `${props.provider.address.addressLine1}, ${props.provider.address.city}, ${props.provider.address.state}`
+  window.open(addressSearchUrl(address), '_blank')
 }
 
 /** Get category label supporting both new ProviderCategory and legacy ProviderType */

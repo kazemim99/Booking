@@ -4,7 +4,7 @@
       <h2 class="section-title">نظرات مشتریان</h2>
       <p class="section-subtitle">تجربه مشتریانی که واقعاً در این سالن نوبت داشته‌اند</p>
     </header>
-    <ReviewList :provider-id="provider.id" />
+    <ReviewList :provider-id="provider.id" :provider-name="provider.businessName" />
   </section>
 </template>
 

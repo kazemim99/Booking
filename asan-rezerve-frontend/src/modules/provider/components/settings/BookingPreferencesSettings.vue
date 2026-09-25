@@ -294,7 +294,7 @@ function getDefaultSettings(): BookingPreferences {
       cancellationWindowHours: 24,
       chargeNoShowFee: false,
       allowRescheduling: true,
-      rescheduleWindowHours: 12,
+      rescheduleWindowHours: 2,
     },
     depositSettings: {
       requiresDeposit: false,

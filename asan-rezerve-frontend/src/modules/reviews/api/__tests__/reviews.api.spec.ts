@@ -41,30 +41,45 @@ describe('reviewsApi', () => {
     put.mockReset()
   })
 
-  it('submits the overall rating and only the dimensions that were given', async () => {
+  it('submits the four aspects, the overall derived from them, and the name choice', async () => {
     post.mockResolvedValue({ data: { reviewId: 'r1', moderationStatus: 'Pending' } })
 
     const created = await reviewsApi.submit('b1', {
       rating: 4.5,
       comment: 'کار تمیز و دقیقی بود',
-      dimensions: { cleanliness: 5, punctuality: 3 },
+      dimensions: { cleanliness: 5, skill: 5, punctuality: 3, conduct: 5 },
+      showName: true,
     })
 
     expect(post).toHaveBeenCalledWith('v1/Reviews/bookings/b1', {
       rating: 4.5,
+      showName: true,
       comment: 'کار تمیز و دقیقی بود',
       cleanlinessRating: 5,
+      skillRating: 5,
       punctualityRating: 3,
+      conductRating: 5,
     })
     expect(created.moderationStatus).toBe('Pending')
   })
 
-  it('edits with the same body shape', async () => {
+  it('edits with the same body shape, and says so when the author hides their name', async () => {
     put.mockResolvedValue({ data: { reviewId: 'r1', moderationStatus: 'Pending' } })
 
-    await reviewsApi.edit('r1', { rating: 2, dimensions: { conduct: 1 } })
+    await reviewsApi.edit('r1', {
+      rating: 2,
+      dimensions: { cleanliness: 2, skill: 2, punctuality: 2, conduct: 1 },
+      showName: false,
+    })
 
-    expect(put).toHaveBeenCalledWith('v1/Reviews/r1', { rating: 2, conductRating: 1 })
+    expect(put).toHaveBeenCalledWith('v1/Reviews/r1', {
+      rating: 2,
+      showName: false,
+      cleanlinessRating: 2,
+      skillRating: 2,
+      punctualityRating: 2,
+      conductRating: 1,
+    })
   })
 
   it('lists a provider’s reviews past the GET cache, so a fresh vote shows at once', async () => {
@@ -129,5 +144,13 @@ describe('reviewsApi', () => {
     expect(get).toHaveBeenCalledWith('v1/Reviews/me', expect.objectContaining({ cache: false }))
     expect(mine[0].moderationStatus).toBe('Rejected')
     expect(mine[0].moderationReason).toBe('spam')
+    // A server that does not say signs the review with the author's name — the default.
+    expect(mine[0].showName).toBe(true)
+  })
+
+  it('carries the author’s choice to hide their name, so an edit opens with it', async () => {
+    get.mockResolvedValue({ data: { items: [{ reviewId: 'r1', showName: false }] } })
+
+    expect((await reviewsApi.mine())[0].showName).toBe(false)
   })
 })

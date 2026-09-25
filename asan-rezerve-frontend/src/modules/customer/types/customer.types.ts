@@ -90,12 +90,16 @@ export interface CustomerReview {
   /** The administrator's reason, when rejected or hidden. */
   moderationReason: string | null
   dimensions: DimensionRatings
+  /** Whether the public review carries the author's name (reviews-and-reschedule-round2, D2); true by default. */
+  showName: boolean
 }
 
 export interface UpdateReviewRequest {
   rating: number
   text?: string
   dimensions?: Partial<Record<Dimension, number>>
+  /** False signs the public review «مشتری». Absent = show the name. */
+  showName?: boolean
 }
 
 // ============================================================================

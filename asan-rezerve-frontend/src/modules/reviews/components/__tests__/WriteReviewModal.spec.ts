@@ -9,21 +9,37 @@ import { defineComponent, h } from 'vue'
 
 const showSuccess = vi.fn()
 const submit = vi.fn()
+const edit = vi.fn()
+const mine = vi.fn()
 
 vi.mock('@/core/composables/useNotification', () => ({ useNotification: () => ({ showSuccess }) }))
-vi.mock('../../api/reviews.api', () => ({ reviewsApi: { submit: (...a: unknown[]) => submit(...a) } }))
+vi.mock('../../api/reviews.api', () => ({
+  reviewsApi: {
+    submit: (...a: unknown[]) => submit(...a),
+    edit: (...a: unknown[]) => edit(...a),
+    mine: (...a: unknown[]) => mine(...a),
+  },
+}))
 
 const ModalStub = defineComponent({
   props: ['isOpen', 'title'],
   setup: (_, { slots }) => () => h('div', slots.default?.()),
 })
+const INPUT = {
+  rating: 5,
+  comment: 'کار تمیز و دقیقی بود',
+  dimensions: { cleanliness: 5, skill: 5, punctuality: 5, conduct: 5 },
+  showName: true,
+}
 const FormStub = defineComponent({
-  props: ['submitting'],
+  props: ['submitting', 'initial', 'submitLabel'],
   emits: ['submit', 'cancel'],
-  setup: (_, { emit }) => () =>
+  setup: (props, { emit }) => () =>
     h('button', {
       'data-test': 'send',
-      onClick: () => emit('submit', { rating: 5, comment: 'کار تمیز و دقیقی بود', dimensions: {} }),
+      'data-initial': JSON.stringify(props.initial ?? null),
+      'data-label': props.submitLabel,
+      onClick: () => emit('submit', INPUT),
     }),
 })
 
@@ -39,6 +55,8 @@ describe('WriteReviewModal', () => {
   beforeEach(() => {
     showSuccess.mockReset()
     submit.mockReset()
+    edit.mockReset()
+    mine.mockReset()
   })
 
   it('names the visit being reviewed', () => {
@@ -52,7 +70,7 @@ describe('WriteReviewModal', () => {
     await wrapper.get('[data-test="send"]').trigger('click')
     await flushPromises()
 
-    expect(submit).toHaveBeenCalledWith('b1', { rating: 5, comment: 'کار تمیز و دقیقی بود', dimensions: {} })
+    expect(submit).toHaveBeenCalledWith('b1', INPUT)
     expect(showSuccess).toHaveBeenCalledWith('نظر شما ثبت شد', expect.stringContaining('پس از تأیید'))
     expect(wrapper.emitted('saved')).toEqual([['r9']])
   })
@@ -67,5 +85,53 @@ describe('WriteReviewModal', () => {
     expect(wrapper.emitted('saved')).toBeUndefined()
     expect(wrapper.emitted('close')).toBeUndefined()
     expect(showSuccess).not.toHaveBeenCalled()
+  })
+
+  // reviews-and-reschedule-round2: one review per salon — a booking card whose salon already has an editable review
+  // offers «ویرایش نظر», which opens this modal on that review.
+  it('given a review, opens it pre-filled — name choice included — and saves it as an edit', async () => {
+    mine.mockResolvedValue([
+      {
+        reviewId: 'r7',
+        rating: 4,
+        comment: 'خوب بود ولی دیر شروع شد',
+        dimensions: { cleanliness: 4, skill: 4, punctuality: 3, conduct: 5 },
+        showName: false,
+      },
+    ])
+    edit.mockResolvedValue({ reviewId: 'r7', moderationStatus: 'Pending' })
+    const wrapper = mount(WriteReviewModal, {
+      props: { isOpen: true, bookingId: 'b1', reviewId: 'r7' },
+      global: { stubs: { BaseModal: ModalStub, ReviewForm: FormStub } },
+    })
+    await flushPromises()
+
+    const form = wrapper.get('[data-test="send"]')
+    expect(JSON.parse(form.attributes('data-initial')!)).toEqual({
+      rating: 4,
+      comment: 'خوب بود ولی دیر شروع شد',
+      dimensions: { cleanliness: 4, skill: 4, punctuality: 3, conduct: 5 },
+      showName: false,
+    })
+    expect(form.attributes('data-label')).toBe('ذخیره تغییرات')
+
+    await form.trigger('click')
+    await flushPromises()
+
+    expect(edit).toHaveBeenCalledWith('r7', INPUT)
+    expect(submit).not.toHaveBeenCalled()
+    expect(wrapper.emitted('saved')).toEqual([['r7']])
+  })
+
+  it('a review that is no longer there says so instead of an empty form', async () => {
+    mine.mockResolvedValue([])
+    const wrapper = mount(WriteReviewModal, {
+      props: { isOpen: true, bookingId: 'b1', reviewId: 'gone' },
+      global: { stubs: { BaseModal: ModalStub, ReviewForm: FormStub } },
+    })
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="send"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="review-missing"]').exists()).toBe(true)
   })
 })

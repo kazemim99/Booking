@@ -37,8 +37,7 @@
         <div class="card-content">
           <h3>{{ favorite.provider?.businessName || 'نامشخص' }}</h3>
           <div class="rating">
-            <span class="stars">★ {{ favorite.provider?.rating?.toFixed(1) || '0.0' }}</span>
-            <span class="reviews">({{ favorite.provider?.reviewCount || 0 }} نظر)</span>
+            <RatingSummary :rating="favorite.provider?.rating" :count="favorite.provider?.reviewCount" />
           </div>
           <p class="category">{{ getCategoryLabel(favorite.provider?.category || '') }}</p>
           <p v-if="favorite.lastBookedAt" class="last-booked">
@@ -60,6 +59,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
 import { favoritesService } from '../../services/favorites.service'
 import FavoriteButton from './FavoriteButton.vue'
+import RatingSummary from '@/shared/components/ui/RatingSummary.vue'
 import type { FavoriteProvider } from '../../types/favorites.types'
 import { formatTimeAgo, getCategoryLabel } from '../../types/favorites.types'
 
@@ -216,15 +216,7 @@ function getInitials(name?: string): string {
   margin-bottom: 0.5rem;
 }
 
-.stars {
-  color: var(--color-warning-500);
-  font-weight: 600;
-}
 
-.reviews {
-  color: #718096;
-  font-size: 0.875rem;
-}
 
 .category,
 .last-booked {

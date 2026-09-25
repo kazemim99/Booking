@@ -15,10 +15,19 @@ vi.mock('@/modules/booking/api/booking.service', () => ({
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: vi.fn() }) }))
 
 const WriteReviewStub = defineComponent({
-  props: ['isOpen', 'bookingId', 'subject'],
+  props: ['isOpen', 'bookingId', 'subject', 'reviewId'],
   emits: ['saved', 'close'],
   setup: (props, { emit }) => () =>
-    h('button', { 'data-test': 'modal-save', 'data-booking': props.bookingId, onClick: () => emit('saved', 'r1') }, props.subject),
+    h(
+      'button',
+      {
+        'data-test': 'modal-save',
+        'data-booking': props.bookingId,
+        'data-review': props.reviewId ?? '',
+        onClick: () => emit('saved', props.reviewId ?? 'r1'),
+      },
+      props.subject,
+    ),
 })
 
 import MyBookingsView from '../MyBookingsView.vue'
@@ -58,7 +67,9 @@ async function openPast(items: CustomerBookingDto[]) {
 }
 
 describe('My Bookings — reviewing a visit', () => {
-  beforeEach(() => getMyBookings.mockReset())
+  beforeEach(() => {
+    getMyBookings.mockReset()
+  })
 
   it('a completed visit offers «ثبت نظر», for that visit, and once saved says it awaits approval', async () => {
     const wrapper = await openPast([visit({ canReview: true })])
@@ -87,5 +98,55 @@ describe('My Bookings — reviewing a visit', () => {
     const wrapper = await openPast([visit({ canReview: false, reviewId: 'r1', reviewStatus: 'Published' })])
 
     expect(wrapper.get('[data-testid="booking-review-state"]').text()).toContain('منتشر شده')
+  })
+
+  // reviews-and-reschedule-round2: one review per salon, editable from the booking while the server allows it.
+  it('an editable review offers «ویرایش نظر», which opens that review for editing', async () => {
+    const wrapper = await openPast([
+      visit({ canReview: false, reviewId: 'r5', reviewBookingId: 'b1', reviewStatus: 'Published', reviewEditable: true }),
+    ])
+
+    expect(wrapper.find('[data-testid="booking-review-button"]').exists()).toBe(false)
+    const edit = wrapper.get('[data-testid="booking-review-edit-button"]')
+    expect(edit.text()).toContain('ویرایش نظر')
+
+    await edit.trigger('click')
+    expect(wrapper.get('[data-test="modal-save"]').attributes('data-review')).toBe('r5')
+
+    await wrapper.get('[data-test="modal-save"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[data-testid="booking-review-state"]').text()).toContain('در انتظار تأیید')
+  })
+
+  it('a review past its edit window is only shown — no «ویرایش نظر»', async () => {
+    const wrapper = await openPast([visit({ canReview: false, reviewId: 'r5', reviewStatus: 'Published', reviewEditable: false })])
+
+    expect(wrapper.find('[data-testid="booking-review-edit-button"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="booking-review-state"]').text()).toContain('منتشر شده')
+  })
+
+  it('another visit to a salon already reviewed says so, and offers the edit instead of a second review', async () => {
+    const wrapper = await openPast([
+      visit({ canReview: false, reviewId: 'r5', reviewBookingId: 'b-earlier', reviewStatus: 'Published', reviewEditable: true }),
+    ])
+
+    expect(wrapper.get('[data-testid="booking-review-other-visit"]').text()).toContain('برای این سالن قبلاً نظر داده‌اید')
+    expect(wrapper.find('[data-testid="booking-review-button"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="booking-review-edit-button"]').exists()).toBe(true)
+  })
+
+  it('a review written from one visit closes «ثبت نظر» on the other visits to that salon', async () => {
+    const wrapper = await openPast([
+      visit({ canReview: true }),
+      visit({ bookingId: 'b2', canReview: true }),
+    ])
+    expect(wrapper.findAll('[data-testid="booking-review-button"]')).toHaveLength(2)
+
+    await wrapper.findAll('[data-testid="booking-review-button"]')[0].trigger('click')
+    await wrapper.get('[data-test="modal-save"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="booking-review-button"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="booking-review-other-visit"]').text()).toContain('برای این سالن قبلاً نظر داده‌اید')
   })
 })

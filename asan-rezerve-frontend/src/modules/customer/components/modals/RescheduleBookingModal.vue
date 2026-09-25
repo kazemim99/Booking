@@ -2,7 +2,7 @@
   <BaseModal
     :is-open="isOpen"
     @close="handleClose"
-    title="تغییر زمان رزرو"
+    :title="mode === 'reschedule' ? 'تغییر زمان رزرو' : 'رزرو مجدد'"
     size="md"
   >
     <div class="reschedule-modal-content">
@@ -122,6 +122,11 @@
         </div>
       </div>
 
+      <!-- A moved booking goes back to the salon (reviews-and-reschedule-round2): said before, not discovered after -->
+      <p v-if="mode === 'reschedule'" class="reconfirm-notice" role="note" data-testid="reschedule-reconfirm-notice">
+        زمان جدید باید دوباره توسط سالن تأیید شود.
+      </p>
+
       <!-- Actions -->
       <div class="modal-actions">
         <button
@@ -138,7 +143,7 @@
           data-testid="reschedule-confirm"
         >
           <span v-if="loading" class="spinner-small"></span>
-          <span v-else>تأیید تغییر زمان</span>
+          <span v-else>{{ mode === 'reschedule' ? 'تأیید تغییر زمان' : 'تأیید رزرو' }}</span>
         </button>
       </div>
     </div>
@@ -163,9 +168,11 @@ interface TimeSlot {
 interface Props {
   isOpen: boolean
   booking?: EnrichedBookingView | null
+  /** 'rebook' reuses this picker to book the same service again — no salon re-confirmation notice then. */
+  mode?: 'reschedule' | 'rebook'
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), { mode: 'reschedule' })
 
 const emit = defineEmits<{
   close: []
@@ -188,10 +195,12 @@ const loadingSlots = ref(false)
 const availableSlots = ref<TimeSlot[]>([])
 
 // Computed
+// Today onwards. How close to the booking a move is still allowed is the salon's rule, enforced by the server (its
+// rescheduleBlockedReason disables «تغییر زمان» up front) — the client no longer bakes in its own window.
 const minDate = computed(() => {
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  return tomorrow.toISOString().split('T')[0]
+  const today = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`
 })
 
 const currentDateTime = computed(() => {
@@ -440,6 +449,16 @@ defineExpose({ resetForm })
 </script>
 
 <style scoped lang="scss">
+.reconfirm-notice {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-warning-50);
+  color: var(--color-warning-800);
+  border: 1px solid var(--color-warning-200);
+  font-size: 0.875rem;
+}
+
 .reschedule-modal-content {
   display: flex;
   flex-direction: column;

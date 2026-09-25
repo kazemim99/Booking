@@ -57,6 +57,15 @@
         </div>
       </div>
 
+      <!-- Rating · review count — the search card had none (reviews-and-reschedule-round2 item 2) -->
+      <RatingSummary
+        class="provider-rating"
+        :rating="provider.averageRating"
+        :count="provider.totalReviews"
+        size="sm"
+        data-testid="provider-card-rating"
+      />
+
       <!-- Description -->
       <p class="provider-description">
         {{ truncateText(provider.description, descriptionLength) }}
@@ -209,6 +218,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Badge } from '../../../shared/components'
+import RatingSummary from '@/shared/components/ui/RatingSummary.vue'
 import { buildProviderImageUrl } from '@/core/utils/url.service'
 import type { ProviderSummary } from '../types/provider.types'
 
@@ -490,6 +500,10 @@ const getAvatarColor = (index: number): string => {
   align-items: flex-start;
   gap: 0.75rem;
   margin-bottom: 0.75rem;
+}
+
+.provider-rating {
+  margin: -0.25rem 0 0.5rem;
 }
 
 .provider-name {

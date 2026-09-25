@@ -16,8 +16,11 @@
       <div class="provider-info">
         <h3>{{ suggestion.favorite.provider?.businessName || 'نامشخص' }}</h3>
         <div class="rating">
-          <span class="stars">★ {{ suggestion.favorite.provider?.rating?.toFixed(1) || '0.0' }}</span>
-          <span class="reviews">({{ suggestion.favorite.provider?.reviewCount || 0 }} نظر)</span>
+          <RatingSummary
+            :rating="suggestion.favorite.provider?.rating"
+            :count="suggestion.favorite.provider?.reviewCount"
+            size="sm"
+          />
         </div>
       </div>
 
@@ -107,6 +110,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import FavoriteButton from './FavoriteButton.vue'
+import RatingSummary from '@/shared/components/ui/RatingSummary.vue'
 import type { QuickRebookSuggestion, TimeSlot } from '../../types/favorites.types'
 import { formatTimeAgo } from '../../types/favorites.types'
 import { formatCurrency } from '@/modules/provider/types/financial.types'
@@ -305,17 +309,6 @@ function handleUnfavorited(): void {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-}
-
-.stars {
-  color: var(--color-warning-500);
-  font-weight: 600;
-  font-size: 0.875rem;
-}
-
-.reviews {
-  color: #718096;
-  font-size: 0.75rem;
 }
 
 /* Sections */

@@ -44,6 +44,7 @@
           v-for="review in listing.reviews"
           :key="review.reviewId"
           :review="review"
+          :provider-name="providerName"
           @vote="(isHelpful: boolean) => castVote(review, isHelpful)"
         />
       </div>
@@ -65,7 +66,7 @@ import { DIMENSIONS, DIMENSION_LABELS, type ProviderReview, type ProviderReviewL
  * Three honest states: loading, failed, and loaded. "No reviews yet" is only ever shown when the API said so — a
  * failed request is not evidence that a salon has no reviews.
  */
-const props = defineProps<{ providerId: string }>()
+const props = defineProps<{ providerId: string; providerName?: string | null }>()
 
 const state = ref<'loading' | 'error' | 'loaded'>('loading')
 const listing = ref<ProviderReviewListing | null>(null)

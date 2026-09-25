@@ -14,10 +14,7 @@
             <p class="provider-type">{{ provider.type }}</p>
             <!-- The count decides: 0 means "no reviews yet", never "rated zero". -->
             <div class="provider-rating" data-test="provider-rating">
-              <template v-if="provider.reviewCount > 0">
-                ⭐ {{ toPersianDigits(provider.rating.toFixed(1)) }} ({{ toPersianDigits(provider.reviewCount) }} نظر)
-              </template>
-              <template v-else>هنوز نظری ثبت نشده</template>
+              <RatingSummary :rating="provider.rating" :count="provider.reviewCount" />
             </div>
             <p class="provider-address">📍 {{ provider.address }}</p>
           </div>
@@ -84,7 +81,7 @@
 
         <div v-if="activeTab === 'reviews'" class="tab-content">
           <h3>نظرات مشتریان</h3>
-          <ReviewList :provider-id="provider.id" />
+          <ReviewList :provider-id="provider.id" :provider-name="provider.name" />
         </div>
       </div>
     </div>
@@ -96,7 +93,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import FavoriteButton from '../components/favorites/FavoriteButton.vue'
 import ReviewList from '@/modules/reviews/components/ReviewList.vue'
-import { toPersianDigits } from '@/core/utils/persian.service'
+import RatingSummary from '@/shared/components/ui/RatingSummary.vue'
 import { providerService } from '@/modules/provider/services/provider.service'
 import { serviceService } from '@/modules/provider/services/service.service'
 

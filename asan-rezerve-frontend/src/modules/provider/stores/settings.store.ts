@@ -427,7 +427,7 @@ export const useSettingsStore = defineStore('settings', () => {
           chargeNoShowFee: true,
           noShowFeePercentage: 50,
           allowRescheduling: true,
-          rescheduleWindowHours: 12,
+          rescheduleWindowHours: 2, // platform default (reviews-and-reschedule-round2 D5)
         },
         depositSettings: {
           requiresDeposit: false,
