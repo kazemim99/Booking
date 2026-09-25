@@ -143,6 +143,11 @@ namespace AsanRezerve.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<IProviderInvitationWriteRepository, ProviderInvitationWriteRepository>();
             services.AddScoped<IProviderCustomerRepository, ProviderCustomerRepository>();
 
+            // Discounts and campaigns (openspec/changes/add-discounts-and-campaigns)
+            services.AddScoped<IPromotionRepository, PromotionRepository>();
+            services.AddScoped<ICampaignEnrollmentRepository, CampaignEnrollmentRepository>();
+            services.AddScoped<IPromotionRedemptionRepository, PromotionRedemptionRepository>();
+
             // Organization Membership (Person ↔ Organization link; supersedes ParentProviderId staff)
             services.AddScoped<IOrganizationMembershipRepository, OrganizationMembershipRepository>();
             // Append-only audit trail for membership lifecycle events.

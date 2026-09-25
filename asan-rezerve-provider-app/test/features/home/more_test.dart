@@ -188,6 +188,7 @@ void main() {
       expect(find.text(AppStrings.moreBusinessSection), findsOneWidget);
       for (final k in [
         'more-services',
+        'more-promotions',
         'more-staff',
         'more-insights',
         'more-share',

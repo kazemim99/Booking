@@ -128,7 +128,11 @@ namespace AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetCustomerBook
                     ReviewId: review.ReviewId,
                     ReviewStatus: review.ReviewStatus,
                     ReviewEditable: review.ReviewEditable,
-                    ReviewBookingId: review.ReviewBookingId));
+                    ReviewBookingId: review.ReviewBookingId,
+                    Subtotal: booking.SubtotalAmount,
+                    DiscountAmount: booking.DiscountAmount ?? 0m,
+                    DiscountTitle: booking.DiscountTitle,
+                    DiscountCode: booking.DiscountCode));
             }
 
             _logger.LogInformation(

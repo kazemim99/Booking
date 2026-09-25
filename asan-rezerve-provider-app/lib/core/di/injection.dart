@@ -41,6 +41,10 @@ import '../../features/notifications/data/notification_api_service.dart';
 import '../../features/notifications/domain/inbox_repository.dart';
 import '../../features/notifications/presentation/inbox_cubit.dart';
 import '../../features/notifications/presentation/push_permission_cubit.dart';
+import '../../features/promotions/data/promotions_api_service.dart';
+import '../../features/promotions/data/promotions_repository_impl.dart';
+import '../../features/promotions/domain/promotions_repository.dart';
+import '../../features/promotions/presentation/promotions_cubit.dart';
 import '../../features/reviews/data/reviews_api_service.dart';
 import '../../features/reviews/data/reviews_repository_impl.dart';
 import '../../features/reviews/domain/reviews_repository.dart';
@@ -161,6 +165,12 @@ Future<void> configureDependencies() async {
   // Factory: the Home card and the reviews page each own one; the page's replies are re-read on return.
   getIt.registerFactory<ReviewsCubit>(() => ReviewsCubit(getIt<ReviewsRepository>()));
 
+  // ---- Discounts and campaigns (add-discounts-and-campaigns) ----
+  getIt.registerLazySingleton<PromotionsApiService>(() => PromotionsApiService(authedDio));
+  getIt.registerLazySingleton<PromotionsRepository>(
+    () => PromotionsRepositoryImpl(getIt<PromotionsApiService>(), getIt<AuthRepository>()),
+  );
+
   // ---- Home (Today workspace) ----
   getIt.registerLazySingleton<HomeApiService>(() => HomeApiService(authedDio));
   getIt.registerLazySingleton<HomeRepository>(
@@ -197,6 +207,10 @@ Future<void> configureDependencies() async {
     () => ServicesCubit(getIt<HomeRepository>()),
   );
   getIt.registerFactory<StaffCubit>(() => StaffCubit(getIt<HomeRepository>()));
+  // Factory: the discounts page owns one per entry (it reads the salon's services for targeting).
+  getIt.registerFactory<PromotionsCubit>(
+    () => PromotionsCubit(getIt<PromotionsRepository>(), getIt<HomeRepository>()),
+  );
   getIt.registerFactory<PendingInvitationsCubit>(
     () => PendingInvitationsCubit(getIt<HomeRepository>()),
   );

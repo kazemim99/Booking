@@ -127,9 +127,15 @@ class _DetailContent extends StatelessWidget {
           AppStrings.bookingDuration,
           JalaliFormatter.toPersianDigits('${booking.durationMinutes} دقیقه'),
         ),
+      if (booking.hasDiscount)
+        (
+          AppStrings.bookingDiscount,
+          '− ${JalaliFormatter.toPersianDigits(PriceFormatter.format(booking.discountAmount.round()))}'
+              '${booking.discountTitle == null ? '' : ' (${booking.discountTitle})'}',
+        ),
       if (booking.price > 0)
         (
-          AppStrings.bookingPrice,
+          booking.hasDiscount ? AppStrings.bookingPayable : AppStrings.bookingPrice,
           JalaliFormatter.toPersianDigits(
             PriceFormatter.format(booking.price.round()),
           ),

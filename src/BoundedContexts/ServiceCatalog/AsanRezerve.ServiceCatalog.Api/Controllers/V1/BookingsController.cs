@@ -22,6 +22,7 @@ using AsanRezerve.ServiceCatalog.Domain.Repositories;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using AsanRezerve.Core.Domain.Exceptions;
 using AsanRezerve.Core.Domain.ValueObjects;
 using System.Security.Claims;
@@ -92,7 +93,8 @@ public class BookingsController : ControllerBase
             WalkInFirstName: request.WalkInFirstName,
             WalkInLastName: request.WalkInLastName,
             WalkInPhone: request.WalkInPhone,
-            NotifyCustomer: request.NotifyCustomer ?? true);
+            NotifyCustomer: request.NotifyCustomer ?? true,
+            PromotionCode: request.PromotionCode);
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -114,10 +116,41 @@ public class BookingsController : ControllerBase
             TotalPrice = result.TotalPrice,
             Currency = result.Currency,
             PaymentStatus = result.PaymentStatus,
-            CreatedAt = result.CreatedAt
+            CreatedAt = result.CreatedAt,
+            Subtotal = result.Subtotal,
+            DiscountAmount = result.DiscountAmount,
+            DiscountTitle = result.AppliedDiscount?.Title,
+            DiscountCode = result.AppliedDiscount?.Code
         };
 
         return CreatedAtAction(nameof(GetBookingById), new { id = result.BookingId }, response);
+    }
+
+    /// <summary>
+    /// Prices a visit as it would be booked now: subtotal, the one discount the server would apply (the best eligible
+    /// automatic offer, or the entered code when it is larger), total, and what happened to the code. Booking creation
+    /// re-evaluates through the same path (openspec/changes/add-discounts-and-campaigns).
+    /// </summary>
+    /// <response code="200">The quote. An unknown or ineligible code is reported in the body, not as an error.</response>
+    [HttpPost("quote")]
+    [Authorize]
+    [EnableRateLimiting("promotion-quote")]
+    [ProducesResponseType(typeof(AsanRezerve.ServiceCatalog.Application.Promotions.PriceQuoteDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> QuotePrice(
+        [FromBody] QuoteBookingPriceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!Guid.TryParse(GetCurrentUserId(), out var customerId))
+            return Unauthorized();
+
+        var serviceIds = request.ServiceIds is { Count: > 0 }
+            ? request.ServiceIds
+            : request.ServiceId is { } single ? new List<Guid> { single } : new List<Guid>();
+
+        return Ok(await _mediator.Send(
+            new AsanRezerve.ServiceCatalog.Application.Promotions.QuoteBookingPriceQuery(
+                customerId, request.ProviderId, serviceIds, request.StartTime, request.PromotionCode),
+            cancellationToken));
     }
 
     /// <summary>
@@ -784,7 +817,11 @@ public class BookingsController : ControllerBase
             Currency = booking.PaymentInfo.TotalAmount.Currency,
             PaymentStatus = booking.PaymentInfo.Status.ToString(),
             CreatedAt = booking.CreatedAt,
-            ServiceNames = MapServiceNames(booking)
+            ServiceNames = MapServiceNames(booking),
+            Subtotal = (decimal)booking.SubtotalAmount,
+            DiscountAmount = (decimal?)booking.DiscountAmount ?? 0m,
+            DiscountTitle = (string?)booking.DiscountTitle,
+            DiscountCode = (string?)booking.DiscountCode
         };
     }
 
@@ -837,6 +874,10 @@ public class BookingsController : ControllerBase
             },
             CustomerNotes = result.CustomerNotes,
             StaffNotes = result.StaffNotes,
+            Subtotal = result.Subtotal,
+            DiscountAmount = result.DiscountAmount,
+            DiscountTitle = result.DiscountTitle,
+            DiscountCode = result.DiscountCode,
             // Policy = new BookingPolicyResponse // TODO: Add policy properties to BookingDetailsViewModel
             // {
             //     MinAdvanceBookingHours = result.PolicyMinAdvanceBookingHours,

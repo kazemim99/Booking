@@ -53,6 +53,10 @@ public sealed class RateLimitingOptions
             ["reply-review"] = new(PermitLimit: 60, WindowSeconds: 3600),
             // Administrators working the queue: generous, but not unbounded.
             ["moderate-review"] = new(PermitLimit: 600, WindowSeconds: 3600),
+
+            // Pricing a visit with an optional discount code: plenty for a customer changing services, times and
+            // typos, too few to enumerate codes (openspec/changes/add-discounts-and-campaigns, design D10).
+            ["promotion-quote"] = new(PermitLimit: 30, WindowSeconds: 600),
         };
 }
 

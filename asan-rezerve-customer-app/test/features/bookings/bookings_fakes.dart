@@ -8,6 +8,7 @@ import 'package:asan_rezerve_customer_app/features/booking/domain/repositories/b
 import 'package:asan_rezerve_customer_app/features/bookings/domain/entities/booking_summary.dart';
 import 'package:asan_rezerve_customer_app/features/bookings/domain/repositories/bookings_repository.dart';
 import 'package:asan_rezerve_customer_app/features/reviews/domain/entities/review.dart';
+import 'package:asan_rezerve_customer_app/features/booking/domain/entities/promotion_entities.dart';
 
 /// A booking as the appointments screens see it. [start] defaults to two days
 /// after a fixed "now" so nothing depends on the wall clock.
@@ -26,6 +27,8 @@ BookingSummary fakeBooking(
   ReviewModerationStatus? reviewStatus,
   bool reviewEditable = false,
   String? reviewBookingId,
+  double discountAmount = 0,
+  String? discountTitle,
 }) {
   final active = actionable ?? const {'confirmed', 'pending', 'requested'}.contains(status.toLowerCase());
   return BookingSummary(
@@ -50,6 +53,8 @@ BookingSummary fakeBooking(
     reviewStatus: reviewStatus,
     reviewEditable: reviewEditable,
     reviewBookingId: reviewBookingId,
+    discountAmount: discountAmount,
+    discountTitle: discountTitle,
   );
 }
 
@@ -194,12 +199,25 @@ class FakeSlots implements BookingRepository {
   }
 
   @override
+  Future<List<PublicOffer>> getOffers(String providerId) async => const [];
+
+  @override
+  Future<Either<Failure, PriceQuote>> quote({
+    required String providerId,
+    required List<String> serviceIds,
+    required DateTime startTime,
+    String? promotionCode,
+  }) async =>
+      const Left(ServerFailure('no quote in this test'));
+
+  @override
   Future<Either<Failure, String>> createBooking({
     required String providerId,
     required String serviceId,
     required String staffProviderId,
     required DateTime startTime,
     List<String>? serviceIds,
+      String? promotionCode,
   }) async =>
       throw UnimplementedError('reschedule never creates a booking');
 }

@@ -246,6 +246,9 @@ Authentication, OTP phone verification, roles, and customer profiles.
 `Notification`, `NotificationTemplate`, `UserNotificationPreferences`.
 Provider registration and profile, service catalog, staff/membership, availability and bookings,
 payments/payouts/ledger, reviews, and notifications.
+*Added 2026-09-25 (`add-discounts-and-campaigns`, not a re-verification of the count above):* `Promotion`,
+`CampaignEnrollment`, `PromotionRedemption` — salon promotions and opt-in, salon-funded platform campaigns; a
+booking snapshots its discount (`Booking.Discount*`), and `TotalPrice` is the discounted price.
 
 There is **no Booking bounded context** — `src/BoundedContexts/` contains only `ServiceCatalog`.
 Bookings are an aggregate inside ServiceCatalog.
@@ -256,6 +259,8 @@ Bookings are an aggregate inside ServiceCatalog.
 `Locations`, `Memberships`, `NotificationPreferences`, `Notifications`, `Payments`, `Payouts`,
 `Platform`, `Profile`, `ProviderAvailability`, `ProviderHierarchy`, `ProviderRegistration`,
 `ProviderSettings`, `Providers`, `Reviews`, `Services`, `Users`.
+*Added 2026-09-25 (`add-discounts-and-campaigns`):* `ProviderPromotions` (`providers/{id}/promotions|campaigns|offers`)
+and `AdminPromotions` (`admin/promotions`, `AdminOnly`); `POST Bookings/quote` on `Bookings`.
 
 ## Important Constraints
 

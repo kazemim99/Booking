@@ -318,6 +318,7 @@ class _ProviderContent extends StatelessWidget {
               const SizedBox(height: AppSpacing.xs),
               ServicesGrid(
                 services: provider.services,
+                offers: context.watch<ProviderDetailCubit>().state.offers,
                 // Straight into booking with that service already chosen.
                 onServiceTap: (service) => context.push(
                   Routes.bookingFlow(provider.id, serviceId: service.id),

@@ -9,6 +9,8 @@ using AsanRezerve.Core.Domain.Exceptions;
 using AsanRezerve.Core.Domain.ValueObjects;
 using AsanRezerve.Core.Application.Services.Notifications;
 using AsanRezerve.ServiceCatalog.Application.Abstractions.Identity;
+using AsanRezerve.ServiceCatalog.Application.Promotions;
+using AsanRezerve.ServiceCatalog.Domain.Aggregates.PromotionAggregate;
 using AsanRezerve.ServiceCatalog.Application.Services;
 using AsanRezerve.ServiceCatalog.Application.Services.Notifications;
 using AsanRezerve.ServiceCatalog.Domain.Aggregates.BookingAggregate;
@@ -43,6 +45,7 @@ namespace AsanRezerve.ServiceCatalog.Application.Commands.Booking.CreateBooking
 
         private readonly IBookingNotificationParameters _bookingParameters;
         private readonly IPersonDirectory _people;
+        private readonly IPromotionPricingService _pricing;
 
         public CreateBookingCommandHandler(
             IBookingWriteRepository bookingWriteRepository,
@@ -59,8 +62,10 @@ namespace AsanRezerve.ServiceCatalog.Application.Commands.Booking.CreateBooking
             IBookingReminderScheduler reminders,
             ILogger<CreateBookingCommandHandler> logger,
             IBookingNotificationParameters bookingParameters,
-            IPersonDirectory people)
+            IPersonDirectory people,
+            IPromotionPricingService pricing)
         {
+            _pricing = pricing;
             _bookingParameters = bookingParameters;
             _people = people;
             _bookingWriteRepository = bookingWriteRepository;
@@ -212,6 +217,31 @@ namespace AsanRezerve.ServiceCatalog.Application.Commands.Booking.CreateBooking
                         service.MaxAdvanceBookingDays, provider.BookingPolicy?.MaxAdvanceBookingDays));
             }
 
+            // The discount, if any (openspec/changes/add-discounts-and-campaigns). Priced here on the server — the
+            // request carries no price — through the same path as the quote endpoint. A salon entering its own walk-in
+            // gets none: that booking's customer is the salon owner, and the salon sets its own price (design D9).
+            PromotionPricingResult? pricing = null;
+            if (!isProviderCreated)
+            {
+                pricing = await _pricing.PriceAsync(new PricingRequest(
+                    provider.Id,
+                    lineItems.Select(l => new PricedLine(l.ServiceId, l.Price)).ToList(),
+                    combinedPrice.Currency,
+                    request.StartTime,
+                    callerId.Value,
+                    request.PromotionCode,
+                    DateTime.UtcNow), cancellationToken);
+
+                // A code the customer typed and cannot have is refused rather than silently booked at full price.
+                if (pricing.Quote.CodeOutcome is PromotionCodeOutcome.NotFound or PromotionCodeOutcome.NotEligible)
+                    throw new DomainValidationException(nameof(request.PromotionCode), pricing.Quote.CodeMessage!);
+            }
+            else if (!string.IsNullOrWhiteSpace(request.PromotionCode))
+            {
+                throw new DomainValidationException(
+                    nameof(request.PromotionCode), "کد تخفیف فقط برای نوبت‌هایی است که مشتری خودش رزرو می‌کند.");
+            }
+
             // Create the booking
             var booking = isProviderCreated
                 ? Domain.Aggregates.BookingAggregate.Booking.CreateConfirmedByProvider(
@@ -235,7 +265,13 @@ namespace AsanRezerve.ServiceCatalog.Application.Commands.Booking.CreateBooking
                     totalPrice: combinedPrice,
                     policy: bookingPolicy,
                     customerNotes: request.CustomerNotes,
-                    services: lineItems);
+                    services: lineItems,
+                    discount: pricing?.Quote.Applied);
+
+            // Counts the use and ties it to this booking, on this unit of work; a lost race for the last use fails the
+            // whole booking with a conflict (the promotion's counter is its concurrency token).
+            if (pricing is not null)
+                await _pricing.RedeemAsync(pricing, booking.Id.Value, cancellationToken);
 
             // Who the salon is booking for. A salon-entered booking always names its customer:
             // picked from the book, or typed in — and typing them in puts them in the book, so the
@@ -300,7 +336,16 @@ namespace AsanRezerve.ServiceCatalog.Application.Commands.Booking.CreateBooking
                 DepositAmount: booking.PaymentInfo.DepositAmount.Amount,
                 RequiresDeposit: booking.Policy.RequireDeposit,
                 Status: booking.Status.ToString(),
-                RequestedAt: booking.RequestedAt);
+                RequestedAt: booking.RequestedAt)
+            {
+                DurationMinutes = (int)booking.Duration.Value,
+                Currency = booking.TotalPrice.Currency,
+                PaymentStatus = booking.PaymentInfo.Status.ToString(),
+                CreatedAt = booking.RequestedAt,
+                Subtotal = booking.SubtotalAmount,
+                DiscountAmount = booking.DiscountAmount ?? 0m,
+                AppliedDiscount = AppliedDiscountDto.From(booking.Discount),
+            };
         }
 
         /// <summary>

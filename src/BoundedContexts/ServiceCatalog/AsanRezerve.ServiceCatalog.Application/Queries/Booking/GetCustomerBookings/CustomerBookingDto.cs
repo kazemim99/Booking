@@ -42,5 +42,11 @@ namespace AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetCustomerBook
         // (7 days, pending or published) — the apps offer «ویرایش نظر» instead of «ثبت نظر».
         bool ReviewEditable = false,
         // The visit that review was written for; differs from BookingId when it is about another visit to the salon.
-        Guid? ReviewBookingId = null);
+        Guid? ReviewBookingId = null,
+        // The discount the booking received (openspec/changes/add-discounts-and-campaigns). TotalPrice is already net of
+        // it; Subtotal is the services' list prices.
+        decimal Subtotal = 0m,
+        decimal DiscountAmount = 0m,
+        string? DiscountTitle = null,
+        string? DiscountCode = null);
 }

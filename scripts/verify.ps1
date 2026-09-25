@@ -216,6 +216,8 @@ foreach ($p in $unitProjects) {
 if ($Tier -eq 'full') {
     $dockerOk = $false
     cmd /c "docker info >nul 2>&1"; if ($LASTEXITCODE -eq 0) { $dockerOk = $true }
+    # An already-running server instead of a container (see PostgresTestContainerFixture).
+    if ($env:ASANREZERVE_TEST_POSTGRES) { $dockerOk = $true }
 
     # One project since docs/TEST_ARCHITECTURE_AUDIT.md Phase 2 slice 4 (was three: SC, UM and
     # Composition each booted their own host).

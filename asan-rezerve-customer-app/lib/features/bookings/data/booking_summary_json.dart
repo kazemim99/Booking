@@ -134,6 +134,9 @@ class BookingSummaryJson {
       cancellationReason: cancellationReason,
       // Optional and additive; blank is none.
       rescheduleBlockedReason: _text(rescheduleBlockedReason),
+      // Additive (add-discounts-and-campaigns): absent on an older server, zero without a discount.
+      discountAmount: (review['discountAmount'] as num?)?.toDouble() ?? 0,
+      discountTitle: _text(review['discountTitle']),
     );
   }
 

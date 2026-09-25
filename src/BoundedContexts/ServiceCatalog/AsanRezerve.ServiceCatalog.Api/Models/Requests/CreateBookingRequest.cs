@@ -69,6 +69,10 @@ public class CreateBookingRequest
     /// </summary>
     public bool? NotifyCustomer { get; set; }
 
+    /// <summary>A coupon code the customer typed. The server decides the price; this only asks for the code.</summary>
+    [MaxLength(40)]
+    public string? PromotionCode { get; set; }
+
     /// <summary>
     /// Alias for StaffProviderId (backward compatibility)
     /// </summary>

@@ -62,6 +62,12 @@ public class BookingDetailsResponse
     // Payment information
     public PaymentInfoResponse PaymentInfo { get; set; } = new();
 
+    /// <summary>The services' list prices; TotalPrice is this minus DiscountAmount.</summary>
+    public decimal Subtotal { get; set; }
+    public decimal DiscountAmount { get; set; }
+    public string? DiscountTitle { get; set; }
+    public string? DiscountCode { get; set; }
+
     // Notes
     public string? CustomerNotes { get; set; }
     public string? StaffNotes { get; set; }

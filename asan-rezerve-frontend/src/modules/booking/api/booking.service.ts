@@ -43,6 +43,10 @@ export interface CreateBookingRequest {
   staffProviderId: string
   startTime: string // ISO 8601 format
   customerNotes?: string
+  /** Every service of the visit; the server prices and books them together (serviceId stays the first). */
+  serviceIds?: string[]
+  /** A code the customer entered and the quote accepted. The server re-prices; it never trusts a client price. */
+  promotionCode?: string | null
 }
 
 /**
