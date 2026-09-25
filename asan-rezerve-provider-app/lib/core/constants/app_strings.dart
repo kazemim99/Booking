@@ -199,6 +199,98 @@ class AppStrings {
   static const String replyRemoved = 'پاسخ حذف شد';
   static const String cancel = 'انصراف';
 
+  // ---- Discounts and campaigns (add-discounts-and-campaigns) ----
+  static const String promotionsTitle = 'تخفیف‌ها';
+  static const String promotionsMine = 'تخفیف‌های من';
+  static const String promotionsCampaigns = 'کمپین‌ها';
+  static const String promotionsLoadFailed = 'دریافت تخفیف‌ها ناموفق بود';
+  static const String promotionsEmpty = 'هنوز تخفیفی تعریف نکرده‌اید';
+  static const String promotionsEmptyHint =
+      'با تخفیف ساعت‌های خلوت، اولین نوبت مشتری جدید یا یک کد برای مشتریان وفادار، نوبت‌های بیشتری بگیرید.';
+  static const String promotionsNew = 'تخفیف جدید';
+  static const String promotionsEdit = 'ویرایش تخفیف';
+  static const String promotionsSaved = 'تخفیف ذخیره شد';
+  static const String promotionsCampaignsEmpty = 'فعلاً کمپینی برای پیوستن وجود ندارد';
+  static const String promotionsCampaignsHint =
+      'کمپین‌های آسان‌رزرو اختیاری‌اند: اگر بپیوندید، تخفیف کمپین روی نوبت‌های جدید سالن شما اعمال می‌شود و هزینه آن با سالن است.';
+  static const String promotionsJoin = 'پیوستن';
+  static const String promotionsLeave = 'خروج';
+  static const String promotionsJoined = 'عضو هستید';
+  static const String promotionsJoinedToast = 'به کمپین پیوستید';
+  static const String promotionsLeftToast = 'از کمپین خارج شدید';
+  static const String promotionsLeaveConfirmTitle = 'خروج از کمپین';
+  static const String promotionsLeaveConfirmBody =
+      'از این به بعد تخفیف کمپین روی نوبت‌های جدید شما اعمال نمی‌شود. نوبت‌های ثبت‌شده تغییری نمی‌کنند.';
+  static const String promotionsPause = 'توقف';
+  static const String promotionsResume = 'ادامه';
+  static const String promotionsEnd = 'پایان';
+  static const String promotionsEndConfirmTitle = 'پایان تخفیف';
+  static const String promotionsEndConfirmBody =
+      'این تخفیف برای همیشه پایان می‌یابد. نوبت‌هایی که با آن ثبت شده‌اند تغییری نمی‌کنند.';
+  static const String promotionsPausedByPlatform = 'توسط پشتیبانی متوقف شده است';
+  static const String promotionsStateScheduled = 'زمان‌بندی‌شده';
+  static const String promotionsStateActive = 'فعال';
+  static const String promotionsStatePaused = 'متوقف';
+  static const String promotionsStateExpired = 'منقضی';
+  static const String promotionsStateExhausted = 'ظرفیت تکمیل';
+  static const String promotionsStateEnded = 'پایان‌یافته';
+  static const String promotionsAutomatic = 'خودکار';
+  static const String promotionsWithCode = 'با کد';
+  static const String promotionsNewCustomers = 'فقط مشتری جدید';
+  static const String promotionsAllServices = 'همه خدمات';
+  static String promotionsServiceCount(int n) => '${PersianDigits.toPersian('$n')} خدمت';
+  static String promotionsMinimum(String amount) => 'حداقل $amount تومان';
+  static String promotionsHours(String from, String to) =>
+      'ساعت ${PersianDigits.toPersian(from)} تا ${PersianDigits.toPersian(to)}';
+  static String promotionsPerCustomer(int n) => 'هر مشتری ${PersianDigits.toPersian('$n')} بار';
+  static String promotionsUsage(int uses, int? limit, String discount) => limit == null
+      ? '${PersianDigits.toPersian('$uses')} بار استفاده · $discount تومان تخفیف داده‌اید'
+      : '${PersianDigits.toPersian('$uses')} از ${PersianDigits.toPersian('$limit')} استفاده · $discount تومان تخفیف داده‌اید';
+  static String promotionsDaysLeft(int days) =>
+      days <= 0 ? 'امروز تمام می‌شود' : '${PersianDigits.toPersian('$days')} روز مانده';
+  static String promotionsStartsIn(int days) =>
+      days <= 0 ? 'امروز شروع می‌شود' : '${PersianDigits.toPersian('$days')} روز دیگر شروع می‌شود';
+  static const String promotionsNoEnd = 'بدون تاریخ پایان';
+
+  // Form
+  static const String promotionFormTitle = 'عنوان تخفیف';
+  static const String promotionFormTitleHint = 'مثلاً: تخفیف صبح‌های وسط هفته';
+  static const String promotionFormHow = 'نحوه اعمال';
+  static const String promotionFormHowAutomatic = 'خودکار روی قیمت';
+  static const String promotionFormHowCode = 'با کد تخفیف';
+  static const String promotionFormHowAutomaticHint = 'به همه مشتری‌ها روی صفحه سالن نشان داده و خودکار اعمال می‌شود.';
+  static const String promotionFormHowCodeHint = 'فقط کسی که کد را دارد هنگام رزرو از آن استفاده می‌کند.';
+  static const String promotionFormCode = 'کد تخفیف';
+  static const String promotionFormCodeGenerate = 'ساخت کد';
+  static const String promotionFormCodeLocked = 'این کد استفاده شده و قابل تغییر نیست';
+  static const String promotionFormKind = 'نوع تخفیف';
+  static const String promotionFormPercent = 'درصدی';
+  static const String promotionFormFixed = 'مبلغ ثابت';
+  static const String promotionFormPercentValue = 'درصد تخفیف';
+  static const String promotionFormAmountValue = 'مبلغ تخفیف (تومان)';
+  static const String promotionFormCap = 'سقف تخفیف (تومان، اختیاری)';
+  static const String promotionFormServices = 'روی کدام خدمات؟';
+  static const String promotionFormWhen = 'چه زمانی؟';
+  static const String promotionFormDaysHint = 'روزی انتخاب نکنید یعنی همه روزها';
+  static const String promotionFormHoursToggle = 'فقط ساعت‌های مشخص (مثلاً ساعت‌های خلوت)';
+  static const String promotionFormFrom = 'از';
+  static const String promotionFormTo = 'تا';
+  static const String promotionFormDuration = 'مدت اعتبار';
+  static const String promotionFormKeepEnd = 'تاریخ پایان فعلی';
+  static const String promotionFormMore = 'شرایط بیشتر';
+  static const String promotionFormMinimum = 'حداقل مبلغ نوبت (تومان)';
+  static const String promotionFormNewCustomers = 'فقط برای اولین نوبت مشتری در سالن شما';
+  static const String promotionFormTotalLimit = 'سقف کل استفاده';
+  static const String promotionFormPerCustomer = 'سقف استفاده هر مشتری';
+  static const String promotionFormUnlimited = 'نامحدود';
+  static const String promotionFormPreview = 'مشتری این‌طور می‌بیند';
+  static const String promotionFormSave = 'ذخیره تخفیف';
+  static const String promotionFormFundingNote = 'هزینه تخفیف با سالن است و مبلغ نهایی نوبت همان مبلغ پس از تخفیف است.';
+  static const List<String> promotionDurations = ['بدون پایان', '۱ هفته', '۲ هفته', '۱ ماه', '۳ ماه'];
+  static const Map<int, String> weekdayShort = {
+    6: 'ش', 0: 'ی', 1: 'د', 2: 'س', 3: 'چ', 4: 'پ', 5: 'ج',
+  };
+
   // Step 5 — working hours
   static const String hoursTitle = 'ساعات کاری';
   static const String hoursSubtitle = 'روزها و ساعات کاری خود را مشخص کنید';

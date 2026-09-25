@@ -38,32 +38,32 @@ implementation task. `scripts/verify.sh fast` after each task, `full` to finish.
 - [x] 2.2 Migration AddDiscountsAndCampaigns (additive) + model snapshot; architecture tests stay green.
 
 ## 3. Application
-- [ ] 3.1 Unit tests: PromotionPricingService loading (provider promos + joined campaigns, new-customer, prior uses).
-- [ ] 3.2 IPromotionPricingService + QuoteBookingPriceQuery.
-- [ ] 3.3 Unit tests: request parsing (PromotionTermsInput.ToTerms) and handler guards; domain is the single validator.
-- [ ] 3.4 Provider commands/queries: create, update, pause, resume, end, list with stats; campaigns list, join, leave.
-- [ ] 3.5 Admin commands/queries: platform campaign CRUD + lifecycle, list all with filters, details with enrollments/stats.
-- [ ] 3.6 CreateBooking applies the best discount + redemption (customer bookings only); invalid code → 400 with reason.
-- [ ] 3.7 CancelBooking releases the redemption; RescheduleBooking transfers it to the successor.
-- [ ] 3.8 Public offers query (automatic, applicable now, no codes); booking DTOs expose subtotal/discount.
+- [x] 3.1 Unit tests: PromotionPricingService loading (provider promos + joined campaigns, new-customer, prior uses).
+- [x] 3.2 IPromotionPricingService + QuoteBookingPriceQuery.
+- [x] 3.3 Unit tests: request parsing (PromotionTermsInput.ToTerms) and handler guards; domain is the single validator.
+- [x] 3.4 Provider commands/queries: create, update, pause, resume, end, list with stats; campaigns list, join, leave.
+- [x] 3.5 Admin commands/queries: platform campaign CRUD + lifecycle, list all with filters, details with enrollments/stats.
+- [x] 3.6 CreateBooking applies the best discount + redemption (customer bookings only); invalid code → 400 with reason.
+- [x] 3.7 CancelBooking releases the redemption; RescheduleBooking transfers it to the successor.
+- [x] 3.8 Public offers query (automatic, applicable now, no codes); booking DTOs expose subtotal/discount.
 
 ## 4. API
-- [ ] 4.1 Controller unit tests: authorization outcomes and request→command mapping for the three controllers.
-- [ ] 4.2 ProviderPromotionsController, AdminPromotionsController, offers + POST Bookings/quote (auth, rate limited).
-- [ ] 4.3 Integration tests (Host, Testcontainers): end-to-end discount booking, cancel release, concurrency, authz.
+- [x] 4.1 Controller unit tests: authorization outcomes and request→command mapping for the three controllers.
+- [x] 4.2 ProviderPromotionsController, AdminPromotionsController, offers + POST Bookings/quote (auth, rate limited).
+- [x] 4.3 Integration tests (Host, Testcontainers): end-to-end discount booking, cancel release, concurrency, authz.
 - [ ] 4.4 API_ENDPOINTS.md + DTO docs updated.
 
 ## 5. Admin panel (asan-rezerve-admin)
-- [ ] 5.1 promotions.api.ts + types + unit tests (URLs, payload mapping).
-- [ ] 5.2 Campaign form composable (validation, payload build) + unit tests.
-- [ ] 5.3 Promotions page: platform campaigns / salon promotions tabs, create/edit drawer, lifecycle actions, details.
-- [ ] 5.4 Route, sidebar entry, fa/en locale keys; type-check + unit tests green.
+- [x] 5.1 promotions.api.ts + types + unit tests (URLs, payload mapping).
+- [x] 5.2 Campaign form composable (validation, payload build) + unit tests.
+- [x] 5.3 Promotions page: platform campaigns / salon promotions tabs, create/edit drawer, lifecycle actions, details.
+- [x] 5.4 Route, sidebar entry, fa/en locale keys; type-check + unit tests green.
 
 ## 6. Provider app (asan-rezerve-provider-app)
-- [ ] 6.1 Promotions data layer (api service, models, repository) + repository tests.
-- [ ] 6.2 PromotionsCubit + CampaignsCubit + bloc tests.
-- [ ] 6.3 Promotions page (list, state chips, usage), create/edit sheet, campaigns tab with join/leave; widget tests.
-- [ ] 6.4 More hub row, route, DI, AppStrings; flutter analyze + test green.
+- [x] 6.1 Promotions data layer (api service, models, repository) + repository tests.
+- [x] 6.2 PromotionsCubit + CampaignsCubit + bloc tests.
+- [x] 6.3 Promotions page (list, state chips, usage), create/edit sheet, campaigns tab with join/leave; widget tests.
+- [x] 6.4 More hub row, route, DI, AppStrings; flutter analyze + test green.
 
 ## 7. Customer web (asan-rezerve-frontend)
 - [ ] 7.1 promotion.service.ts (offers, quote) + unit tests.

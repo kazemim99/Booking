@@ -97,6 +97,13 @@ class MorePage extends StatelessWidget {
                       ),
                       _row(
                         context,
+                        key: 'more-promotions',
+                        icon: Icons.local_offer_outlined,
+                        label: AppStrings.promotionsTitle,
+                        onTap: () => context.push(Routes.morePromotions),
+                      ),
+                      _row(
+                        context,
                         key: 'more-staff',
                         icon: Icons.people_outline,
                         label: AppStrings.moreStaff,

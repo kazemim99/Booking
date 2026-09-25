@@ -233,6 +233,22 @@ class ApiConstants {
   /// GET — every review of the business in every state, owner/manager only, with `awaitingReplyCount`.
   static String reviewInbox(String providerId) => '/$apiVersion/Reviews/providers/$providerId/inbox';
 
+  // ---- Discounts and campaigns (openspec/changes/add-discounts-and-campaigns) ----
+
+  /// GET list / POST create the salon's own promotions.
+  static String providerPromotions(String providerId) => '/$apiVersion/providers/$providerId/promotions';
+
+  /// PUT edits; POST `/pause`, `/resume`, `/end` change its lifecycle.
+  static String providerPromotion(String providerId, String promotionId) =>
+      '/$apiVersion/providers/$providerId/promotions/$promotionId';
+
+  /// GET the platform campaigns the salon can join, with whether it has.
+  static String providerCampaigns(String providerId) => '/$apiVersion/providers/$providerId/campaigns';
+
+  /// POST joins, DELETE leaves.
+  static String campaignEnrollment(String providerId, String campaignId) =>
+      '/$apiVersion/providers/$providerId/campaigns/$campaignId/enrollment';
+
   /// GET — the public listing; only its `statistics` are read here (published reviews, as customers see them).
   static String providerReviews(String providerId) => '/$apiVersion/Reviews/providers/$providerId';
 
