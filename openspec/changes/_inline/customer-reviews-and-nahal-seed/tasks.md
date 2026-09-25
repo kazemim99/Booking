@@ -1,4 +1,4 @@
-Status: ACTIVE
+Status: DONE
 Verify: FAST
 
 User request (2026-09-25): «الان من چرا نمیتونم بعنوان مشتری کامنت بذارم؟ ضمنا میخوام برای سالن نهال یکسری کامنت با
@@ -56,9 +56,9 @@ User request (2026-09-25): «الان من چرا نمیتونم بعنوان م
 - [x] 8 Customer app: salon page reviews — error with retry, load more, author name
 - [x] 9 Web: «ثبت نظر» on My Bookings and the bookings sidebar (modal with ReviewForm), states, author name on cards
 - [x] 10 Provider app: «تکمیل»/«عدم حضور» offered only when the server accepts them
-- [?] 11 DECISION: should a confirmed booking complete by itself some hours after its end (unless marked no-show)?
-- [?] 12 DECISION: put the Nahal demo reviews on production, where real customers would read them as genuine?
-- [ ] 13 FULL verify
+- [?] 11 DECISION: should a confirmed booking complete by itself some hours after its end (unless marked no-show)? (asked)
+- [?] 12 DECISION: put the Nahal demo reviews on production, where real customers would read them as genuine? (asked)
+- [x] 13 FULL verify
 
 ## Decisions
 
@@ -84,6 +84,9 @@ User request (2026-09-25): «الان من چرا نمیتونم بعنوان م
   the same exception types and status codes; validation errors keep their field key («Rating», «SkillRating», «Comment»).
 
 ## Log
+
+- 2026-09-25 FULL PASS on 1116492 (18 steps, 528 s): unit + architecture, integration suite, web type-check/lint/unit,
+  customer and provider apps analyze + test. Not deployed; production untouched.
 
 - 2026-09-25 Self-review found, and a test proved (red first): the salon owner's own «نوبت‌های من» lists the walk-ins they
   entered for clients (stored under the owner's id — pre-existing since customer-sees-salon-bookings), so task 1 made
