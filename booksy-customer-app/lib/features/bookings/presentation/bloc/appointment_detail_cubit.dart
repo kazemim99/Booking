@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../reviews/domain/entities/review.dart';
 import '../../domain/entities/booking_summary.dart';
 import '../../domain/repositories/bookings_repository.dart';
 
@@ -131,7 +132,17 @@ class AppointmentDetailCubit extends Cubit<AppointmentDetailState> {
     await _refresh();
   }
 
-  void reviewed() => emit(state.copyWith(reviewed: true));
+  /// A review was just saved for this booking: from here it shows as written and waiting for approval.
+  void reviewed() {
+    final booking = state.booking;
+    emit(state.copyWith(
+      reviewed: true,
+      booking: booking?.copyWith(
+        canReview: false,
+        reviewStatus: ReviewModerationStatus.pending,
+      ),
+    ));
+  }
 
   /// Replaces the shown booking with the server's copy; keeps what is shown
   /// when that fails.

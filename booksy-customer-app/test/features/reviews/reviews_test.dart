@@ -9,19 +9,135 @@ import 'package:flutter_test/flutter_test.dart';
 /// (openspec/changes/customer-app-discovery-pass).
 void main() {
   Future<void> pumpSection(WidgetTester tester,
-      {ProviderReviews? reviews, bool loading = false}) async {
+      {ProviderReviews? reviews,
+      bool loading = false,
+      bool failed = false,
+      VoidCallback? onRetry,
+      VoidCallback? onLoadMore}) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Directionality(
           textDirection: TextDirection.rtl,
           child: Scaffold(
-            body: ProviderReviewsSection(reviews: reviews, loading: loading),
+            body: SingleChildScrollView(
+              child: ProviderReviewsSection(
+                reviews: reviews,
+                loading: loading,
+                failed: failed,
+                onRetry: onRetry,
+                onLoadMore: onLoadMore,
+              ),
+            ),
           ),
         ),
       ),
     );
     await tester.pump();
   }
+
+  List<Review> many(int n) => [
+        for (var i = 1; i <= n; i++)
+          Review(id: 'r$i', customerName: 'مریم ر.', rating: 5, comment: 'عالی بود، ممنون از شما $i', isVerified: true),
+      ];
+
+  // openspec/changes/_inline/customer-reviews-and-nahal-seed
+  group('the reviews section, as a customer reads it', () {
+    testWidgets('a failed read says so with a retry, and never «no reviews yet»', (tester) async {
+      var retried = 0;
+      await pumpSection(tester, failed: true, onRetry: () => retried++);
+
+      expect(find.byKey(const Key('provider-reviews-failed')), findsOneWidget);
+      expect(find.text(AppStrings.reviewsEmpty), findsNothing);
+      await tester.tap(find.byKey(const Key('provider-reviews-retry')));
+      expect(retried, 1);
+    });
+
+    testWidgets('three reviews show first; the rest are one tap away', (tester) async {
+      await pumpSection(tester, reviews: ProviderReviews(averageRating: 5, totalReviews: 18, items: many(18)));
+
+      expect(find.byKey(const Key('review-r3')), findsOneWidget);
+      expect(find.byKey(const Key('review-r4')), findsNothing);
+      expect(find.text(AppStrings.reviewsShowAll('۱۸')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('provider-reviews-show-all')));
+      await tester.pump();
+
+      expect(find.byKey(const Key('review-r18')), findsOneWidget);
+      expect(find.byKey(const Key('provider-reviews-show-all')), findsNothing);
+    });
+
+    testWidgets('when the server has more, «نظرهای بیشتر» asks for them', (tester) async {
+      var asked = 0;
+      await pumpSection(
+        tester,
+        reviews: ProviderReviews(averageRating: 5, totalReviews: 25, hasMore: true, items: many(20)),
+        onLoadMore: () => asked++,
+      );
+
+      await tester.tap(find.byKey(const Key('provider-reviews-show-all')));
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(const Key('provider-reviews-more')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('provider-reviews-more')));
+
+      expect(asked, 1);
+    });
+
+    testWidgets('each review says it followed a real visit, and how the stars fall is shown', (tester) async {
+      await pumpSection(
+        tester,
+        reviews: ProviderReviews(
+          averageRating: 4,
+          totalReviews: 3,
+          distribution: const {5: 2, 4: 0, 3: 0, 2: 0, 1: 1},
+          items: many(3),
+        ),
+      );
+
+      expect(find.byKey(const Key('review-r1-verified')), findsOneWidget);
+      expect(find.textContaining(AppStrings.reviewVerifiedVisit, findRichText: true), findsNWidgets(3));
+      expect(find.byKey(const Key('review-distribution')), findsOneWidget);
+    });
+
+    testWidgets('fits a 360 phone at 1.3x text', (tester) async {
+      tester.view.physicalSize = const Size(360 * 3, 640 * 3);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(size: Size(360, 640), textScaler: TextScaler.linear(1.3)),
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Scaffold(
+              body: SingleChildScrollView(
+                child: ProviderReviewsSection(
+                  reviews: ProviderReviews(
+                    averageRating: 4,
+                    totalReviews: 18,
+                    distribution: const {5: 10, 4: 4, 3: 2, 2: 1, 1: 1},
+                    items: [
+                      ...many(2),
+                      const Review(
+                        id: 'rx',
+                        customerName: 'نیلوفر ص.',
+                        rating: 2,
+                        comment: 'یک ساعت منتظر موندم و آخرش هم با عجله کارم رو انجام دادن.',
+                        providerResponse: 'از اینکه تجربه خوبی نداشتید واقعاً متأسفیم. لطفاً با ما تماس بگیرید.',
+                        isVerified: true,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ));
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+    });
+  });
 
   group('the reviews on a profile', () {
     testWidgets('a salon nobody reviewed says so, rather than showing nothing',

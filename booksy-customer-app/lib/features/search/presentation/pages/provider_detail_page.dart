@@ -155,6 +155,8 @@ class ProviderDetailPage extends StatelessWidget {
                   now: now,
                   reviews: state.reviews,
                   reviewsLoading: state.reviewsLoading,
+                  reviewsFailed: state.reviewsFailed,
+                  reviewsLoadingMore: state.reviewsLoadingMore,
                 ),
               ),
             );
@@ -225,12 +227,16 @@ class _ProviderContent extends StatelessWidget {
   final DateTime? now;
   final ProviderReviews? reviews;
   final bool reviewsLoading;
+  final bool reviewsFailed;
+  final bool reviewsLoadingMore;
 
   const _ProviderContent({
     required this.provider,
     this.now,
     this.reviews,
     this.reviewsLoading = false,
+    this.reviewsFailed = false,
+    this.reviewsLoadingMore = false,
   });
 
   /// Voting is for signed-in readers: a guest is sent to sign in and brought
@@ -334,6 +340,13 @@ class _ProviderContent extends StatelessWidget {
               ProviderReviewsSection(
                 reviews: reviews,
                 loading: reviewsLoading,
+                failed: reviewsFailed,
+                loadingMore: reviewsLoadingMore,
+                onRetry: () =>
+                    context.read<ProviderDetailCubit>().loadReviews(provider.id),
+                onLoadMore: () => context
+                    .read<ProviderDetailCubit>()
+                    .loadMoreReviews(provider.id),
                 onVote: (review, helpful) => _vote(context, review, helpful),
               ),
             ],

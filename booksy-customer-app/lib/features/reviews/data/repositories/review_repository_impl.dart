@@ -1,7 +1,9 @@
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 
+import '../../../../core/errors/dio_failure_mapper.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../../core/errors/server_message.dart';
 import '../../domain/entities/review.dart';
 import '../../domain/repositories/review_repository.dart';
 import '../datasources/review_remote_datasource.dart';
@@ -13,9 +15,10 @@ class ReviewRepositoryImpl implements ReviewRepository {
 
   @override
   Future<Either<Failure, ProviderReviews>> getProviderReviews(
-      String providerId) =>
+      String providerId, {int page = 1}) =>
       _guard('دریافت نظرها ناموفق بود', () async {
-        final data = await remoteDataSource.getProviderReviews(providerId);
+        final data =
+            await remoteDataSource.getProviderReviews(providerId, page: page);
         final statistics = data['statistics'] as Map<String, dynamic>? ?? const {};
         final reviews = data['reviews'] as Map<String, dynamic>? ?? const {};
         final items = (reviews['items'] as List<dynamic>? ?? const [])
@@ -27,6 +30,7 @@ class ReviewRepositoryImpl implements ReviewRepository {
                   comment: r['comment'] as String?,
                   createdAt: _date(r['createdAt']),
                   providerResponse: r['providerResponse'] as String?,
+                  isVerified: r['isVerified'] == true,
                   dimensions: ReviewDimension.readFrom(r),
                   helpfulCount: (r['helpfulCount'] as num?)?.toInt() ?? 0,
                   notHelpfulCount: (r['notHelpfulCount'] as num?)?.toInt() ?? 0,
@@ -43,6 +47,9 @@ class ReviewRepositoryImpl implements ReviewRepository {
             for (final d in ReviewDimension.values)
               if (_dimension(statistics[d.statisticsKey]) case final avg?) d: avg,
           },
+          distribution: _distribution(statistics['ratingDistribution']),
+          page: (reviews['pageNumber'] as num?)?.toInt() ?? page,
+          hasMore: reviews['hasNextPage'] == true,
         );
       });
 
@@ -120,6 +127,21 @@ class ReviewRepositoryImpl implements ReviewRepository {
   static DateTime? _date(Object? value) =>
       value is String ? DateTime.tryParse(value) : null;
 
+  static const _starKeys = {
+    5: 'fiveStarCount',
+    4: 'fourStarCount',
+    3: 'threeStarCount',
+    2: 'twoStarCount',
+    1: 'oneStarCount',
+  };
+
+  static Map<int, int> _distribution(Object? json) => json is Map
+      ? {
+          for (final e in _starKeys.entries)
+            e.key: (json[e.value] as num?)?.toInt() ?? 0,
+        }
+      : const {};
+
   static DimensionAverage? _dimension(Object? json) {
     if (json is! Map) return null;
     final average = json['average'];
@@ -140,14 +162,15 @@ class ReviewRepositoryImpl implements ReviewRepository {
     }
   }
 
-  /// The server's own reason where it gave one: «نظر قبلاً ثبت شده» reads better
-  /// than a status code.
+  /// The server's own reason where it gave one: «برای این نوبت قبلاً نظر ثبت
+  /// کرده‌اید» reads better than a status code. It was read from `message`
+  /// only, which the create-review refusals do not carry (they answer
+  /// `errors: [{ message }]`), so every refusal read «ثبت نظر ناموفق بود».
+  /// Offline and a lost session say so, as everywhere else.
   Failure _failureFor(DioException e, String fallback) {
-    final data = e.response?.data;
-    final message = data is Map
-        ? (data['message'] ?? (data['error'] is Map ? data['error']['message'] : null))
-        : null;
-    return ServerFailure(
-        message is String && message.isNotEmpty ? message : fallback);
+    final mapped = mapDioFailure(e);
+    if (mapped is NetworkFailure) return mapped;
+    if (e.response?.statusCode == 401) return mapped;
+    return ServerFailure(serverMessage(e.response?.data) ?? fallback);
   }
 }

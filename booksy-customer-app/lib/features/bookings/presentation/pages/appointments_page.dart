@@ -10,6 +10,8 @@ import '../../../../core/utils/jalali_formatter.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../reviews/domain/entities/review.dart';
+import '../../../reviews/presentation/write_review_flow.dart';
 import '../../domain/entities/booking_summary.dart';
 import '../bloc/appointments_bloc.dart';
 import 'reschedule_page.dart';
@@ -217,6 +219,18 @@ class _AppointmentsViewState extends State<_AppointmentsView> {
     }
   }
 
+  /// «ثبت نظر» straight from a past visit's card — the one place customers look
+  /// for their past visits — rather than only behind its detail page.
+  Future<void> _review(BuildContext context, BookingSummary booking) async {
+    final bloc = context.read<AppointmentsBloc>();
+    final saved = await writeReviewForBooking(
+      context,
+      bookingId: booking.id,
+      subject: reviewSubject(booking.providerName, booking.serviceName),
+    );
+    if (saved) bloc.add(AppointmentReviewed(booking.id));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -299,6 +313,7 @@ class _AppointmentsViewState extends State<_AppointmentsView> {
                               _confirmCancel(context, bookings[index]),
                           onReschedule: () =>
                               _reschedule(context, bookings[index]),
+                          onReview: () => _review(context, bookings[index]),
                         ),
                       ),
                     );
@@ -340,11 +355,13 @@ class _BookingCard extends StatelessWidget {
   final BookingSummary booking;
   final VoidCallback onCancel;
   final VoidCallback onReschedule;
+  final VoidCallback onReview;
 
   const _BookingCard({
     required this.booking,
     required this.onCancel,
     required this.onReschedule,
+    required this.onReview,
   });
 
   @override
@@ -431,24 +448,79 @@ class _BookingCard extends StatelessWidget {
                 ),
               ),
           ],
-          // A visit that took place can be booked again: same salon, same
-          // service already chosen.
-          if (booking.canRebook) ...[
+          // Where the visit's review stands: written (and its state), or not
+          // possible until the salon marks the visit done.
+          if (_reviewLine(booking) case (final icon, final text, final key)) ...[
             const SizedBox(height: AppSpacing.xs),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: AppButton.text(
-                label: AppStrings.bookAgain,
-                onPressed: () => context.push(Routes.bookingFlow(
-                  booking.providerId,
-                  serviceId:
-                      booking.serviceId.isEmpty ? null : booking.serviceId,
-                )),
-              ),
+            Row(
+              key: Key(key),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(icon, size: 16, color: theme.colorScheme.onSurfaceVariant),
+                const SizedBox(width: AppSpacing.xxs),
+                Expanded(
+                  child: Text(
+                    text,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          // A visit that took place can be reviewed, and booked again: same
+          // salon, same service already chosen.
+          if (booking.canReview || booking.canRebook) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Wrap(
+              children: [
+                if (booking.canReview)
+                  AppButton.text(
+                    key: Key('booking-card-review-${booking.id}'),
+                    label: AppStrings.reviewWriteAction,
+                    icon: Icons.star_outline_rounded,
+                    onPressed: onReview,
+                  ),
+                if (booking.canRebook)
+                  AppButton.text(
+                    label: AppStrings.bookAgain,
+                    onPressed: () => context.push(Routes.bookingFlow(
+                      booking.providerId,
+                      serviceId:
+                          booking.serviceId.isEmpty ? null : booking.serviceId,
+                    )),
+                  ),
+              ],
             ),
           ],
         ],
       ),
     );
   }
+}
+
+/// The line a past visit's card says about its review, if any.
+(IconData, String, String)? _reviewLine(BookingSummary booking) {
+  if (booking.reviewStatus case final status?) {
+    final label = switch (status) {
+      ReviewModerationStatus.pending => AppStrings.reviewStatusPending,
+      ReviewModerationStatus.published => AppStrings.reviewStatusPublished,
+      ReviewModerationStatus.rejected => AppStrings.reviewStatusRejected,
+      ReviewModerationStatus.hidden => AppStrings.reviewStatusHidden,
+    };
+    return (
+      Icons.rate_review_outlined,
+      AppStrings.reviewCardStatus(label),
+      'booking-card-review-status-${booking.id}',
+    );
+  }
+  if (booking.reviewBlockedReason case final reason?) {
+    return (
+      Icons.hourglass_empty_rounded,
+      reason,
+      'booking-card-review-blocked-${booking.id}',
+    );
+  }
+  return null;
 }

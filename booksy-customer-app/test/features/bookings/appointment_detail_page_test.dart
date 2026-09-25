@@ -308,6 +308,61 @@ void main() {
 
       expect(_reviews.created, ['b0']);
       expect(find.byKey(const Key('appointment-write-review')), findsNothing);
+      // …and says where it stands instead of just vanishing.
+      expect(find.byKey(const Key('appointment-review-status')), findsOneWidget);
+      expect(find.text(AppStrings.reviewSubmittedPending), findsOneWidget);
+    });
+
+    // openspec/changes/_inline/customer-reviews-and-nahal-seed
+    testWidgets('a completed visit asks how it went, and a tapped star starts the review with it', (tester) async {
+      _bookings.past = [completed];
+      await _open(tester, 'b0');
+
+      expect(find.byKey(const Key('appointment-review-prompt')), findsOneWidget);
+      expect(find.text(AppStrings.reviewPromptTitle), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('appointment-quick-star-4')));
+      await _settle(tester);
+
+      // The dialog names the visit and opens with four stars chosen.
+      expect(find.byKey(const Key('review-subject')), findsOneWidget);
+      expect(find.text('سالن نمونه · کوتاهی مو'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('review-submit')));
+      await _settle(tester);
+
+      expect(_reviews.created, ['b0'], reason: 'four stars were enough — no «لطفاً امتیاز را انتخاب کنید»');
+    });
+
+    testWidgets('a visit the salon has not marked done says why it cannot be reviewed yet', (tester) async {
+      const reason = 'پس از اینکه سالن این نوبت را «انجام‌شده» ثبت کند، می‌توانید برایش نظر بنویسید.';
+      _bookings.past = [
+        fakeBooking('bw', start: DateTime(2026, 5, 10, 14), actionable: false, reviewBlockedReason: reason),
+      ];
+      await _open(tester, 'bw');
+
+      final button = tester.widget<AppButton>(find.byKey(const Key('appointment-write-review')));
+      expect(button.onPressed, isNull, reason: 'shown, disabled, with what will unlock it');
+      expect(find.text(reason), findsOneWidget);
+    });
+
+    testWidgets('a visit already reviewed shows the review\'s state, not the button', (tester) async {
+      _bookings.past = [
+        fakeBooking('br', status: 'Completed', start: DateTime(2026, 5, 10, 14), actionable: false,
+            reviewStatus: ReviewModerationStatus.published),
+      ];
+      await _open(tester, 'br');
+
+      expect(find.byKey(const Key('appointment-write-review')), findsNothing);
+      expect(find.text(AppStrings.reviewSubmittedPublished), findsOneWidget);
+      expect(find.byKey(const Key('appointment-my-reviews')), findsOneWidget);
+    });
+
+    testWidgets('the review block fits a 360 phone at 1.3x text', (tester) async {
+      _bookings.past = [completed];
+      await _open(tester, 'b0', textScale: 1.3);
+
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const Key('appointment-review-prompt')), findsOneWidget);
     });
   });
 

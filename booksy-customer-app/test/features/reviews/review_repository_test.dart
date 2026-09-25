@@ -203,4 +203,40 @@ void main() {
 
     expect(result.fold((f) => f.message, (_) => ''), 'مهلت ویرایش گذشته است');
   });
+
+  // openspec/changes/_inline/customer-reviews-and-nahal-seed: every refusal of «ثبت نظر» read «ثبت نظر ناموفق بود»,
+  // because the create-review endpoint answers `errors: [{ message }]` and only `message` was read.
+  test('a create-review refusal says the server\'s words', () async {
+    adapter
+      ..statusCode = 409
+      ..body = {
+        'success': false,
+        'errors': [
+          {'code': 'ERR_CONFLICT', 'message': 'برای این نوبت قبلاً نظر ثبت کرده‌اید.'}
+        ],
+      };
+
+    final result = await repository.createReview(bookingId: 'b1', rating: 5);
+
+    expect(result.fold((f) => f.message, (_) => ''), 'برای این نوبت قبلاً نظر ثبت کرده‌اید.');
+  });
+
+  test('a validation refusal says the customer\'s words, not the English wrapper', () async {
+    adapter
+      ..statusCode = 400
+      ..body = {
+        'success': false,
+        'message': "Validation failed for property 'Comment': متن نظر باید دست‌کم ۱۰ نویسه باشد.",
+        'error': {
+          'code': 'DOMAIN_VALIDATION_FAILED',
+          'errors': {
+            'Comment': ['متن نظر باید دست‌کم ۱۰ نویسه باشد.']
+          },
+        },
+      };
+
+    final result = await repository.editReview(reviewId: 'r1', rating: 4, comment: 'کوتاه');
+
+    expect(result.fold((f) => f.message, (_) => ''), 'متن نظر باید دست‌کم ۱۰ نویسه باشد.');
+  });
 }

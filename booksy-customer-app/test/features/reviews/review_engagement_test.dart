@@ -201,6 +201,51 @@ void main() {
     });
   });
 
+  // openspec/changes/_inline/customer-reviews-and-nahal-seed
+  group('reading a salon\'s reviews', () {
+    test('a failed read is a failure, not «no reviews», and a retry reads them', () async {
+      final reviews = _FakeReviews()..listingFailure = const NetworkFailure('offline');
+      final cubit = ProviderDetailCubit(_NoBookings(), reviewRepository: reviews);
+
+      await cubit.loadReviews('p1');
+      expect(cubit.state.reviewsFailed, isTrue);
+      expect(cubit.state.reviews, isNull);
+
+      reviews
+        ..listingFailure = null
+        ..listing = const ProviderReviews(totalReviews: 1, items: [Review(id: 'r1', customerName: 'x', rating: 5)]);
+      await cubit.loadReviews('p1');
+
+      expect(cubit.state.reviewsFailed, isFalse);
+      expect(cubit.state.reviews!.items.single.id, 'r1');
+    });
+
+    test('more reviews are read page by page and follow the ones shown', () async {
+      final reviews = _FakeReviews()
+        ..listing = const ProviderReviews(totalReviews: 3, hasMore: true, page: 1, items: [
+          Review(id: 'r1', customerName: 'x', rating: 5),
+          Review(id: 'r2', customerName: 'x', rating: 4),
+        ])
+        ..pages = {
+          2: const ProviderReviews(totalReviews: 3, hasMore: false, page: 2, items: [
+            Review(id: 'r2', customerName: 'x', rating: 4),
+            Review(id: 'r3', customerName: 'x', rating: 3),
+          ]),
+        };
+      final cubit = ProviderDetailCubit(_NoBookings(), reviewRepository: reviews);
+      await cubit.loadReviews('p1');
+
+      await cubit.loadMoreReviews('p1');
+
+      expect(reviews.pagesRead, [1, 2]);
+      expect(cubit.state.reviews!.items.map((r) => r.id), ['r1', 'r2', 'r3'], reason: 'none twice');
+      expect(cubit.state.reviews!.hasMore, isFalse);
+
+      await cubit.loadMoreReviews('p1');
+      expect(reviews.pagesRead, [1, 2], reason: 'nothing more to read');
+    });
+  });
+
   group('opening a salon', () {
     test('asks for the profile and the reviews at the same time', () async {
       // The reviews used to be requested only after the profile came back, so the section filled a whole
@@ -339,9 +384,17 @@ class _FakeReviews implements ReviewRepository {
 
   var listingCalls = 0;
 
+  /// When set, page N answers with pages[N] (the first read uses [listing]).
+  Map<int, ProviderReviews> pages = const {};
+  Failure? listingFailure;
+  final pagesRead = <int>[];
+
   @override
-  Future<Either<Failure, ProviderReviews>> getProviderReviews(String providerId) async {
+  Future<Either<Failure, ProviderReviews>> getProviderReviews(String providerId, {int page = 1}) async {
     listingCalls++;
+    pagesRead.add(page);
+    if (listingFailure case final f?) return Left(f);
+    if (pages[page] case final p?) return Right(p);
     return Right(listing);
   }
 

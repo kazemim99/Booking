@@ -10,8 +10,8 @@ import '../../../../core/utils/jalali_formatter.dart';
 import '../../../../core/utils/person_name.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../../core/widgets/widgets.dart';
-import '../../../reviews/domain/repositories/review_repository.dart';
-import '../../../reviews/presentation/widgets/write_review_dialog.dart';
+import '../../../reviews/domain/entities/review.dart';
+import '../../../reviews/presentation/write_review_flow.dart';
 import '../../domain/entities/booking_summary.dart';
 import '../bloc/appointment_detail_cubit.dart';
 import 'reschedule_page.dart';
@@ -76,27 +76,6 @@ class _DetailContent extends StatelessWidget {
 
   BookingSummary get booking => state.booking!;
 
-  Future<void> _writeReview(BuildContext context) async {
-    final cubit = context.read<AppointmentDetailCubit>();
-    final draft = await showWriteReviewDialog(context);
-    if (draft == null || !context.mounted) return;
-
-    final repository = getIt<ReviewRepository>();
-    final result = await repository.createReview(
-      bookingId: booking.id,
-      rating: draft.rating,
-      comment: draft.comment,
-      dimensions: draft.dimensions,
-    );
-    if (!context.mounted) return;
-    result.fold(
-      (failure) => AppSnackbar.error(context, failure.message),
-      (_) {
-        cubit.reviewed();
-        AppSnackbar.success(context, AppStrings.reviewSaved);
-      },
-    );
-  }
 
   Future<void> _confirmCancel(BuildContext context) async {
     final cubit = context.read<AppointmentDetailCubit>();
@@ -209,6 +188,9 @@ class _DetailContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.md),
+        // After a visit the review is the first thing asked for; before the
+        // salon has marked it done, the page says so instead of just lacking it.
+        _ReviewSection(state: state),
         // The same rules as the list cards: an active booking still ahead.
         if (booking.canReschedule) ...[
           AppButton(
@@ -244,18 +226,6 @@ class _DetailContent extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
         ],
-        // Only a visit that happened can be reviewed, and only once — the
-        // server checks the same, so offering it again would only earn a
-        // rejection.
-        if (state.canWriteReview) ...[
-          AppButton.secondary(
-            key: const Key('appointment-write-review'),
-            label: AppStrings.reviewWriteAction,
-            icon: Icons.star_outline,
-            onPressed: () => _writeReview(context),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-        ],
         AppButton.secondary(
           key: const Key('appointment-view-salon'),
           label: AppStrings.appointmentViewSalon,
@@ -277,5 +247,164 @@ class _DetailContent extends StatelessWidget {
         ],
       ],
     );
+  }
+}
+
+/// Where this visit's review stands, as one block: asked for (with the stars
+/// right there), written and waiting or published, or not possible yet and why.
+/// Nothing at all for a visit that is still ahead, cancelled or missed.
+class _ReviewSection extends StatelessWidget {
+  final AppointmentDetailState state;
+
+  const _ReviewSection({required this.state});
+
+  BookingSummary get booking => state.booking!;
+
+  Future<void> _write(BuildContext context, {double? rating}) async {
+    final cubit = context.read<AppointmentDetailCubit>();
+    final saved = await writeReviewForBooking(
+      context,
+      bookingId: booking.id,
+      subject: reviewSubject(booking.providerName, booking.serviceName),
+      rating: rating,
+    );
+    if (saved) cubit.reviewed();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.textTheme.bodySmall
+        ?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+
+    if (state.canWriteReview) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+        child: AppCard(
+          key: const Key('appointment-review-prompt'),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(AppStrings.reviewPromptTitle,
+                  style: theme.textTheme.titleSmall),
+              const SizedBox(height: AppSpacing.xxs),
+              Text(AppStrings.reviewPromptSubtitle, style: muted),
+              const SizedBox(height: AppSpacing.xs),
+              // Tapping a star is the review started: the dialog opens with it chosen.
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for (var star = 1; star <= 5; star++)
+                    IconButton(
+                      key: Key('appointment-quick-star-$star'),
+                      tooltip: AppStrings.reviewStarLabel(
+                          JalaliFormatter.toPersianDigits('$star')),
+                      iconSize: 32,
+                      constraints:
+                          const BoxConstraints(minWidth: 48, minHeight: 48),
+                      icon: Icon(Icons.star_outline_rounded,
+                          color: theme.colorScheme.primary),
+                      onPressed: () => _write(context, rating: star.toDouble()),
+                    ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              AppButton(
+                key: const Key('appointment-write-review'),
+                label: AppStrings.reviewWriteAction,
+                icon: Icons.rate_review_outlined,
+                onPressed: () => _write(context),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final status = booking.reviewStatus ??
+        (state.reviewed ? ReviewModerationStatus.pending : null);
+    if (status != null) {
+      final (icon, color, line) = switch (status) {
+        ReviewModerationStatus.pending => (
+            Icons.hourglass_top_rounded,
+            theme.colorScheme.tertiary,
+            AppStrings.reviewSubmittedPending
+          ),
+        ReviewModerationStatus.published => (
+            Icons.check_circle_outline_rounded,
+            theme.colorScheme.primary,
+            AppStrings.reviewSubmittedPublished
+          ),
+        ReviewModerationStatus.rejected => (
+            Icons.info_outline_rounded,
+            theme.colorScheme.error,
+            AppStrings.reviewSubmittedRejected
+          ),
+        ReviewModerationStatus.hidden => (
+            Icons.visibility_off_outlined,
+            theme.colorScheme.onSurfaceVariant,
+            AppStrings.reviewSubmittedHidden
+          ),
+      };
+      return Padding(
+        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+        child: AppCard(
+          key: const Key('appointment-review-status'),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: color),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(AppStrings.reviewSubmittedTitle,
+                        style: theme.textTheme.titleSmall),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(line, style: muted),
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: AppButton.text(
+                        key: const Key('appointment-my-reviews'),
+                        label: AppStrings.myReviewsTitle,
+                        onPressed: () => context.push(Routes.myReviews),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // The visit is over and the salon has not marked it done: the action is
+    // there, disabled, with what will unlock it — the same way «تغییر زمان»
+    // says why it cannot be used.
+    if (booking.reviewBlockedReason case final reason?) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const AppButton.secondary(
+              key: Key('appointment-write-review'),
+              label: AppStrings.reviewWriteAction,
+              icon: Icons.rate_review_outlined,
+              onPressed: null,
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.xs),
+              child: Text(reason,
+                  key: const Key('appointment-review-blocked'), style: muted),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 }

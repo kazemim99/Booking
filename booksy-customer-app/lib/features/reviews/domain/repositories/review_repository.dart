@@ -6,7 +6,9 @@ import '../entities/review.dart';
 /// Reading a salon's reviews, leaving and editing one after a visit, and voting
 /// on what others wrote.
 abstract class ReviewRepository {
-  Future<Either<Failure, ProviderReviews>> getProviderReviews(String providerId);
+  /// One page (20) of a salon's published reviews, newest first.
+  Future<Either<Failure, ProviderReviews>> getProviderReviews(String providerId,
+      {int page = 1});
 
   /// A review belongs to a booking: only someone who actually went can write one.
   /// It is public only once an administrator approves it.

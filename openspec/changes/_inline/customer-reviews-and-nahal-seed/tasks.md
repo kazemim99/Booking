@@ -51,9 +51,9 @@ User request (2026-09-25): «الان من چرا نمیتونم بعنوان م
 - [x] 3 API: review and vote refusals in Persian, 403 with a readable body (unit + integration)
 - [x] 4 API: public reviews name the author «first-name initial.» or «مشتری» (integration)
 - [x] 5 Seed: سالن نهال demo reviewers, completed visits, reviews, salon replies, votes; idempotent (unit + integration)
-- [ ] 6 Customer app: review state from the server on the booking card and page (button / reason / submitted state)
-- [ ] 7 Customer app: review/vote errors show the server's Persian reason
-- [ ] 8 Customer app: salon page reviews — error with retry, load more, author name
+- [x] 6 Customer app: review state from the server on the booking card and page (button / reason / submitted state)
+- [x] 7 Customer app: review/vote errors show the server's Persian reason
+- [x] 8 Customer app: salon page reviews — error with retry, load more, author name
 - [ ] 9 Web: «ثبت نظر» on My Bookings and the bookings sidebar (modal with ReviewForm), states, author name on cards
 - [ ] 10 Provider app: «تکمیل»/«عدم حضور» offered only when the server accepts them
 - [?] 11 DECISION: should a confirmed booking complete by itself some hours after its end (unless marked no-show)?
