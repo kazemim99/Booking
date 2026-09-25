@@ -170,6 +170,46 @@ void main() {
     });
   });
 
+  group('tool/cache_bust_web.sh', () {
+    test('names the entry file and the icon font after their content, and points the loaders at them', () async {
+      final bash = _bash();
+      if (bash == null) {
+        markTestSkipped('no POSIX bash on this machine');
+        return;
+      }
+      final script = File('tool/cache_bust_web.sh').absolute.path.replaceAll(r'\', '/');
+      final dir = Directory.systemTemp.createTempSync('cache_bust_web_test');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      void write(String name, String content) => File('${dir.path}/$name')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(content);
+      write('main.dart.js', 'app');
+      write('flutter_bootstrap.js', '_flutter.buildConfig = {"mainJsPath":"main.dart.js"};');
+      write('assets/fonts/MaterialIcons-Regular.otf', 'icon glyphs of this build');
+      write('assets/FontManifest.json',
+          '[{"family":"MaterialIcons","fonts":[{"asset":"fonts/MaterialIcons-Regular.otf"}]},'
+          '{"family":"Vazir","fonts":[{"asset":"assets/fonts/Vazir-Regular.ttf"}]}]');
+
+      final result = await Process.run(
+          bash, [if (Platform.isWindows) ...['-o', 'igncr'], script, '.'], workingDirectory: dir.path);
+      expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
+
+      // A browser holding an older build's icon font drew the newer build's icons as blanks (provider app, 2026-09-25).
+      final fonts = Directory('${dir.path}/assets/fonts').listSync().map((f) => f.uri.pathSegments.last).toList();
+      expect(fonts, hasLength(1));
+      expect(fonts.single, matches(RegExp(r'^MaterialIcons-Regular\.[0-9a-f]{16}\.otf$')));
+      final manifest = jsonDecode(File('${dir.path}/assets/FontManifest.json').readAsStringSync()) as List;
+      final icons = manifest.firstWhere((f) => f['family'] == 'MaterialIcons') as Map;
+      expect((icons['fonts'] as List).single['asset'], 'fonts/${fonts.single}');
+      final vazir = manifest.firstWhere((f) => f['family'] == 'Vazir') as Map;
+      expect((vazir['fonts'] as List).single['asset'], 'assets/fonts/Vazir-Regular.ttf', reason: 'other fonts untouched');
+
+      final entry = '${result.stdout}'.trim();
+      expect(entry, matches(RegExp(r'^main\.dart\.[0-9a-f]{16}\.js$')), reason: 'still prints the entry name');
+      expect(File('${dir.path}/flutter_bootstrap.js').readAsStringSync(), contains('"mainJsPath":"$entry"'));
+    });
+  });
+
   group('CI build-customer-web job', () {
     test('precompresses the bundle right after the entry file is renamed, before upload', () {
       final yml = read('../.github/workflows/deploy.yml');
