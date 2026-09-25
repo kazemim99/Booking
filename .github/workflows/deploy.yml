@@ -551,7 +551,12 @@ jobs:
   # and /var/www/asan-rezerve-provider. Never `docker image prune -a` or `docker system prune`.
   deploy:
     name: Deploy to Production Server
-    runs-on: [self-hosted, asan-rezerve-prod]
+    # TRANSITIONAL (2026-09-25): the box has not had the server-side rename (docs/DEPLOYMENT_RUNBOOK.md, "Pending:
+    # server-side rename") and its runner, deploy directory and web roots still carry the booksy names. Until that
+    # migration runs, deploy the renamed app INTO that layout: same runner, same /opt/booksy, same volumes (the
+    # Compose project stays "booksy", which is what names them), same web roots. Change these five values back to
+    # the asan-rezerve names in the same commit as the migration.
+    runs-on: [self-hosted, booksy-prod]
     needs:
       - build-api
       - build-frontend
@@ -566,10 +571,12 @@ jobs:
       name: production
       url: https://back.nahalkmi.ir
     env:
-      DEPLOY_PATH: /opt/asan-rezerve
-      PROVIDER_WEB_ROOT: /var/www/asan-rezerve-provider
-      CUSTOMER_WEB_ROOT: /var/www/asan-rezerve-customer
-      ADMIN_WEB_ROOT: /var/www/asan-rezerve-admin
+      DEPLOY_PATH: /opt/booksy
+      PROVIDER_WEB_ROOT: /var/www/booksy-provider
+      CUSTOMER_WEB_ROOT: /var/www/booksy-customer
+      ADMIN_WEB_ROOT: /var/www/booksy-admin
+      # Explicit, not left to the directory name: it is what names the data volumes (booksy_postgres_data, ...).
+      COMPOSE_PROJECT_NAME: booksy
 
     steps:
     - name: Checkout compose file
@@ -592,16 +599,25 @@ jobs:
         cp docker-compose.prod.yml "$DEPLOY_PATH/docker-compose.prod.yml"
 
     - name: Pull images and start the backend
-      working-directory: /opt/asan-rezerve
+      working-directory: /opt/booksy
       run: |
         # Only the two images CI just pushed; postgres/redis keep their pinned tags.
         # No --profile: Seq/pgAdmin stay off on this shared box.
         docker compose -f docker-compose.prod.yml pull asan-rezerve-api frontend
+        # Once, on the first deploy after the rename: the pre-rename stack (booksy-* containers on
+        # booksy-network) is taken down GRACEFULLY with its own compose file -- no -v, so every volume stays.
+        # It must go first: the renamed network claims the same fixed subnet (172.25.0.0/16), and `up` would fail
+        # with "pool overlaps" while the old one exists. Later deploys find no booksy-api container and skip this.
+        if docker ps -a --format '{{.Names}}' | grep -qx booksy-api; then
+          echo "Pre-rename stack found: stopping it (volumes kept)"
+          docker compose -f docker-compose.prod.yml.previous down --remove-orphans
+        fi
         # `up -d` recreates only containers whose image or config changed, so the
         # database and Redis keep running across a deploy.
-        docker compose -f docker-compose.prod.yml up -d
+        docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
     - name: Wait for the API container to become healthy
+      working-directory: /opt/booksy
       run: |
         for i in $(seq 1 60); do
           status=$(docker inspect -f '{{.State.Health.Status}}' asan-rezerve-api 2>/dev/null || echo missing)
@@ -610,6 +626,12 @@ jobs:
         done
         echo "::error::asan-rezerve-api did not become healthy (last status: $status)"
         docker logs --tail 200 asan-rezerve-api
+        # Put back what was running: the previous compose file, against the same volumes.
+        if [ -f docker-compose.prod.yml.previous ]; then
+          echo "Rolling back to the previous compose file"
+          docker compose -f docker-compose.prod.yml down --remove-orphans
+          docker compose -f docker-compose.prod.yml.previous up -d --remove-orphans
+        fi
         exit 1
 
     - name: Download provider web bundle

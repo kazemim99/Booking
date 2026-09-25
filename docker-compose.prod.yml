@@ -19,6 +19,10 @@ services:
       # The address browsers reach the API at. TLS ends in the host nginx, so the API itself only
       # ever sees http:// requests; image URLs built from those were blocked by HTTPS pages.
       - App__PublicBaseUrl=${PUBLIC_BASE_URL:-https://back.nahalkmi.ir}
+      # Demo reviews for سالن نهال by named test customers (openspec/changes/_inline/customer-reviews-and-nahal-seed).
+      # ON while the platform is in its test stage; idempotent (it skips a salon that already has them). Set
+      # SEED_DEMO_REVIEWS=false in .env before real customers arrive — they would read these as genuine.
+      - Database__SeedDemoReviews=${SEED_DEMO_REVIEWS:-true}
     ports:
       # Localhost only: the frontend container reaches this over asan-rezerve-network by
       # container name, and the host nginx vhost never needs to — it proxies to the
@@ -39,7 +43,9 @@ services:
       # writable layer and every deploy (a new container) deleted them.
       - uploads_data:/app/wwwroot/uploads
     networks:
-      - asan-rezerve-network
+      asan-rezerve-network:
+        # The pre-rename container name, so a connection string or proxy that still says booksy-api works.
+        aliases: [booksy-api]
     restart: unless-stopped
     deploy:
       resources:
@@ -73,7 +79,9 @@ services:
       asan-rezerve-api:
         condition: service_started
     networks:
-      - asan-rezerve-network
+      asan-rezerve-network:
+        # The pre-rename container name, so a connection string or proxy that still says booksy-frontend works.
+        aliases: [booksy-frontend]
     restart: unless-stopped
     deploy:
       resources:
@@ -106,7 +114,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - asan-rezerve-network
+      asan-rezerve-network:
+        # The pre-rename container name, so a connection string or proxy that still says booksy-postgres works.
+        aliases: [booksy-postgres]
     restart: unless-stopped
     deploy:
       resources:
@@ -134,7 +144,9 @@ services:
     volumes:
       - redis_data:/data
     networks:
-      - asan-rezerve-network
+      asan-rezerve-network:
+        # The pre-rename container name, so a connection string or proxy that still says booksy-redis works.
+        aliases: [booksy-redis]
     restart: unless-stopped
     deploy:
       resources:

@@ -192,10 +192,25 @@ namespace AsanRezerve.ServiceCatalog.Infrastructure.Persistence.Seeders
             return Math.Clamp(overall + shift, 1.0m, 5.0m);
         }
 
+        /// <summary>
+        /// A salon name as a person would read it: Persian «ی/ک» for Arabic «ي/ك», no ZWNJ, single spaces, trimmed.
+        /// </summary>
+        public static string SameName(string name) =>
+            string.Join(' ', name
+                .Replace('ي', 'ی').Replace('ك', 'ک').Replace("\u200c", " ")
+                .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+
         /// <summary>The demo salon, when this environment has it and it has no seeded reviews yet.</summary>
         public async Task<Provider?> SalonToSeedAsync(string salonName, CancellationToken cancellationToken = default)
         {
-            var salon = await _context.Providers.FirstOrDefaultAsync(p => p.Profile.BusinessName == salonName, cancellationToken);
+            // The live salon was typed in by hand, so its name may carry Arabic «ي/ك», a ZWNJ or stray spaces
+            // where the seed says «سالن نهال». Narrow in SQL on the one word that cannot vary, then compare the
+            // normalized names.
+            var core = SameName(salonName).Split(' ').Last();
+            var candidates = await _context.Providers
+                .Where(p => p.Profile.BusinessName.Contains(core))
+                .ToListAsync(cancellationToken);
+            var salon = candidates.FirstOrDefault(p => SameName(p.Profile.BusinessName) == SameName(salonName));
             if (salon is null)
             {
                 _logger.LogInformation("No salon named {Salon}; no demo reviews to seed", salonName);

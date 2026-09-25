@@ -101,4 +101,21 @@ public class DemoSalonReviewsPlanTests
             plan.DaysAgo.Should().BeGreaterThanOrEqualTo(3, "the visit is well in the past");
         }
     }
+
+    [Theory]
+    [InlineData("سالن نهال")]
+    [InlineData("  سالن   نهال ")]
+    [InlineData("سالن\u200cنهال")]
+    [InlineData("سالن\u00a0نهال")]
+    public void The_live_salon_is_found_however_its_name_was_typed(string typed)
+    {
+        DemoSalonReviewsSeeder.SameName(typed).Should().Be(DemoSalonReviewsSeeder.SameName(DemoSalonReviewsSeeder.DemoSalonName));
+    }
+
+    [Fact]
+    public void Arabic_letters_read_as_their_persian_twins()
+    {
+        DemoSalonReviewsSeeder.SameName("سالن كيانا ي").Should().Be("سالن کیانا ی");
+        DemoSalonReviewsSeeder.SameName("سالن نهال شعبه ۲").Should().NotBe(DemoSalonReviewsSeeder.SameName("سالن نهال"));
+    }
 }
