@@ -50,6 +50,14 @@ Run #110 (4bec8d0) hit a transient GitHub Actions cache-export failure in the AP
 built and pushed successfully) — infra flake, unrelated to this change. Deploy job never ran since it
 depends on that build. Retried with this commit.
 
+Runs #111 (77e4b07, after the cache-export fix) and #112 (a5f4955) built and tested green, then their deploy job
+waited with **no runner ever taking it** (`runner_id` 0) until it was cancelled (11:25 and 13:20 UTC). So the
+`booksy-prod` runner was not online, and nothing from master after PR #32 reached the box. How it looks from
+outside: reviews signed «Customer 8156da0c», no Nahal demo reviews, «بوکسی» in the customer app header. Check it
+first: `systemctl status 'actions.runner.*'` on the box. The repository was also renamed on GitHub (Booking →
+AsanRezerve) the same day; if the runner shows offline in Settings → Actions → Runners, re-register it against the
+new URL.
+
 ### The one risk that matters: Compose auto-names volumes after the directory
 
 `docker-compose.prod.yml` declares `postgres_data`, `redis_data`, `uploads_data`, etc. with no
