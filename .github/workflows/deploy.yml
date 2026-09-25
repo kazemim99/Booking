@@ -251,7 +251,9 @@ jobs:
           ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api:latest
           ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api:${{ steps.meta.outputs.sha_short }}
         cache-from: type=gha
-        cache-to: type=gha,mode=max
+        # The cache export runs after the push; its failure (run 110: "error writing layer blob: not_found") must not
+        # fail a build whose image is already in the registry and block the deploy.
+        cache-to: type=gha,mode=max,ignore-error=true
 
   # Build Frontend (parallel job 4)
   build-frontend:
@@ -317,7 +319,7 @@ jobs:
           ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:latest
           ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:${{ steps.meta.outputs.sha_short }}
         cache-from: type=gha
-        cache-to: type=gha,mode=max
+        cache-to: type=gha,mode=max,ignore-error=true
 
   # Provider app (Flutter web), served by host nginx from /var/www/asan-rezerve-provider on the box.
   # Built here on a GitHub-hosted runner; the deploy job below publishes the artifact.
