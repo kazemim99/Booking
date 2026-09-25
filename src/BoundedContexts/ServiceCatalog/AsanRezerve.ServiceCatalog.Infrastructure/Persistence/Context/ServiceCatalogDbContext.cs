@@ -60,6 +60,9 @@ namespace AsanRezerve.ServiceCatalog.Infrastructure.Persistence.Context
             => Set<AsanRezerve.ServiceCatalog.Infrastructure.Persistence.Reviews.ProviderRatingSummary>();
         public DbSet<ProviderInvitation> ProviderInvitations => Set<ProviderInvitation>();
         public DbSet<ProviderCustomer> ProviderCustomers => Set<ProviderCustomer>();
+        public DbSet<Domain.Aggregates.PromotionAggregate.Promotion> Promotions => Set<Domain.Aggregates.PromotionAggregate.Promotion>();
+        public DbSet<Domain.Aggregates.PromotionAggregate.CampaignEnrollment> CampaignEnrollments => Set<Domain.Aggregates.PromotionAggregate.CampaignEnrollment>();
+        public DbSet<Domain.Aggregates.PromotionAggregate.PromotionRedemption> PromotionRedemptions => Set<Domain.Aggregates.PromotionAggregate.PromotionRedemption>();
         public DbSet<OrganizationMembership> OrganizationMemberships => Set<OrganizationMembership>();
         public DbSet<MembershipAuditEntry> MembershipAuditEntries => Set<MembershipAuditEntry>();
 

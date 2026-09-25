@@ -115,6 +115,16 @@ namespace AsanRezerve.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .HasConversion<string>()
                 .HasMaxLength(50);
 
+            // The discount snapshot (openspec/changes/add-discounts-and-campaigns). Flat, all nullable: a booking made
+            // without a promotion leaves them empty. TotalPrice above is already the discounted amount.
+            builder.Property(b => b.DiscountPromotionId).HasColumnName("DiscountPromotionId");
+            builder.Property(b => b.DiscountTitle).HasColumnName("DiscountTitle").HasMaxLength(80);
+            builder.Property(b => b.DiscountCode).HasColumnName("DiscountCode").HasMaxLength(20);
+            builder.Property(b => b.DiscountOwner).HasColumnName("DiscountOwner").HasConversion<string>().HasMaxLength(20);
+            builder.Property(b => b.DiscountAmount).HasColumnName("DiscountAmount").HasColumnType("decimal(18,2)");
+            builder.Ignore(b => b.Discount);
+            builder.Ignore(b => b.SubtotalAmount);
+
             // Price (Owned Value Object). Explicitly pin the shared FK to the owner key and mark it ValueGeneratedNever
             // so EF never treats it as a modifiable key on update — the fix for the
             // "Booking.TotalPrice#Price.BookingId is part of a key and so cannot be modified" defect that broke every

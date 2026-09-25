@@ -25,17 +25,17 @@ implementation task. `scripts/verify.sh fast` after each task, `full` to finish.
 ## Tasks
 
 ## 1. Domain
-- [ ] 1.1 Unit tests: Promotion create/update validation (percent 1–90, fixed>0, cap, window, code format, time window, limits).
-- [ ] 1.2 Promotion aggregate, DiscountRule, PromotionSchedule, enums; lifecycle pause/resume/end; derived state.
-- [ ] 1.3 Unit tests: eligibility per condition (window, weekday/time salon-local, min subtotal, services, new-customer, limits, status).
-- [ ] 1.4 Unit tests: PromotionPricing selection (best wins, tie-break, code outcomes, 90% cap, floor to Toman, targeted lines).
-- [ ] 1.5 PromotionPricing policy + PriceQuote/AppliedDiscount types; Promotion.RecordRedemption/ReleaseRedemption with limits.
-- [ ] 1.6 Unit tests + impl: CampaignEnrollment join/leave/rejoin; PromotionRedemption apply/release/transfer.
-- [ ] 1.7 Unit tests + impl: Booking carries AppliedDiscount snapshot (total = subtotal − discount), Reschedule copies it.
+- [x] 1.1 Unit tests: Promotion create/update validation (percent 1–90, fixed>0, cap, window, code format, time window, limits).
+- [x] 1.2 Promotion aggregate, DiscountRule, PromotionSchedule, enums; lifecycle pause/resume/end; derived state.
+- [x] 1.3 Unit tests: eligibility per condition (window, weekday/time salon-local, min subtotal, services, new-customer, limits, status).
+- [x] 1.4 Unit tests: PromotionPricing selection (best wins, tie-break, code outcomes, 90% cap, floor to Toman, targeted lines).
+- [x] 1.5 PromotionPricing policy + PriceQuote/AppliedDiscount types; Promotion.RecordRedemption/ReleaseRedemption with limits.
+- [x] 1.6 Unit tests + impl: CampaignEnrollment join/leave/rejoin; PromotionRedemption apply/release/transfer.
+- [x] 1.7 Unit tests + impl: Booking carries AppliedDiscount snapshot (total = subtotal − discount), Reschedule copies it.
 
 ## 2. Persistence
-- [ ] 2.1 EF configurations (promotions, campaign_enrollments, promotion_redemptions, booking discount columns), repos, DI.
-- [ ] 2.2 Migration AddDiscountsAndCampaigns (additive) + model snapshot; architecture tests stay green.
+- [x] 2.1 EF configurations (promotions, campaign_enrollments, promotion_redemptions, booking discount columns), repos, DI.
+- [x] 2.2 Migration AddDiscountsAndCampaigns (additive) + model snapshot; architecture tests stay green.
 
 ## 3. Application
 - [ ] 3.1 Unit tests: PromotionPricingService loading (provider promos + joined campaigns, new-customer, prior uses).

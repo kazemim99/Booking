@@ -52,8 +52,32 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates.BookingAggregate
         public BookingStatus Status { get; private set; }
 
         // Pricing & Payment
+
+        /// <summary>
+        /// What the customer pays: the services' list prices minus <see cref="Discount"/>. Deposit, cancellation fee,
+        /// earnings and the ledger all work on this amount — every discount is funded by the salon (decision
+        /// 2026-09-25), so there is nothing else to reconcile.
+        /// </summary>
         public Price TotalPrice { get; private set; }
         public PaymentInfo PaymentInfo { get; private set; }
+
+        // The discount this booking received, snapshotted at booking time and never changed by later edits to the
+        // promotion (openspec/changes/add-discounts-and-campaigns). Flat columns rather than an owned type: an
+        // optional owned entity whose columns may all be null is exactly what FOLLOW-UPS #9 warns about.
+        public Guid? DiscountPromotionId { get; private set; }
+        public string? DiscountTitle { get; private set; }
+        public string? DiscountCode { get; private set; }
+        public PromotionOwner? DiscountOwner { get; private set; }
+        public decimal? DiscountAmount { get; private set; }
+
+        public AppliedDiscount? Discount =>
+            DiscountPromotionId is { } promotionId && DiscountAmount is { } amount
+                ? new AppliedDiscount(promotionId, DiscountTitle ?? string.Empty, DiscountCode,
+                    DiscountOwner ?? PromotionOwner.Provider, amount)
+                : null;
+
+        /// <summary>The services' list prices before any discount.</summary>
+        public decimal SubtotalAmount => TotalPrice.Amount + (DiscountAmount ?? 0m);
 
         // Policy & Rules
         public BookingPolicy Policy { get; private set; }
@@ -97,6 +121,8 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates.BookingAggregate
         /// Factory method - Create a new booking request
         /// </summary>
         /// <param name="individualProviderId">Optional individual provider ID when booking at an organization with staff hierarchy</param>
+        /// <param name="totalPrice">The services' list prices. With a <paramref name="discount"/>, the booking's total is this minus it.</param>
+        /// <param name="discount">The promotion the server chose for this visit, if any.</param>
         public static Booking CreateBookingRequest(
             UserId customerId,
             ProviderId providerId,
@@ -108,8 +134,16 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates.BookingAggregate
             BookingPolicy policy,
             string? customerNotes = null,
             ProviderId? individualProviderId = null,
-            IReadOnlyList<BookingServiceItem>? services = null)
+            IReadOnlyList<BookingServiceItem>? services = null,
+            AppliedDiscount? discount = null)
         {
+            if (discount is not null && (discount.Amount <= 0 || discount.Amount >= totalPrice.Amount))
+                throw new DomainValidationException(
+                    nameof(discount), "تخفیف باید بیشتر از صفر و کمتر از مبلغ نوبت باشد.");
+
+            if (discount is not null)
+                totalPrice = Price.Create(totalPrice.Amount - discount.Amount, totalPrice.Currency);
+
             var timeSlot = TimeSlot.Create(startTime, duration);
             var depositAmount = policy.CalculateDepositAmount(
                 Money.Create(totalPrice.Amount, totalPrice.Currency));
@@ -144,6 +178,8 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates.BookingAggregate
 
             if (services is { Count: > 0 })
                 booking._services.AddRange(services);
+
+            booking.CopyDiscount(discount);
 
             booking.AddHistoryEntry("Booking requested", BookingStatus.Requested);
 
@@ -422,6 +458,9 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates.BookingAggregate
                 RequestedAt = now
             };
 
+            // The successor costs what this booking cost: the price was locked at booking, discount included.
+            newBooking.CopyDiscount(Discount);
+
             // Mark current booking as rescheduled
             Status = BookingStatus.Rescheduled;
             RescheduledToBookingId = newBooking.Id;
@@ -448,6 +487,15 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates.BookingAggregate
                 RescheduledAt.Value));
 
             return newBooking;
+        }
+
+        private void CopyDiscount(AppliedDiscount? discount)
+        {
+            DiscountPromotionId = discount?.PromotionId;
+            DiscountTitle = discount?.Title;
+            DiscountCode = discount?.Code;
+            DiscountOwner = discount?.Owner;
+            DiscountAmount = discount?.Amount;
         }
 
         /// <summary>
