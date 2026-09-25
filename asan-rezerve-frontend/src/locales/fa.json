@@ -1,12 +1,12 @@
 {
   "app": {
-    "name": "بوکسی"
+    "name": "آسان رزرو"
   },
   "auth": {
     "welcomeBack": "خوش آمدید",
     "signInToAccount": "وارد حساب کاربری خود شوید",
     "createAccount": "ایجاد حساب کاربری",
-    "joinToday": "همین امروز به بوکسی بپیوندید",
+    "joinToday": "همین امروز به آسان رزرو بپیوندید",
     "emailAddress": "آدرس ایمیل",
     "emailPlaceholder": "you{'@'}example.com",
     "password": "رمز عبور",
@@ -423,7 +423,7 @@
         },
         "marketing": {
           "label": "اطلاعیه‌های بازاریابی",
-          "description": "به‌روزرسانی‌ها و اخبار از بوکسی"
+          "description": "به‌روزرسانی‌ها و اخبار از آسان رزرو"
         },
         "newsletter": {
           "label": "خبرنامه",
@@ -838,7 +838,7 @@
     "staff": "کارکنان",
     "team": "تیم",
     "registration": {
-      "welcome": "به بوکسی خوش آمدید!",
+      "welcome": "به آسان رزرو خوش آمدید!",
       "saveDraft": "ذخیره پیش‌نویس",
       "progress": {
         "step": "مرحله {current} از {total}"

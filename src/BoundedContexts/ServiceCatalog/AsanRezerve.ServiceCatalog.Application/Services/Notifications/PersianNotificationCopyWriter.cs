@@ -109,7 +109,7 @@ namespace AsanRezerve.ServiceCatalog.Application.Services.Notifications
 
                 NotificationEventCode.Welcome => Copy(
                     "خوش آمدید",
-                    $"{customer} عزیز، به بوکسی خوش آمدید."),
+                    $"{customer} عزیز، به آسان رزرو خوش آمدید."),
 
                 NotificationEventCode.PasswordReset => Copy(
                     "بازنشانی رمز عبور",

@@ -3,7 +3,7 @@
     <a-layout-sider v-model:collapsed="collapsed" :trigger="null" collapsible theme="dark">
       <div class="logo">
         <h2 v-if="!collapsed">{{ $t('app.name') }}</h2>
-        <h2 v-else>{{ isPersian ? 'بوکسی' : 'BA' }}</h2>
+        <h2 v-else>{{ isPersian ? 'آسان رزرو' : 'BA' }}</h2>
       </div>
 
       <a-menu
