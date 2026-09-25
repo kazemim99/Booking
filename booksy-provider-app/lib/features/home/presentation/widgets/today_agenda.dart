@@ -16,6 +16,9 @@ class TodayAgenda extends StatelessWidget {
   final void Function(String id) onComplete;
   final void Function(String id) onNoShow;
 
+  /// The salon's clock, which decides what the server will take. Defaults to now.
+  final DateTime? now;
+
   const TodayAgenda({
     super.key,
     required this.bookings,
@@ -23,6 +26,7 @@ class TodayAgenda extends StatelessWidget {
     required this.onAddAppointment,
     required this.onComplete,
     required this.onNoShow,
+    this.now,
   });
 
   @override
@@ -75,6 +79,7 @@ class TodayAgenda extends StatelessWidget {
             _AgendaRow(
               booking: bookings[i],
               isCurrent: i == currentIndex,
+              now: now ?? DateTime.now(),
               onComplete: onComplete,
               onNoShow: onNoShow,
             ),
@@ -93,13 +98,19 @@ class _AgendaRow extends StatelessWidget {
   const _AgendaRow({
     required this.booking,
     required this.isCurrent,
+    required this.now,
     required this.onComplete,
     required this.onNoShow,
   });
 
+  final DateTime now;
+
   @override
   Widget build(BuildContext context) {
-    final done = booking.isDone;
+    // The menu holds only what the server will take; a row with nothing to do has no menu. It offered both on a
+    // pending request and hours ahead, and both failed there.
+    final canComplete = booking.canCompleteAt(now);
+    final canNoShow = booking.canMarkNoShowAt(now);
 
     return Padding(
       key: Key('agenda-row-${booking.id}'),
@@ -107,7 +118,7 @@ class _AgendaRow extends StatelessWidget {
       child: BookingCard(
         booking: booking,
         highlighted: isCurrent,
-        trailing: done
+        trailing: !canComplete && !canNoShow
             ? null
             : PopupMenuButton<String>(
                 key: Key('agenda-menu-${booking.id}'),
@@ -116,15 +127,17 @@ class _AgendaRow extends StatelessWidget {
                 onSelected: (v) => v == 'complete'
                     ? onComplete(booking.id)
                     : onNoShow(booking.id),
-                itemBuilder: (_) => const [
-                  PopupMenuItem(
-                    value: 'complete',
-                    child: Text(AppStrings.homeActionComplete),
-                  ),
-                  PopupMenuItem(
-                    value: 'noshow',
-                    child: Text(AppStrings.homeActionNoShow),
-                  ),
+                itemBuilder: (_) => [
+                  if (canComplete)
+                    const PopupMenuItem(
+                      value: 'complete',
+                      child: Text(AppStrings.homeActionComplete),
+                    ),
+                  if (canNoShow)
+                    const PopupMenuItem(
+                      value: 'noshow',
+                      child: Text(AppStrings.homeActionNoShow),
+                    ),
                 ],
               ),
       ),

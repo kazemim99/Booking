@@ -118,16 +118,36 @@ void main() {
     expect(find.text(AppStrings.homeConfirmed), findsOneWidget); // snackbar
   });
 
-  testWidgets('confirmed booking sheet offers complete/no-show',
+  // Only what the server takes (openspec/changes/_inline/customer-reviews-and-nahal-seed): «تکمیل» from 15 minutes
+  // before the start, «عدم حضور» once the time is over. Both used to be offered hours ahead, and failed there.
+  testWidgets('a confirmed booking whose time has come offers complete/no-show',
       (tester) async {
+    when(() => repository.fetchBookings(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+        )).thenAnswer((_) async => Right([
+          booking('b0', DateTime(2026, 7, 15, 7), HomeBookingStatus.confirmed),
+        ]));
     await pump(tester);
 
-    await tester.tap(find.byKey(const Key('calendar-booking-b2')));
+    await tester.tap(find.byKey(const Key('calendar-booking-b0')));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('sheet-complete')), findsOneWidget);
     expect(find.byKey(const Key('sheet-noshow')), findsOneWidget);
     expect(find.byKey(const Key('sheet-confirm')), findsNothing);
+  });
+
+  testWidgets('a confirmed booking still ahead says when it can be marked done',
+      (tester) async {
+    await pump(tester); // now 08:00; b2 is at 14:00
+
+    await tester.tap(find.byKey(const Key('calendar-booking-b2')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('sheet-complete')), findsNothing);
+    expect(find.byKey(const Key('sheet-noshow')), findsNothing);
+    expect(find.byKey(const Key('sheet-complete-later')), findsOneWidget);
   });
 
   testWidgets('empty day shows the actionable empty state', (tester) async {

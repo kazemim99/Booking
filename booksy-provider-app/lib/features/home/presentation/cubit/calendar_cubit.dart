@@ -80,6 +80,9 @@ class CalendarCubit extends Cubit<CalendarState> {
   final HomeRepository _repository;
   final ConnectivityService _connectivity;
   final DateTime Function() _now;
+
+  /// The calendar's clock — what a booking's actions are judged against.
+  DateTime now() => _now();
   int _fetchSeq = 0;
 
   CalendarCubit(

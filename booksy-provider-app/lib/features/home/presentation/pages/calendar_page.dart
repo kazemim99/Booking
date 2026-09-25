@@ -494,7 +494,8 @@ void showCalendarBookingSheet(
                     ),
                   ],
                 )
-              else if (booking.status == HomeBookingStatus.confirmed)
+              else if (booking.canCompleteAt(cubit.now()))
+                // Only what the server takes: «تکمیل» from 15 minutes before the start, «عدم حضور» once it is over.
                 Row(
                   children: [
                     Expanded(
@@ -508,22 +509,30 @@ void showCalendarBookingSheet(
                         label: const Text(AppStrings.homeActionComplete),
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        key: const Key('sheet-noshow'),
-                        onPressed: () => run(
-                          cubit.markNoShow(booking.id),
-                          AppStrings.homeNoShowMarked,
+                    if (booking.canMarkNoShowAt(cubit.now())) ...[
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          key: const Key('sheet-noshow'),
+                          onPressed: () => run(
+                            cubit.markNoShow(booking.id),
+                            AppStrings.homeNoShowMarked,
+                          ),
+                          icon: const Icon(
+                            Icons.person_off,
+                            size: AppIconSize.action,
+                          ),
+                          label: const Text(AppStrings.homeActionNoShow),
                         ),
-                        icon: const Icon(
-                          Icons.person_off,
-                          size: AppIconSize.action,
-                        ),
-                        label: const Text(AppStrings.homeActionNoShow),
                       ),
-                    ),
+                    ],
                   ],
+                )
+              else if (booking.status == HomeBookingStatus.confirmed)
+                const Text(
+                  AppStrings.homeCompleteLaterHint,
+                  key: Key('sheet-complete-later'),
+                  style: TextStyle(fontSize: 13, color: AppColors.muted),
                 ),
               const SizedBox(height: AppSpacing.sm),
             ],

@@ -334,6 +334,10 @@ class AppStrings {
   static const String homeNextLabel = 'بعدی';
   static const String homeActionComplete = 'تکمیل';
   static const String homeActionNoShow = 'عدم حضور';
+  static const String homeNextAwaitsConfirmation = 'این درخواست منتظر تأیید شماست.';
+  // Why a confirmed booking still ahead offers no «تکمیل» (openspec/changes/_inline/customer-reviews-and-nahal-seed).
+  static const String homeCompleteLaterHint =
+      'از ۱۵ دقیقه پیش از شروع نوبت می‌توانید آن را «انجام‌شده» ثبت کنید؛ پس از آن مشتری می‌تواند برایتان نظر بنویسد.';
   static const String homeActionCall = 'تماس';
 
   // Action queue (requests)
