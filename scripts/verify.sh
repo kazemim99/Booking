@@ -132,17 +132,17 @@ if [ "$TIER" = full ]; then
     else step "$n" "$ROOT" dotnet test "$p" ${NOBUILD[@]+"${NOBUILD[@]}"} --nologo -v q "${logger[@]}"; fi
   done
   slowest "$TRX_DIR" "$VERIFY_DIR/slowest.txt"
-  for app in asanrezerve-frontend asanrezerve-admin; do
+  for app in asan-rezerve-frontend asan-rezerve-admin; do
     touched "$app" || continue
     [ -d "$app/node_modules" ] || { blocked "vue:$app" "no node_modules; run 'npm ci' in $app"; continue; }
     step "vue:$app:type-check" "$ROOT/$app" npm run --silent type-check
-    # asanrezerve-admin's vitest suite was never run by any gate — see verify.ps1.
-    [ "$app" = asanrezerve-admin ] && step "vue:$app:unit" "$ROOT/$app" npx vitest run
-    [ "$app" = asanrezerve-frontend ] && step "vue:$app:lint" "$ROOT/$app" npm run --silent lint:check
+    # asan-rezerve-admin's vitest suite was never run by any gate — see verify.ps1.
+    [ "$app" = asan-rezerve-admin ] && step "vue:$app:unit" "$ROOT/$app" npx vitest run
+    [ "$app" = asan-rezerve-frontend ] && step "vue:$app:lint" "$ROOT/$app" npm run --silent lint:check
     # Unit tests — see verify.ps1 for why, and for the two excluded EMPTY placeholder specs.
-    [ "$app" = asanrezerve-frontend ] && step "vue:$app:unit" "$ROOT/$app" npx vitest run src --exclude src/modules/auth/__tests__/auth.api.spec.ts --exclude src/modules/auth/__tests__/LoginForm.spec.ts
+    [ "$app" = asan-rezerve-frontend ] && step "vue:$app:unit" "$ROOT/$app" npx vitest run src --exclude src/modules/auth/__tests__/auth.api.spec.ts --exclude src/modules/auth/__tests__/LoginForm.spec.ts
   done
-  for app in asanrezerve-customer-app asanrezerve-provider-app; do
+  for app in asan-rezerve-customer-app asan-rezerve-provider-app; do
     touched "$app" || continue
     command -v flutter >/dev/null || { blocked "flutter:$app" "flutter not on PATH"; continue; }
     step "flutter:$app:analyze" "$ROOT/$app" flutter analyze --no-pub --no-fatal-warnings --no-fatal-infos

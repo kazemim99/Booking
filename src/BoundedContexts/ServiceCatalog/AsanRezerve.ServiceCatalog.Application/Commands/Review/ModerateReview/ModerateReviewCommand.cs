@@ -66,7 +66,7 @@ public sealed class ModerateReviewCommandHandler : ICommandHandler<ModerateRevie
     public async Task<ModerateReviewResult> Handle(ModerateReviewCommand request, CancellationToken cancellationToken)
     {
         var review = await _reviews.GetByIdAsync(request.ReviewId, cancellationToken)
-                     ?? throw new NotFoundException($"Review with ID {request.ReviewId} not found");
+                     ?? throw new NotFoundException("این نظر پیدا نشد.");
 
         var wasPublic = review.IsPubliclyVisible;
         var wasEverPublished = review.FirstPublishedAt is not null;

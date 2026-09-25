@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_strings.dart';
+import '../../../reviews/domain/entities/review.dart';
 import '../../domain/entities/booking_summary.dart';
 import '../../domain/repositories/bookings_repository.dart';
 
@@ -46,6 +47,17 @@ class AppointmentRescheduled extends AppointmentsEvent {
 
   @override
   List<Object?> get props => [bookingId, newStartTime];
+}
+
+/// A review was saved for a past visit from its card; the card shows it as
+/// written, waiting for approval, instead of offering «ثبت نظر» again.
+class AppointmentReviewed extends AppointmentsEvent {
+  final String bookingId;
+
+  const AppointmentReviewed(this.bookingId);
+
+  @override
+  List<Object?> get props => [bookingId];
 }
 
 // ---------- State ----------
@@ -109,6 +121,7 @@ class AppointmentsBloc extends Bloc<AppointmentsEvent, AppointmentsState> {
     on<AppointmentsRefreshed>(_onRefreshed);
     on<AppointmentCancelled>(_onCancelled);
     on<AppointmentRescheduled>(_onRescheduled);
+    on<AppointmentReviewed>(_onReviewed);
   }
 
   Future<void> _onRequested(
@@ -228,6 +241,26 @@ class AppointmentsBloc extends Bloc<AppointmentsEvent, AppointmentsState> {
         for (final b in state.upcoming)
           if (b.id == event.bookingId)
             b.copyWith(startTime: event.newStartTime)
+          else
+            b,
+      ],
+    ));
+  }
+
+  void _onReviewed(
+    AppointmentReviewed event,
+    Emitter<AppointmentsState> emit,
+  ) {
+    // A refresh already under way read the card before the review; it must not put «ثبت نظر» back.
+    _changes++;
+    emit(state.copyWith(
+      past: [
+        for (final b in state.past)
+          if (b.id == event.bookingId)
+            b.copyWith(
+              canReview: false,
+              reviewStatus: ReviewModerationStatus.pending,
+            )
           else
             b,
       ],

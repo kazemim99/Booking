@@ -14,6 +14,9 @@ class NowNext extends StatelessWidget {
   final void Function(String id) onNoShow;
   final void Function(HomeBooking booking) onCall;
 
+  /// The salon's clock, which decides what the server will take. Defaults to now.
+  final DateTime? now;
+
   const NowNext({
     super.key,
     required this.booking,
@@ -21,6 +24,7 @@ class NowNext extends StatelessWidget {
     required this.onComplete,
     required this.onNoShow,
     required this.onCall,
+    this.now,
   });
 
   String get _time {
@@ -31,6 +35,11 @@ class NowNext extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final at = now ?? DateTime.now();
+    // Only what the server takes: a request is confirmed first, «تکمیل» opens 15 minutes before the start, and
+    // «عدم حضور» once the time is over. The card used to offer both on anything, and they failed.
+    final canComplete = booking.canCompleteAt(at);
+    final canNoShow = booking.canMarkNoShowAt(at);
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,24 +77,37 @@ class NowNext extends StatelessWidget {
           // (Size.fromHeight) and must never sit bare inside a Row.
           Row(
             children: [
-              Expanded(
-                child: FilledButton.icon(
-                  key: const Key('nownext-complete'),
-                  onPressed: () => onComplete(booking.id),
-                  icon: const Icon(Icons.check, size: AppIconSize.action),
-                  label: const Text(AppStrings.homeActionComplete),
+              if (canComplete)
+                Expanded(
+                  child: FilledButton.icon(
+                    key: const Key('nownext-complete'),
+                    onPressed: () => onComplete(booking.id),
+                    icon: const Icon(Icons.check, size: AppIconSize.action),
+                    label: const Text(AppStrings.homeActionComplete),
+                  ),
                 ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: OutlinedButton.icon(
-                  key: const Key('nownext-noshow'),
-                  onPressed: () => onNoShow(booking.id),
-                  icon:
-                      const Icon(Icons.person_off, size: AppIconSize.action),
-                  label: const Text(AppStrings.homeActionNoShow),
+              if (canNoShow) ...[
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    key: const Key('nownext-noshow'),
+                    onPressed: () => onNoShow(booking.id),
+                    icon:
+                        const Icon(Icons.person_off, size: AppIconSize.action),
+                    label: const Text(AppStrings.homeActionNoShow),
+                  ),
                 ),
-              ),
+              ],
+              if (!canComplete)
+                Expanded(
+                  child: Text(
+                    booking.status == HomeBookingStatus.pending
+                        ? AppStrings.homeNextAwaitsConfirmation
+                        : AppStrings.homeCompleteLaterHint,
+                    key: const Key('nownext-later'),
+                    style: const TextStyle(fontSize: 13, color: AppColors.muted),
+                  ),
+                ),
               if (booking.clientPhone.isNotEmpty) ...[
                 const SizedBox(width: AppSpacing.sm),
                 IconButton(

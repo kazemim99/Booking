@@ -138,11 +138,13 @@ public class BookingsController : ControllerBase
         [FromRoute] Guid id,
         CancellationToken cancellationToken = default)
     {
-        var query = new GetBookingDetailsQuery(BookingId: id);
+        var currentUserId = GetCurrentUserId();
+        var query = new GetBookingDetailsQuery(
+            BookingId: id,
+            CallerId: Guid.TryParse(currentUserId, out var callerId) ? callerId : null);
         var result = await _mediator.Send(query, cancellationToken);
 
         // Authorization check - only customer, provider, or admin can view
-        var currentUserId = GetCurrentUserId();
         if (!CanViewBooking(result, currentUserId))
         {
             _logger.LogWarning("User {UserId} attempted to view booking {BookingId} without permission",
@@ -748,8 +750,8 @@ public class BookingsController : ControllerBase
         if (User.IsInRole("Admin") || User.IsInRole("SysAdmin"))
             return true;
 
-        // Customer can view their own bookings
-        if (booking.CustomerId.ToString() == userId)
+        // Customer can view their own bookings — including one a salon entered for their verified mobile
+        if (booking.CustomerId.ToString() == userId || booking.IsForCaller)
             return true;
 
         // Provider can view their bookings
@@ -805,6 +807,10 @@ public class BookingsController : ControllerBase
             StaffProviderId = result.StaffId,
             StaffName = result.StaffName,
             RescheduleBlockedReason = result.RescheduleBlockedReason,
+            CanReview = result.CanReview,
+            ReviewBlockedReason = result.ReviewBlockedReason,
+            ReviewId = result.ReviewId,
+            ReviewStatus = result.ReviewStatus,
             ServiceName = result.ServiceName,
             ProviderBusinessName = result.ProviderName,
             StartTime = result.StartTime,

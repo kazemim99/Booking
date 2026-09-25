@@ -22,8 +22,8 @@ namespace AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetCustomerBook
         private readonly IBookingReadRepository _bookingRepository;
         private readonly IProviderReadRepository _providerRepository;
         private readonly IServiceReadRepository _serviceRepository;
-        private readonly IProviderCustomerRepository _providerCustomers;
-        private readonly IPersonDirectory _people;
+        private readonly IBookingCustomer _bookingCustomer;
+        private readonly IReviewReadRepository _reviews;
         private readonly IBookingStaffNames _staffNames;
         private readonly ILogger<GetCustomerBookingsQueryHandler> _logger;
 
@@ -31,41 +31,18 @@ namespace AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetCustomerBook
             IBookingReadRepository bookingRepository,
             IProviderReadRepository providerRepository,
             IServiceReadRepository serviceRepository,
-            IProviderCustomerRepository providerCustomers,
-            IPersonDirectory people,
+            IBookingCustomer bookingCustomer,
+            IReviewReadRepository reviews,
             IBookingStaffNames staffNames,
             ILogger<GetCustomerBookingsQueryHandler> logger)
         {
             _bookingRepository = bookingRepository;
             _providerRepository = providerRepository;
             _serviceRepository = serviceRepository;
-            _providerCustomers = providerCustomers;
-            _people = people;
+            _bookingCustomer = bookingCustomer;
+            _reviews = reviews;
             _staffNames = staffNames;
             _logger = logger;
-        }
-
-        /// <summary>
-        /// The customer-book entries that are this same person: a salon books someone by mobile
-        /// number, before or after they ever open the app, and sign-in proves that number is
-        /// theirs. Empty when we cannot read their number.
-        /// </summary>
-        private async Task<IReadOnlyCollection<Guid>> TheirCustomerBookEntriesAsync(
-            Guid personId, CancellationToken cancellationToken)
-        {
-            var people = await _people.FindByIdsAsync(new[] { personId }, cancellationToken);
-            if (!people.TryGetValue(personId, out var person) || string.IsNullOrWhiteSpace(person.PhoneNumber))
-                return Array.Empty<Guid>();
-
-            try
-            {
-                return await _providerCustomers.IdsByPhoneAsync(
-                    PhoneNumber.From(person.PhoneNumber!), cancellationToken);
-            }
-            catch (ArgumentException)
-            {
-                return Array.Empty<Guid>();
-            }
         }
 
         public async Task<PagedResult<CustomerBookingDto>> Handle(GetCustomerBookingsQuery request, CancellationToken cancellationToken)
@@ -90,7 +67,7 @@ namespace AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetCustomerBook
 
             // Get bookings from repository with pagination and filters — theirs, and the ones a
             // salon entered for their number.
-            var theirEntries = await TheirCustomerBookEntriesAsync(request.CustomerId, cancellationToken);
+            var theirEntries = await _bookingCustomer.TheirBookEntriesAsync(request.CustomerId, cancellationToken);
             var pagedResult = await _bookingRepository.GetCustomerBookingHistoryAsync(
                 UserId.From(request.CustomerId.ToString()),
                 request.Pagination,
@@ -107,8 +84,18 @@ namespace AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetCustomerBook
             // 3. Batching the queries for providers and services
             var enrichedDtos = new List<CustomerBookingDto>();
 
+            // Where each booking's review stands, for the person it is for. The list also holds the walk-ins a salon
+            // owner entered for their clients (stored under the owner's id): those are not the owner's to review, so
+            // they say nothing. One query for the page.
+            var reviews = await _reviews.GetStatesByBookingIdsAsync(
+                pagedResult.Items.Select(b => b.Id.Value).ToList(), cancellationToken);
+
             foreach (var booking in pagedResult.Items)
             {
+                var review = BookingCustomer.IsFor(booking, request.CustomerId, theirEntries)
+                    ? BookingReviewStanding.Of(booking, reviews.GetValueOrDefault(booking.Id.Value))
+                    : BookingReviewStanding.None;
+
                 // Load provider and service for additional details
                 var provider = await _providerRepository.GetByIdAsync(booking.ProviderId, cancellationToken);
                 var service = await _serviceRepository.GetByIdAsync(booking.ServiceId, cancellationToken);
@@ -132,7 +119,11 @@ namespace AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetCustomerBook
                     ConfirmedAt: booking.ConfirmedAt,
                     CustomerNotes: booking.CustomerNotes,
                     StaffName: await _staffNames.ForAsync(provider, booking.StaffId, cancellationToken),
-                    RescheduleBlockedReason: booking.RescheduleBlockedReason()));
+                    RescheduleBlockedReason: booking.RescheduleBlockedReason(),
+                    CanReview: review.CanReview,
+                    ReviewBlockedReason: review.ReviewBlockedReason,
+                    ReviewId: review.ReviewId,
+                    ReviewStatus: review.ReviewStatus));
             }
 
             _logger.LogInformation(

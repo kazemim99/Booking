@@ -30,6 +30,8 @@ export type MyVote = 'helpful' | 'notHelpful' | null
 /** One review in a provider's public listing. Published reviews only; a reply appears only once approved. */
 export interface ProviderReview {
   reviewId: string
+  /** How the listing signs it: «مریم ر.» — first name and surname initial — or «مشتری». */
+  customerName: string
   rating: number
   comment: string | null
   isVerified: boolean

@@ -1,5 +1,6 @@
 import '../../../core/utils/person_name.dart';
 import '../../../core/utils/wall_clock.dart';
+import '../../reviews/domain/entities/review.dart';
 import '../domain/entities/booking_summary.dart';
 
 /// Maps the two booking shapes the API returns to [BookingSummary]. Manual
@@ -34,6 +35,7 @@ class BookingSummaryJson {
       status: json['status'],
       cancellationReason: json['cancellationReason'] as String?,
       rescheduleBlockedReason: json['rescheduleBlockedReason'],
+      review: json,
       now: now,
     );
   }
@@ -64,6 +66,7 @@ class BookingSummaryJson {
       status: json['status'],
       cancellationReason: json['cancellationReason'] as String?,
       rescheduleBlockedReason: json['rescheduleBlockedReason'],
+      review: json,
       now: now,
     );
   }
@@ -84,6 +87,7 @@ class BookingSummaryJson {
     required Object? status,
     required String? cancellationReason,
     required Object? rescheduleBlockedReason,
+    required Map<String, dynamic> review,
     required DateTime now,
   }) {
     // The salon's wall clock: the digits are the time, whatever zone the server wrote (QA 2026-09-23).
@@ -93,6 +97,14 @@ class BookingSummaryJson {
         _actionableStatuses.contains(statusText.toLowerCase()) &&
             start.isAfter(now);
     final staff = staffId?.toString();
+
+    // Where the review stands, as the server says (additive fields). An older server says nothing, and then a
+    // completed visit is offered as before.
+    final reviewId = _text(review['reviewId']);
+    final serverCanReview = review['canReview'];
+    final canReview = serverCanReview is bool
+        ? serverCanReview
+        : statusText.toLowerCase() == 'completed' && reviewId == null;
 
     return BookingSummary(
       id: id.toString(),
@@ -112,12 +124,16 @@ class BookingSummaryJson {
       status: statusText,
       canCancel: actionable,
       canReschedule: actionable,
-      canReview: statusText.toLowerCase() == 'completed',
+      canReview: canReview,
+      reviewBlockedReason: _text(review['reviewBlockedReason']),
+      reviewId: reviewId,
+      reviewStatus: reviewId == null ? null : ReviewModerationStatus.parse(review['reviewStatus']),
       cancellationReason: cancellationReason,
       // Optional and additive; blank is none.
-      rescheduleBlockedReason: rescheduleBlockedReason is String && rescheduleBlockedReason.trim().isNotEmpty
-          ? rescheduleBlockedReason.trim()
-          : null,
+      rescheduleBlockedReason: _text(rescheduleBlockedReason),
     );
   }
+
+  static String? _text(Object? value) =>
+      value is String && value.trim().isNotEmpty ? value.trim() : null;
 }

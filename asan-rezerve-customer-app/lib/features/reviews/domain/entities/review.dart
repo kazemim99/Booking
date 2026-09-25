@@ -45,6 +45,10 @@ class Review extends Equatable {
   /// The salon's reply, when it wrote one and it was approved.
   final String? providerResponse;
 
+  /// Written after a visit on record — every review is, by construction; said
+  /// on the card because it is what makes a review worth trusting.
+  final bool isVerified;
+
   /// Only the dimensions the customer chose to rate.
   final Map<ReviewDimension, double> dimensions;
   final int helpfulCount;
@@ -60,6 +64,7 @@ class Review extends Equatable {
     this.comment,
     this.createdAt,
     this.providerResponse,
+    this.isVerified = false,
     this.dimensions = const {},
     this.helpfulCount = 0,
     this.notHelpfulCount = 0,
@@ -74,6 +79,7 @@ class Review extends Equatable {
         comment: comment,
         createdAt: createdAt,
         providerResponse: providerResponse,
+        isVerified: isVerified,
         dimensions: dimensions,
         helpfulCount: result.helpfulCount,
         notHelpfulCount: result.notHelpfulCount,
@@ -88,6 +94,7 @@ class Review extends Equatable {
         comment,
         createdAt,
         providerResponse,
+        isVerified,
         dimensions,
         helpfulCount,
         notHelpfulCount,
@@ -115,11 +122,22 @@ class ProviderReviews extends Equatable {
   /// Only the dimensions somebody rated; a missing key means nobody has.
   final Map<ReviewDimension, DimensionAverage> dimensions;
 
+  /// How many published reviews gave each whole star, 5 down to 1 — the shape
+  /// of the average, which one number hides.
+  final Map<int, int> distribution;
+
+  /// The last page read, and whether the salon has more reviews than are loaded.
+  final int page;
+  final bool hasMore;
+
   const ProviderReviews({
     this.averageRating = 0,
     this.totalReviews = 0,
     this.items = const [],
     this.dimensions = const {},
+    this.distribution = const {},
+    this.page = 1,
+    this.hasMore = false,
   });
 
   ProviderReviews withItems(List<Review> next) => ProviderReviews(
@@ -127,10 +145,29 @@ class ProviderReviews extends Equatable {
         totalReviews: totalReviews,
         items: next,
         dimensions: dimensions,
+        distribution: distribution,
+        page: page,
+        hasMore: hasMore,
       );
 
+  /// The next page read after this one: its reviews after these (none twice),
+  /// and its paging.
+  ProviderReviews appending(ProviderReviews next) {
+    final seen = {for (final r in items) r.id};
+    return ProviderReviews(
+      averageRating: next.averageRating,
+      totalReviews: next.totalReviews,
+      items: [...items, ...next.items.where((r) => !seen.contains(r.id))],
+      dimensions: next.dimensions,
+      distribution: next.distribution,
+      page: next.page,
+      hasMore: next.hasMore,
+    );
+  }
+
   @override
-  List<Object?> get props => [averageRating, totalReviews, items, dimensions];
+  List<Object?> get props =>
+      [averageRating, totalReviews, items, dimensions, distribution, page, hasMore];
 }
 
 /// The server's tally after a vote: counts and the caller's vote, which is

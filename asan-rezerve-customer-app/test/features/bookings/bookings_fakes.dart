@@ -7,6 +7,7 @@ import 'package:asan_rezerve_customer_app/features/booking/domain/entities/booki
 import 'package:asan_rezerve_customer_app/features/booking/domain/repositories/booking_repository.dart';
 import 'package:asan_rezerve_customer_app/features/bookings/domain/entities/booking_summary.dart';
 import 'package:asan_rezerve_customer_app/features/bookings/domain/repositories/bookings_repository.dart';
+import 'package:asan_rezerve_customer_app/features/reviews/domain/entities/review.dart';
 
 /// A booking as the appointments screens see it. [start] defaults to two days
 /// after a fixed "now" so nothing depends on the wall clock.
@@ -21,6 +22,8 @@ BookingSummary fakeBooking(
   String? staffId,
   String? staffName,
   String? rescheduleBlockedReason,
+  String? reviewBlockedReason,
+  ReviewModerationStatus? reviewStatus,
 }) {
   final active = actionable ?? const {'confirmed', 'pending', 'requested'}.contains(status.toLowerCase());
   return BookingSummary(
@@ -38,8 +41,11 @@ BookingSummary fakeBooking(
     status: status,
     canCancel: active,
     canReschedule: active,
-    canReview: canReview ?? status.toLowerCase() == 'completed',
+    canReview: canReview ?? (status.toLowerCase() == 'completed' && reviewStatus == null),
     rescheduleBlockedReason: rescheduleBlockedReason,
+    reviewBlockedReason: reviewBlockedReason,
+    reviewId: reviewStatus == null ? null : 'r-$id',
+    reviewStatus: reviewStatus,
   );
 }
 

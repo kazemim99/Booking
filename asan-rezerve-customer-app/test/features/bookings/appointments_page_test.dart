@@ -12,6 +12,10 @@ import 'package:asan_rezerve_customer_app/features/bookings/presentation/pages/a
 import 'package:asan_rezerve_customer_app/features/bookings/presentation/pages/reschedule_page.dart';
 import 'package:asan_rezerve_customer_app/features/booking/domain/repositories/booking_repository.dart';
 import 'package:asan_rezerve_customer_app/features/bookings/domain/repositories/bookings_repository.dart';
+import 'package:asan_rezerve_customer_app/core/errors/failures.dart';
+import 'package:asan_rezerve_customer_app/features/reviews/domain/entities/review.dart';
+import 'package:asan_rezerve_customer_app/features/reviews/domain/repositories/review_repository.dart';
+import 'package:dartz/dartz.dart';
 
 import '../../helpers/fake_auth_bloc.dart';
 import 'bookings_fakes.dart';
@@ -21,6 +25,27 @@ import 'bookings_fakes.dart';
 
 late FakeBookings _bookings;
 late GoRouter _router;
+late _FakeReviews _reviews;
+
+class _FakeReviews implements ReviewRepository {
+  final created = <String>[];
+  Failure? failure;
+
+  @override
+  Future<Either<Failure, void>> createReview({
+    required String bookingId,
+    required double rating,
+    String? comment,
+    Map<ReviewDimension, double> dimensions = const {},
+  }) async {
+    if (failure case final f?) return Left(f);
+    created.add(bookingId);
+    return const Right(null);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
 
 Widget _app({double textScale = 1.0}) {
   final auth = FakeAuthBloc()..signIn();
@@ -125,7 +150,10 @@ Future<void> _showPast(WidgetTester tester) async {
 void main() {
   setUp(() {
     _bookings = FakeBookings();
-    getIt.registerFactory<AppointmentsBloc>(() => AppointmentsBloc(_bookings));
+    _reviews = _FakeReviews();
+    getIt
+      ..registerFactory<AppointmentsBloc>(() => AppointmentsBloc(_bookings))
+      ..registerSingleton<ReviewRepository>(_reviews);
   });
 
   tearDown(() => getIt.reset());
@@ -169,6 +197,83 @@ void main() {
 
       final button = tester.widget<TextButton>(find.widgetWithText(TextButton, AppStrings.rescheduleBooking));
       expect(button.onPressed, isNotNull);
+    });
+  });
+
+  // openspec/changes/_inline/customer-reviews-and-nahal-seed: «چرا نمیتونم بعنوان مشتری کامنت بذارم؟» — the review
+  // was only behind a completed visit's detail page, and nothing said why a finished visit had none.
+  group('reviewing from the past list', () {
+    testWidgets('a completed visit\'s card offers «ثبت نظر», and once saved says it is waiting for approval',
+        (tester) async {
+      _bookings.past = [fakeBooking('b0', status: 'Completed', start: DateTime(2026, 5, 10, 14), actionable: false)];
+      await _open(tester);
+      await _showPast(tester);
+
+      await tester.tap(find.byKey(const Key('booking-card-review-b0')));
+      await _settle(tester);
+      await tester.tap(find.byKey(const Key('review-star-5')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('review-submit')));
+      await _settle(tester);
+
+      expect(_reviews.created, ['b0']);
+      expect(find.byKey(const Key('booking-card-review-b0')), findsNothing);
+      expect(find.text(AppStrings.reviewCardStatus(AppStrings.reviewStatusPending)), findsOneWidget);
+    });
+
+    testWidgets('a refused review says the server\'s reason and keeps the action', (tester) async {
+      _reviews.failure = const ServerFailure('برای این نوبت قبلاً نظر ثبت کرده‌اید.');
+      _bookings.past = [fakeBooking('b0', status: 'Completed', start: DateTime(2026, 5, 10, 14), actionable: false)];
+      await _open(tester);
+      await _showPast(tester);
+
+      await tester.tap(find.byKey(const Key('booking-card-review-b0')));
+      await _settle(tester);
+      await tester.tap(find.byKey(const Key('review-star-4')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('review-submit')));
+      await _settle(tester);
+
+      expect(find.text('برای این نوبت قبلاً نظر ثبت کرده‌اید.'), findsOneWidget);
+      expect(find.byKey(const Key('booking-card-review-b0')), findsOneWidget);
+    });
+
+    testWidgets('a finished visit the salon has not marked done says why, with no review action', (tester) async {
+      const reason = 'پس از اینکه سالن این نوبت را «انجام‌شده» ثبت کند، می‌توانید برایش نظر بنویسید.';
+      _bookings.past = [
+        fakeBooking('bw', start: DateTime(2026, 5, 10, 14), actionable: false, reviewBlockedReason: reason),
+      ];
+      await _open(tester);
+      await _showPast(tester);
+
+      expect(find.byKey(const Key('booking-card-review-blocked-bw')), findsOneWidget);
+      expect(find.text(reason), findsOneWidget);
+      expect(find.byKey(const Key('booking-card-review-bw')), findsNothing);
+    });
+
+    testWidgets('a reviewed visit shows its review\'s state', (tester) async {
+      _bookings.past = [
+        fakeBooking('br', status: 'Completed', start: DateTime(2026, 5, 10, 14), actionable: false,
+            reviewStatus: ReviewModerationStatus.published),
+      ];
+      await _open(tester);
+      await _showPast(tester);
+
+      expect(find.text(AppStrings.reviewCardStatus(AppStrings.reviewStatusPublished)), findsOneWidget);
+      expect(find.byKey(const Key('booking-card-review-br')), findsNothing);
+      expect(find.text(AppStrings.bookAgain), findsOneWidget, reason: 'a reviewed visit can still be booked again');
+    });
+
+    testWidgets('a card with both actions and a status fits a 360 phone at 1.3x text', (tester) async {
+      _bookings.past = [
+        fakeBooking('b0', status: 'Completed', start: DateTime(2026, 5, 10, 14), actionable: false),
+        fakeBooking('bw', start: DateTime(2026, 5, 9, 14), actionable: false,
+            reviewBlockedReason: 'پس از اینکه سالن این نوبت را «انجام‌شده» ثبت کند، می‌توانید برایش نظر بنویسید.'),
+      ];
+      await _open(tester, textScale: 1.3);
+      await _showPast(tester);
+
+      expect(tester.takeException(), isNull);
     });
   });
 

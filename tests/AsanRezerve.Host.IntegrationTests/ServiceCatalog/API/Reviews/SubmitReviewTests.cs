@@ -96,6 +96,8 @@ public class SubmitReviewTests : ReviewTestBase
         var response = await Client.PostAsJsonAsync($"/api/v1/reviews/bookings/{visit.BookingId}", AReview());
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        FirstErrorMessage(await response.Content.ReadAsStringAsync())
+            .Should().Be("فقط برای نوبت‌های خودتان می‌توانید نظر ثبت کنید.", "a bare 403 left the app saying only «ناموفق»");
     }
 
     [Fact]
@@ -106,6 +108,19 @@ public class SubmitReviewTests : ReviewTestBase
         var response = await SubmitAsync(visit, AReview());
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        FirstErrorMessage(await response.Content.ReadAsStringAsync())
+            .Should().Contain("سالن", "the visit is over and waits for the salon to mark it done — say so");
+    }
+
+    [Fact]
+    public async Task A_booking_still_ahead_is_refused_naming_its_state_in_persian()
+    {
+        var visit = await UpcomingVisitAsync();
+
+        var response = await SubmitAsync(visit, AReview());
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        FirstErrorMessage(await response.Content.ReadAsStringAsync()).Should().Contain("تأیید شده");
     }
 
     [Fact]
@@ -117,6 +132,20 @@ public class SubmitReviewTests : ReviewTestBase
         var response = await SubmitAsync(visit, AReview(3.0m));
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        FirstErrorMessage(await response.Content.ReadAsStringAsync()).Should().Contain("قبلاً نظر ثبت کرده‌اید");
+    }
+
+    [Fact]
+    public async Task A_too_short_comment_is_refused_in_the_customers_words_naming_the_field()
+    {
+        var visit = await CompletedVisitAsync();
+
+        var response = await SubmitAsync(visit, new { rating = 4.0m, comment = "خوب بود" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = JObject.Parse(await response.Content.ReadAsStringAsync())["errors"]![0]!;
+        error["message"]!.Value<string>().Should().Be("متن نظر باید دست‌کم ۱۰ نویسه باشد.");
+        error["field"]!.Value<string>().Should().Be("Comment");
     }
 
     [Fact]
@@ -141,4 +170,8 @@ public class SubmitReviewTests : ReviewTestBase
         provider.PublishedReviewCount.Should().Be(0);
         provider.HasRating.Should().BeFalse();
     }
+
+    /// <summary>The first error's words, from the create-review endpoint's <c>{ errors: [{ code, message, field }] }</c>.</summary>
+    private static string FirstErrorMessage(string body) =>
+        JObject.Parse(body)["errors"]![0]!["message"]!.Value<string>()!;
 }

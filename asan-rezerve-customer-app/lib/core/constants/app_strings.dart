@@ -278,6 +278,11 @@ class AppStrings {
   static const String bookingNameSaveAndBook = 'ذخیره و ثبت نوبت';
   static const String reviewsTitle = 'نظرها';
   static const String reviewsEmpty = 'هنوز نظری ثبت نشده است';
+  static const String reviewsLoadFailed = 'نظرها بارگذاری نشد.';
+  static const String reviewsMore = 'نظرهای بیشتر';
+  static String reviewsShowAll(String count) => 'مشاهده همه نظرها ($count)';
+  static const String reviewVerifiedVisit = 'مراجعه تأییدشده';
+  static String reviewDistributionLabel(String stars, String count) => '$stars ستاره: $count نظر';
   // "Where do I leave my review?" (QA recording 2026-09-23 #10).
   static const String reviewsHowToWrite =
       'پس از انجام نوبت، از همان نوبت در «$appointmentsTitle» می‌توانید برای این سالن نظر ثبت کنید.';
@@ -297,6 +302,20 @@ class AppStrings {
   static const String reviewEditNotice =
       'نظر ویرایش‌شده تا تأیید دوباره نمایش داده نمی‌شود';
   static const String reviewSaveAction = 'ذخیره';
+  // Where a visit's review stands (openspec/changes/_inline/customer-reviews-and-nahal-seed).
+  static const String reviewPromptTitle = 'تجربه‌تان چطور بود؟';
+  static const String reviewPromptSubtitle =
+      'با امتیاز و نظرتان به دیگران کمک کنید سالن مناسب را پیدا کنند.';
+  static const String reviewSubmittedTitle = 'نظر شما ثبت شد';
+  static const String reviewSubmittedPending =
+      'در انتظار تأیید است و پس از تأیید برای همه نمایش داده می‌شود.';
+  static const String reviewSubmittedPublished =
+      'منتشر شده و دیگران آن را می‌بینند. ممنون از شما!';
+  static const String reviewSubmittedRejected =
+      'تأیید نشد؛ دلیلش را در «نظرهای من» ببینید.';
+  static const String reviewSubmittedHidden =
+      'فعلاً پنهان است؛ جزئیات در «نظرهای من».';
+  static String reviewCardStatus(String status) => 'نظر شما: $status';
   static const String reviewDimensionsToggle = 'امتیاز جزئی‌تر (اختیاری)';
   static const String reviewHelpful = 'مفید بود';
   static const String reviewNotHelpful = 'مفید نبود';

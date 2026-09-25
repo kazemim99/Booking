@@ -128,6 +128,8 @@ public class ReviewVoteTests : ReviewTestBase
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await VoteRowsAsync(reviewId)).Should().Be(0);
+        JObject.Parse(await response.Content.ReadAsStringAsync())["message"]!.Value<string>()
+            .Should().Be("به نظر خودتان نمی‌توانید رأی بدهید.", "the app shows the server's reason, which was English");
     }
 
     [Fact]

@@ -47,14 +47,16 @@ public sealed class CastReviewVoteCommandHandler : ICommandHandler<CastReviewVot
     public async Task<CastReviewVoteResult> Handle(CastReviewVoteCommand request, CancellationToken cancellationToken)
     {
         var review = await _read.GetByIdAsync(request.ReviewId, cancellationToken)
-                     ?? throw new NotFoundException($"Review with ID {request.ReviewId} not found");
+                     ?? throw new NotFoundException("این نظر پیدا نشد.");
         var voter = UserId.From(request.VoterId);
 
         if (review.IsAuthoredBy(voter))
-            throw new ForbiddenException("You cannot vote on your own review");
+            throw new ForbiddenException("به نظر خودتان نمی‌توانید رأی بدهید.");
 
         if (!review.IsPubliclyVisible)
-            throw new InvalidAggregateStateException(typeof(Domain.Aggregates.Review), "Vote", review.ModerationStatus.ToString());
+            throw new InvalidAggregateStateException(
+                nameof(Domain.Aggregates.Review), "Vote", review.ModerationStatus.ToString(),
+                "فقط به نظرهای منتشرشده می‌توانید رأی بدهید.");
 
         var existing = await _write.GetVoteAsync(review.Id, voter, cancellationToken);
         var decision = ReviewVotePolicy.Decide(existing?.IsHelpful, request.IsHelpful);

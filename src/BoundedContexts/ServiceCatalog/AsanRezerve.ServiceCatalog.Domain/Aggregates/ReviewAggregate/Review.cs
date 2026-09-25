@@ -140,7 +140,8 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates
         public void AddProviderResponse(string response, string? modifiedBy = null)
         {
             if (ProviderResponse is not null)
-                throw new InvalidAggregateStateException(typeof(Review), nameof(AddProviderResponse), "HasReply");
+                throw new InvalidAggregateStateException(
+                    nameof(Review), nameof(AddProviderResponse), "HasReply", ReviewWords.AlreadyReplied);
 
             // A reply answers what the public can see. Replying to a pending review that may yet be rejected
             // would be moderation work spent on nothing.
@@ -156,7 +157,8 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates
         public void UpdateProviderResponse(string response, string? modifiedBy = null)
         {
             if (ProviderResponse is null)
-                throw new InvalidAggregateStateException(typeof(Review), nameof(UpdateProviderResponse), "NoReply");
+                throw new InvalidAggregateStateException(
+                    nameof(Review), nameof(UpdateProviderResponse), "NoReply", ReviewWords.NoReply);
 
             SetReply(ValidateReply(response), modifiedBy);
         }
@@ -167,7 +169,8 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates
         public void RemoveProviderResponse(string? modifiedBy = null)
         {
             if (ProviderResponse is null)
-                throw new InvalidAggregateStateException(typeof(Review), nameof(RemoveProviderResponse), "NoReply");
+                throw new InvalidAggregateStateException(
+                    nameof(Review), nameof(RemoveProviderResponse), "NoReply", ReviewWords.NoReply);
 
             ProviderResponse = null;
             ProviderResponseAt = null;
@@ -206,17 +209,18 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates
         {
             if (ReplyModerationStatus != required)
                 throw new InvalidAggregateStateException(
-                    typeof(Review), operation, ReplyModerationStatus?.ToString() ?? "NoReply");
+                    nameof(Review), operation, ReplyModerationStatus?.ToString() ?? "NoReply",
+                    ReplyModerationStatus is { } state ? ReviewWords.NotInReplyState(state) : ReviewWords.NoReply);
         }
 
         private static string ValidateReply(string response)
         {
             if (string.IsNullOrWhiteSpace(response))
-                throw new DomainValidationException(nameof(ProviderResponse), "Provider response cannot be empty");
+                throw new DomainValidationException(nameof(ProviderResponse), "متن پاسخ نمی‌تواند خالی باشد.");
 
             var trimmed = response.Trim();
             if (trimmed.Length > 1000)
-                throw new DomainValidationException(nameof(ProviderResponse), "Provider response cannot exceed 1000 characters");
+                throw new DomainValidationException(nameof(ProviderResponse), "پاسخ حداکثر ۱۰۰۰ نویسه می‌تواند باشد.");
 
             return trimmed;
         }
@@ -310,12 +314,14 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates
             DateTime utcNow)
         {
             if (ModerationStatus is not (ReviewModerationStatus.Pending or ReviewModerationStatus.Published))
-                throw new InvalidAggregateStateException(typeof(Review), nameof(EditByAuthor), ModerationStatus.ToString());
+                throw new InvalidAggregateStateException(
+                    nameof(Review), nameof(EditByAuthor), ModerationStatus.ToString(),
+                    $"نظرِ {ReviewWords.Label(ModerationStatus)} قابل ویرایش نیست.");
 
             if (!ReviewEditPolicy.IsInsideWindow(CreatedAt, utcNow))
                 throw new BusinessRuleViolationException(
                     "ReviewEditWindow",
-                    $"A review can only be edited within {ReviewEditPolicy.WindowDays} days of being written",
+                    $"نظر را تا {ReviewEditPolicy.WindowDays} روز پس از نوشتنش می‌توانید ویرایش کنید.",
                     "REVIEW_EDIT_WINDOW_CLOSED");
 
             // Validate everything before changing anything, so a refused edit leaves the review as it was.
@@ -350,17 +356,21 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates
         private void RequireModerationState(ReviewModerationStatus required, string operation)
         {
             if (ModerationStatus != required)
-                throw new InvalidAggregateStateException(typeof(Review), operation, ModerationStatus.ToString());
+                throw new InvalidAggregateStateException(
+                    nameof(Review), operation, ModerationStatus.ToString(),
+                    operation == nameof(AddProviderResponse)
+                        ? ReviewWords.ReplyWaitsForPublication
+                        : ReviewWords.NotInState(ModerationStatus));
         }
 
         private static string RequireReason(string reason)
         {
             if (string.IsNullOrWhiteSpace(reason))
-                throw new DomainValidationException(nameof(ModerationReason), "A moderation reason is required");
+                throw new DomainValidationException(nameof(ModerationReason), "دلیل را بنویسید.");
 
             var trimmed = reason.Trim();
             if (trimmed.Length > 500)
-                throw new DomainValidationException(nameof(ModerationReason), "A moderation reason cannot exceed 500 characters");
+                throw new DomainValidationException(nameof(ModerationReason), "دلیل حداکثر ۵۰۰ نویسه می‌تواند باشد.");
 
             return trimmed;
         }
@@ -442,11 +452,11 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates
         private static void ValidateStarValue(decimal value, string field)
         {
             if (value < 1.0m || value > 5.0m)
-                throw new DomainValidationException(field, $"{field} must be between 1.0 and 5.0");
+                throw new DomainValidationException(field, $"{ReviewWords.RatingLabel(field)} باید بین ۱ تا ۵ ستاره باشد.");
 
             // Allow only 0.5 increments (1.0, 1.5, 2.0, 2.5, etc.)
             if (value % 0.5m != 0)
-                throw new DomainValidationException(field, $"{field} must be in 0.5 increments (e.g., 3.5, 4.0, 4.5)");
+                throw new DomainValidationException(field, $"{ReviewWords.RatingLabel(field)} باید مضربی از نیم ستاره باشد (مثلاً ۳٫۵ یا ۴).");
         }
         
         /// <summary>
@@ -464,15 +474,51 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates
         private static void ValidateComment(string comment)
         {
             if (comment.Length < 10)
-                throw new DomainValidationException("Review comment must be at least 10 characters");
-            
+                throw new DomainValidationException(nameof(Comment), "متن نظر باید دست‌کم ۱۰ نویسه باشد.");
+
             if (comment.Length > 2000)
-                throw new DomainValidationException("Review comment cannot exceed 2000 characters");
+                throw new DomainValidationException(nameof(Comment), "متن نظر حداکثر ۲۰۰۰ نویسه می‌تواند باشد.");
         }
         
         public override string ToString()
         {
             return $"Review {Id}: {RatingValue}★ by Customer {CustomerId.Value} for Provider {ProviderId.Value}";
         }
+    }
+    /// <summary>
+    /// What a review's refusals say, in Persian: the customer, the salon and the moderator all read them in the apps
+    /// (openspec/changes/_inline/customer-reviews-and-nahal-seed). The English wording reached them verbatim.
+    /// </summary>
+    internal static class ReviewWords
+    {
+        public const string AlreadyReplied = "این نظر پاسخ دارد؛ همان پاسخ را ویرایش کنید.";
+        public const string NoReply = "این نظر پاسخی ندارد.";
+        public const string ReplyWaitsForPublication = "پس از تأیید این نظر می‌توانید به آن پاسخ دهید.";
+
+        public static string Label(ReviewModerationStatus status) => status switch
+        {
+            ReviewModerationStatus.Pending => "در انتظار تأیید",
+            ReviewModerationStatus.Published => "منتشرشده",
+            ReviewModerationStatus.Rejected => "ردشده",
+            ReviewModerationStatus.Hidden => "پنهان‌شده",
+            _ => status.ToString(),
+        };
+
+        public static string NotInState(ReviewModerationStatus status) =>
+            $"این کار برای نظرِ {Label(status)} ممکن نیست.";
+
+        public static string NotInReplyState(ReviewModerationStatus status) =>
+            $"این کار برای پاسخِ {Label(status)} ممکن نیست.";
+
+        /// <summary>The request field a rating came in, as the customer knows it.</summary>
+        public static string RatingLabel(string field) => field switch
+        {
+            "Rating" => "امتیاز کلی",
+            nameof(Review.CleanlinessRating) => "امتیاز تمیزی و بهداشت",
+            nameof(Review.SkillRating) => "امتیاز مهارت و کیفیت کار",
+            nameof(Review.PunctualityRating) => "امتیاز وقت‌شناسی",
+            nameof(Review.ConductRating) => "امتیاز برخورد و رفتار",
+            _ => "امتیاز",
+        };
     }
 }

@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 
+import '../../errors/server_message.dart';
+
 /// Error Interceptor
 /// Handles API errors and provides user-friendly error messages
 @injectable
@@ -52,27 +54,9 @@ class ErrorInterceptor extends Interceptor {
     final statusCode = response.statusCode;
     final data = response.data;
 
-    // Try to extract error message from response
-    String? message;
-    if (data is Map<String, dynamic>) {
-      message = data['message'] as String?;
-
-      // Check for validation errors
-      if (data['errors'] != null) {
-        if (data['errors'] is List) {
-          final errors = data['errors'] as List;
-          if (errors.isNotEmpty) {
-            message = errors.first.toString();
-          }
-        } else if (data['errors'] is Map) {
-          final errors = data['errors'] as Map;
-          final firstError = errors.values.first;
-          if (firstError is List && firstError.isNotEmpty) {
-            message = firstError.first.toString();
-          }
-        }
-      }
-    }
+    // The server's own words, whichever shape they came in. A list of
+    // `{ code, message }` used to be shown as its toString().
+    final message = serverMessage(data);
 
     switch (statusCode) {
       case 400:

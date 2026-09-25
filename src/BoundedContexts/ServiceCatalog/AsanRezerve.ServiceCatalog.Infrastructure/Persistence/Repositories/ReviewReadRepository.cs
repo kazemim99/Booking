@@ -337,6 +337,22 @@ public sealed class ReviewReadRepository
             .AnyAsync(r => r.BookingId == bookingId, cancellationToken);
     }
 
+    public async Task<IReadOnlyDictionary<Guid, BookingReviewState>> GetStatesByBookingIdsAsync(
+        IReadOnlyCollection<Guid> bookingIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (bookingIds.Count == 0)
+            return new Dictionary<Guid, BookingReviewState>();
+
+        var rows = await DbSet
+            .AsNoTracking()
+            .Where(r => bookingIds.Contains(r.BookingId))
+            .Select(r => new { r.BookingId, r.Id, r.ModerationStatus })
+            .ToListAsync(cancellationToken);
+
+        return rows.ToDictionary(r => r.BookingId, r => new BookingReviewState(r.Id, r.ModerationStatus));
+    }
+
     public async Task<IReadOnlyList<Review>> GetRecentReviewsAsync(
         int count = 10,
         bool verifiedOnly = true,

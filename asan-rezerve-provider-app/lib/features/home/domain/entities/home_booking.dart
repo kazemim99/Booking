@@ -49,6 +49,23 @@ class HomeBooking extends Equatable {
       status == HomeBookingStatus.completed ||
       status == HomeBookingStatus.noShow;
 
+  /// How early before its start a visit may be marked done (the server's `Booking.Complete`).
+  static const completeEarly = Duration(minutes: 15);
+
+  /// «تکمیل» is offered only when the server takes it: a confirmed booking, from fifteen minutes before its start
+  /// on the salon's clock. It was offered on pending bookings and hours ahead, and failed there. Marking a visit
+  /// done is what lets its customer review it (openspec/changes/_inline/customer-reviews-and-nahal-seed).
+  bool canCompleteAt(DateTime now) {
+    final s = start;
+    return status == HomeBookingStatus.confirmed && s != null && !now.isBefore(s.subtract(completeEarly));
+  }
+
+  /// «عدم حضور» once a confirmed booking's time is over (the server's `Booking.MarkAsNoShow`).
+  bool canMarkNoShowAt(DateTime now) {
+    final over = end ?? start;
+    return status == HomeBookingStatus.confirmed && over != null && !now.isBefore(over);
+  }
+
   @override
   List<Object?> get props =>
       [id, start, end, clientName, clientPhone, serviceName, price, currency, status];

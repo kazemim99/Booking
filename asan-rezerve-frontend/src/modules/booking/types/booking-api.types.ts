@@ -29,6 +29,13 @@ export interface CustomerBookingDto {
   customerNotes: string | null
   /** Why the customer cannot move this booking now (Persian); absent/null when they can. */
   rescheduleBlockedReason?: string | null
+  /** The customer may review this visit now (it is done and has no review). Absent on an older server. */
+  canReview?: boolean
+  /** Why it cannot be reviewed YET (Persian): the visit is over and the salon has not marked it done. */
+  reviewBlockedReason?: string | null
+  /** The review the customer wrote for it, and where moderation stands on it. */
+  reviewId?: string | null
+  reviewStatus?: 'Pending' | 'Published' | 'Rejected' | 'Hidden' | null
 }
 
 /**

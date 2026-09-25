@@ -8,10 +8,11 @@ class ReviewRemoteDataSource {
 
   ReviewRemoteDataSource({required this.serviceCatalogDio});
 
-  Future<Map<String, dynamic>> getProviderReviews(String providerId) async {
+  Future<Map<String, dynamic>> getProviderReviews(String providerId,
+      {int page = 1}) async {
     final response = await serviceCatalogDio.get(
       ApiConstants.providerReviews(providerId),
-      queryParameters: const {'pageNumber': 1, 'pageSize': 20},
+      queryParameters: {'pageNumber': page, 'pageSize': 20},
     );
     return _unwrap(response.data);
   }

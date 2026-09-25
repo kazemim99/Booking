@@ -20,6 +20,18 @@ public class BookingDetailsResponse
     /// <summary>Why the customer cannot move this booking now (Persian); null when they can.</summary>
     public string? RescheduleBlockedReason { get; set; }
 
+    /// <summary>The person this booking is for may review it now. False for anyone else who can see it.</summary>
+    public bool CanReview { get; set; }
+
+    /// <summary>Why they cannot review it yet (Persian) — the salon has not marked the visit done; else null.</summary>
+    public string? ReviewBlockedReason { get; set; }
+
+    /// <summary>The review they wrote for it, if any.</summary>
+    public Guid? ReviewId { get; set; }
+
+    /// <summary>That review's moderation state: Pending | Published | Rejected | Hidden.</summary>
+    public string? ReviewStatus { get; set; }
+
     // Service information
     public string ServiceName { get; set; } = string.Empty;
     public string ServiceCategory { get; set; } = string.Empty;

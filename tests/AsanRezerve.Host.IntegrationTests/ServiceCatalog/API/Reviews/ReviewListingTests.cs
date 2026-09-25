@@ -66,6 +66,35 @@ public class ReviewListingTests : ReviewTestBase
 
     // ── The public listing ──
 
+    /// <summary>A published review by a person signed up with these names; returns how the public listing names them.</summary>
+    private async Task<string> PublicNameOfAuthorAsync(string? first, string? last)
+    {
+        var phone = NewPhone();
+        var author = await SignUpAsync(phone, first, last);
+        var visit = await CompletedVisitAsync(customer: author);
+        var reviewId = await ReviewedAsync(visit);
+        await ModerateAsync(reviewId, "approve");
+
+        var item = ((JArray)(await PublicListingAsync(visit))["reviews"]!["items"]!)
+            .Single(i => i["reviewId"]!.Value<string>() == reviewId.ToString());
+        var name = item["customerName"]!.Value<string>()!;
+        name.Should().NotContain(phone[^7..], "a phone number is never part of a name");
+        return name;
+    }
+
+    [Fact]
+    public async Task A_public_review_names_its_author_by_first_name_and_surname_initial()
+    {
+        (await PublicNameOfAuthorAsync("ناصر", "عابدی")).Should().Be("ناصر ع.",
+            "enough to read as a person, not enough to find them; it read «Customer 3fa85f64»");
+    }
+
+    [Fact]
+    public async Task An_author_without_a_real_name_is_a_customer()
+    {
+        (await PublicNameOfAuthorAsync(null, null)).Should().Be("مشتری");
+    }
+
     [Fact]
     public async Task The_public_listing_returns_published_reviews_only()
     {

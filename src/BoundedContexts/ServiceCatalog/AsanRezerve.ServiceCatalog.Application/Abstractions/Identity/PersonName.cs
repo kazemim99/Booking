@@ -93,6 +93,25 @@ public static class PersonName
         ?? Sanitize(displayName)
         ?? salonName;
 
+    /// <summary>What a public review is signed with when its author has no real name.</summary>
+    public const string AnonymousReviewer = "مشتری";
+
+    /// <summary>
+    /// How a review's author is named to the public: first name and surname initial («ناصر ع.») — enough to read as a
+    /// person, not enough to find them — the first name alone when there is no surname, and «مشتری» when there is no
+    /// real name. Never a placeholder, a phone number or an id (it read «Customer 3fa85f64»).
+    /// </summary>
+    public static string ForPublicReview(string? firstName, string? lastName)
+    {
+        var (first, last) = RealParts(firstName, lastName);
+        if (first.Length == 0)
+            return AnonymousReviewer;
+
+        return last.Length == 0
+            ? first
+            : $"{first} {System.Globalization.StringInfo.GetNextTextElement(last)}.";
+    }
+
     /// <summary>Digits, optionally with the separators a phone number is written with; at least one digit.</summary>
     private static bool IsDigitGroup(string token) =>
         token.Length > 0

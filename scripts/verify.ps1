@@ -246,15 +246,15 @@ if ($Tier -eq 'full') {
     $touched = Get-TouchedPaths
     function Touched($prefix) { $All -or (($touched | Where-Object { $_ -like "$prefix/*" }).Count -gt 0) }
 
-    foreach ($app in @('asanrezerve-frontend', 'asanrezerve-admin')) {
+    foreach ($app in @('asan-rezerve-frontend', 'asan-rezerve-admin')) {
         if (-not (Touched $app)) { continue }
         if (-not (Test-Path (Join-Path $root "$app/node_modules"))) { Add-Blocked "vue:$app" "no node_modules; run 'npm ci' in $app"; continue }
         Invoke-Step -Name "vue:${app}:type-check" -Dir (Join-Path $root $app) -Command 'npm run --silent type-check' -ShowPattern @('error TS', 'Found [0-9]+ error')
-        if ($app -eq 'asanrezerve-admin') {
-            # asanrezerve-admin had 54 vitest tests that no gate ran. Same defect as the frontend's, fixed the same way.
+        if ($app -eq 'asan-rezerve-admin') {
+            # asan-rezerve-admin had 54 vitest tests that no gate ran. Same defect as the frontend's, fixed the same way.
             Invoke-Step -Name "vue:${app}:unit" -Dir (Join-Path $root $app) -Command 'npx vitest run' -ShowPattern @('Test Files', 'Tests ', 'FAIL')
         }
-        if ($app -eq 'asanrezerve-frontend') {
+        if ($app -eq 'asan-rezerve-frontend') {
             Invoke-Step -Name "vue:${app}:lint" -Dir (Join-Path $root $app) -Command 'npm run --silent lint:check' -ShowPattern @('error', 'problems')
             # Unit tests, which this gate did not run at all until add-notification-clients: type-check and
             # lint passed while vitest was never invoked, so a broken component test protected nothing.
@@ -265,7 +265,7 @@ if ($Tier -eq 'full') {
         }
     }
 
-    foreach ($app in @('asanrezerve-customer-app', 'asanrezerve-provider-app')) {
+    foreach ($app in @('asan-rezerve-customer-app', 'asan-rezerve-provider-app')) {
         if (-not (Touched $app)) { continue }
         if (-not (Get-Command flutter -ErrorAction SilentlyContinue)) { Add-Blocked "flutter:$app" 'flutter not on PATH'; continue }
         Invoke-Step -Name "flutter:${app}:analyze" -Dir (Join-Path $root $app) -Command 'flutter analyze --no-pub --no-fatal-warnings --no-fatal-infos' -ShowPattern @('error •', 'No issues found', 'issues found')

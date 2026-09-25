@@ -1,6 +1,8 @@
 <template>
   <article class="review-card" dir="rtl" data-test="review-card">
     <header class="review-card__header">
+      <span class="review-card__avatar" aria-hidden="true">{{ initial }}</span>
+      <strong class="review-card__author" data-test="review-author">{{ author }}</strong>
       <RatingStars :model-value="review.rating" readonly size="sm" label="امتیاز کلی" />
       <time class="review-card__date" :datetime="review.createdAt">{{ date }}</time>
       <span v-if="review.isVerified" class="review-card__verified">مراجعه تأییدشده</span>
@@ -60,6 +62,12 @@ const emit = defineEmits<{ vote: [isHelpful: boolean] }>()
 
 const rated = computed(() => DIMENSIONS.filter((d) => typeof props.review.dimensions[d] === 'number'))
 
+/** The name the listing gives; a review from an older listing without one is still someone's. */
+const author = computed(() => props.review.customerName?.trim() || 'مشتری')
+
+/** Its first letter — a face for the review, never a photo of a person. */
+const initial = computed(() => Array.from(author.value)[0])
+
 const date = computed(() => {
   const d = new Date(props.review.createdAt)
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('fa-IR')
@@ -78,6 +86,18 @@ const date = computed(() => {
 }
 .review-card__header { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 .review-card__date { color: var(--color-text-secondary, #777); font-size: 0.85rem; }
+.review-card__avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-light, #ede9fe);
+  color: var(--color-primary, #6d28d9);
+  font-weight: 700;
+}
+.review-card__author { font-weight: 600; }
 .review-card__verified {
   font-size: 0.75rem;
   color: var(--color-success, #00b894);

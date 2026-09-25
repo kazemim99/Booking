@@ -38,12 +38,12 @@ public sealed class EditReviewCommandHandler : ICommandHandler<EditReviewCommand
     public async Task<EditReviewResult> Handle(EditReviewCommand request, CancellationToken cancellationToken)
     {
         var review = await _reviews.GetByIdAsync(request.ReviewId, cancellationToken)
-                     ?? throw new NotFoundException($"Review with ID {request.ReviewId} not found");
+                     ?? throw new NotFoundException("این نظر پیدا نشد.");
 
         // Ownership is checked here, not in the aggregate — the same split Booking uses — so a non-author is a
         // 403, not a validation error.
         if (!review.IsAuthoredBy(UserId.From(request.EditorId)))
-            throw new ForbiddenException("You can only edit reviews you wrote");
+            throw new ForbiddenException("فقط نظرهای خودتان را می‌توانید ویرایش کنید.");
 
         var wasPublic = review.IsPubliclyVisible;
         var now = DateTime.UtcNow;

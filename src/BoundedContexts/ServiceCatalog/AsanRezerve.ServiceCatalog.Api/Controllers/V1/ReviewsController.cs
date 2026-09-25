@@ -205,7 +205,7 @@ public class ReviewsController : ControllerBase
         {
             return BadRequest(new ApiErrorResponse(
                 "ERR_VALIDATION",
-                "Rating must be in 0.5 increments (e.g., 3.5, 4.0, 4.5)",
+                "امتیاز کلی باید مضربی از نیم ستاره باشد (مثلاً ۳٫۵ یا ۴).",
                 "Rating"));
         }
 
@@ -244,7 +244,8 @@ public class ReviewsController : ControllerBase
         {
             _logger.LogWarning(ex, "Customer {CustomerId} not authorized for booking {BookingId}",
                 customerId, bookingId);
-            return Forbid();
+            // With the reason: a bare Forbid() has no body, so the app could only say «ثبت نظر ناموفق بود».
+            return StatusCode(StatusCodes.Status403Forbidden, new ApiErrorResponse("ERR_FORBIDDEN", ex.Message));
         }
         catch (Core.Application.Exceptions.ConflictException ex)
         {
@@ -256,9 +257,12 @@ public class ReviewsController : ControllerBase
         catch (Core.Domain.Exceptions.DomainValidationException ex)
         {
             _logger.LogWarning(ex, "Validation error creating review for booking {BookingId}", bookingId);
+            // The customer's words, not the wrapper («Validation failed for property …»), with the field they are about.
+            var (field, messages) = ex.ValidationErrors.FirstOrDefault();
             return BadRequest(new ApiErrorResponse(
                 "ERR_VALIDATION",
-                ex.Message));
+                messages?.FirstOrDefault() ?? ex.Message,
+                field));
         }
         catch (Exception ex)
         {

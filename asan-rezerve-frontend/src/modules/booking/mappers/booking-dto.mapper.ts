@@ -134,6 +134,18 @@ export interface EnrichedBookingView extends CustomerBookingDto {
   isPast: boolean
   canCancel: boolean
   canReschedule: boolean
+
+  /** «ثبت نظر» is offered (openspec/changes/_inline/customer-reviews-and-nahal-seed). */
+  canReview: boolean
+  /** «نظر شما: …» — the written review's state, in Persian; null when there is none. */
+  reviewStatusLabel: string | null
+}
+
+const REVIEW_STATUS_LABELS: Record<string, string> = {
+  Pending: 'در انتظار تأیید',
+  Published: 'منتشر شده',
+  Rejected: 'رد شده',
+  Hidden: 'پنهان شده',
 }
 
 /**
@@ -181,5 +193,9 @@ export function mapToEnrichedBookingView(dto: CustomerBookingDto): EnrichedBooki
     isPast,
     canCancel: isUpcoming && ['Requested', 'Pending', 'Confirmed'].includes(dto.status),
     canReschedule: isUpcoming && ['Requested', 'Pending', 'Confirmed'].includes(dto.status),
+
+    // The server's word where it gave one; an older server's copy falls back to the status.
+    canReview: typeof dto.canReview === 'boolean' ? dto.canReview : dto.status === 'Completed' && !dto.reviewId,
+    reviewStatusLabel: dto.reviewId ? (REVIEW_STATUS_LABELS[dto.reviewStatus ?? 'Pending'] ?? null) : null,
   }
 }

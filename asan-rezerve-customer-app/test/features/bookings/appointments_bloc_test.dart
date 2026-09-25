@@ -7,6 +7,7 @@ import 'package:asan_rezerve_customer_app/core/errors/failures.dart';
 import 'package:asan_rezerve_customer_app/features/bookings/domain/entities/booking_summary.dart';
 import 'package:asan_rezerve_customer_app/features/bookings/domain/repositories/bookings_repository.dart';
 import 'package:asan_rezerve_customer_app/features/bookings/presentation/bloc/appointments_bloc.dart';
+import 'package:asan_rezerve_customer_app/features/reviews/domain/entities/review.dart';
 
 BookingSummary _booking(String id, {String status = 'Confirmed'}) =>
     BookingSummary(
@@ -266,6 +267,44 @@ void main() {
         expect(bloc.state.upcoming.single.status, 'Completed');
         await bloc.close();
       });
+    });
+
+    test('a review saved from a past card shows it as written, and a refresh read before it does not undo it',
+        () async {
+      final done = BookingSummary(
+        id: 'b0',
+        providerId: 'p1',
+        providerName: 'سالن نمونه',
+        serviceId: 's1',
+        serviceName: 'کوتاهی مو',
+        startTime: DateTime(2026, 5, 10, 14),
+        durationMinutes: 45,
+        price: 250000,
+        currency: 'تومان',
+        status: 'Completed',
+        canCancel: false,
+        canReschedule: false,
+        canReview: true,
+      );
+      final repo = FakeBookingsRepository()
+        ..upcomingResult = const Right([])
+        ..pastResult = Right([done]);
+      final bloc = AppointmentsBloc(repo);
+      bloc.add(const AppointmentsRequested());
+      await _settle();
+
+      repo.listGate = Completer<void>();
+      bloc.add(const AppointmentsRefreshed());
+      await _settle();
+      bloc.add(const AppointmentReviewed('b0'));
+      await _settle();
+      repo.listGate!.complete();
+      await _settle();
+
+      final card = bloc.state.past.single;
+      expect(card.canReview, isFalse);
+      expect(card.reviewStatus, ReviewModerationStatus.pending);
+      await bloc.close();
     });
 
     test('reschedule event updates the card start time in place', () async {

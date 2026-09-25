@@ -23,19 +23,29 @@ class ReviewDraft {
 }
 
 /// Leaving a review after a visit — or, given [initial], editing one. Returns
-/// the draft, or null when dismissed.
+/// the draft, or null when dismissed. [subject] names what is being reviewed
+/// (salon · service); [rating] is a star already chosen where the customer
+/// was asked «تجربه‌تان چطور بود؟».
 Future<ReviewDraft?> showWriteReviewDialog(BuildContext context,
-        {ReviewDraft? initial}) =>
+        {ReviewDraft? initial, String? subject, double? rating}) =>
     showDialog<ReviewDraft>(
       context: context,
-      builder: (_) => WriteReviewDialog(initial: initial),
+      builder: (_) =>
+          WriteReviewDialog(initial: initial, subject: subject, rating: rating),
     );
 
 class WriteReviewDialog extends StatefulWidget {
   /// The review being edited; null for a new one.
   final ReviewDraft? initial;
 
-  const WriteReviewDialog({super.key, this.initial});
+  /// What is being reviewed, shown under the title — the customer should never
+  /// wonder which visit they are rating.
+  final String? subject;
+
+  /// A star the customer already picked before the dialog opened.
+  final double? rating;
+
+  const WriteReviewDialog({super.key, this.initial, this.subject, this.rating});
 
   @override
   State<WriteReviewDialog> createState() => _WriteReviewDialogState();
@@ -52,6 +62,7 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
   @override
   void initState() {
     super.initState();
+    _rating = widget.rating ?? 0;
     final initial = widget.initial;
     if (initial != null) {
       _rating = initial.rating;
@@ -96,8 +107,25 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
       // content on a 360 dp phone.
       insetPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md, vertical: AppSpacing.lg),
-      title: Text(
-          _editing ? AppStrings.reviewEditTitle : AppStrings.reviewDialogTitle),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(_editing
+              ? AppStrings.reviewEditTitle
+              : AppStrings.reviewDialogTitle),
+          if (widget.subject case final subject? when subject.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.xxs),
+              child: Text(
+                subject,
+                key: const Key('review-subject'),
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
+            ),
+        ],
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,

@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../reviews/domain/entities/review.dart';
+
 /// Booking summary for the appointments list, mapped from the backend's
 /// CustomerBookingDto. Carries the ids the reschedule flow needs so no
 /// extra detail fetch is required.
@@ -22,7 +24,19 @@ class BookingSummary extends Equatable {
   final String status;
   final bool canCancel;
   final bool canReschedule;
+
+  /// The customer may review this visit now: it is on record as done and has no review yet. Said by the server
+  /// (openspec/changes/_inline/customer-reviews-and-nahal-seed); an older server's copy falls back to the status.
   final bool canReview;
+
+  /// Why it cannot be reviewed YET, in Persian — the visit is over and the salon has not marked it done, which only
+  /// the salon can do. Null when it can be, when it never will be, or while the visit is still ahead.
+  final String? reviewBlockedReason;
+
+  /// The review the customer wrote for this visit, and where moderation stands on it; null when there is none.
+  final String? reviewId;
+  final ReviewModerationStatus? reviewStatus;
+
   final String? cancellationReason;
 
   /// Why an active booking cannot be moved right now (the salon's rule, in Persian), or null when it can. The
@@ -47,9 +61,15 @@ class BookingSummary extends Equatable {
     required this.canCancel,
     required this.canReschedule,
     required this.canReview,
+    this.reviewBlockedReason,
+    this.reviewId,
+    this.reviewStatus,
     this.cancellationReason,
     this.rescheduleBlockedReason,
   });
+
+  /// The customer has written a review for this visit, in whatever state.
+  bool get hasReview => reviewStatus != null;
 
   bool get isUpcoming => startTime.isAfter(DateTime.now());
 
@@ -63,6 +83,8 @@ class BookingSummary extends Equatable {
     String? status,
     bool? canCancel,
     bool? canReschedule,
+    bool? canReview,
+    ReviewModerationStatus? reviewStatus,
   }) {
     return BookingSummary(
       id: id,
@@ -80,7 +102,10 @@ class BookingSummary extends Equatable {
       status: status ?? this.status,
       canCancel: canCancel ?? this.canCancel,
       canReschedule: canReschedule ?? this.canReschedule,
-      canReview: canReview,
+      canReview: canReview ?? this.canReview,
+      reviewBlockedReason: reviewBlockedReason,
+      reviewId: reviewId,
+      reviewStatus: reviewStatus ?? this.reviewStatus,
       cancellationReason: cancellationReason,
       rescheduleBlockedReason: rescheduleBlockedReason,
     );
@@ -104,6 +129,9 @@ class BookingSummary extends Equatable {
         canCancel,
         canReschedule,
         canReview,
+        reviewBlockedReason,
+        reviewId,
+        reviewStatus,
         cancellationReason,
         rescheduleBlockedReason,
       ];

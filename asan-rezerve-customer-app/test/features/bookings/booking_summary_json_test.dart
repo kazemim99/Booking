@@ -1,4 +1,5 @@
 import 'package:asan_rezerve_customer_app/features/bookings/data/booking_summary_json.dart';
+import 'package:asan_rezerve_customer_app/features/reviews/domain/entities/review.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Who does the work (QA recording 2026-09-23 #8): the booking APIs send the staff member's name as `staffName`
@@ -93,5 +94,48 @@ void main() {
         reason: 'staffName: $raw',
       );
     }
+  });
+
+  // openspec/changes/_inline/customer-reviews-and-nahal-seed: the server says where a visit's review stands, so the
+  // app neither offers «ثبت نظر» on status alone nor forgets a review it saved once the page closes.
+  group('where the review stands', () {
+    const waiting = 'پس از اینکه سالن این نوبت را «انجام‌شده» ثبت کند، می‌توانید برایش نظر بنویسید.';
+
+    test('a completed visit the server says can be reviewed', () {
+      final booking = BookingSummaryJson.fromListItem(listItem({'status': 'Completed', 'canReview': true}), now: now);
+      expect(booking.canReview, isTrue);
+      expect(booking.hasReview, isFalse);
+    });
+
+    test('a reviewed visit carries its review and is not offered again', () {
+      final booking = BookingSummaryJson.fromListItem(
+        listItem({'status': 'Completed', 'canReview': false, 'reviewId': 'r1', 'reviewStatus': 'Published'}),
+        now: now,
+      );
+      expect(booking.canReview, isFalse);
+      expect(booking.reviewId, 'r1');
+      expect(booking.reviewStatus, ReviewModerationStatus.published);
+      expect(booking.hasReview, isTrue);
+    });
+
+    test('a visit waiting for the salon says why, on both shapes', () {
+      final item = BookingSummaryJson.fromListItem(
+          listItem({'status': 'Confirmed', 'canReview': false, 'reviewBlockedReason': waiting}), now: now);
+      final byId = BookingSummaryJson.fromDetails(details({'canReview': false, 'reviewBlockedReason': waiting}), now: now);
+      expect(item.reviewBlockedReason, waiting);
+      expect(byId.reviewBlockedReason, waiting);
+      expect(item.canReview, isFalse);
+    });
+
+    test('the server has the last word over the status', () {
+      final booking = BookingSummaryJson.fromDetails(details({'status': 'Completed', 'canReview': false}), now: now);
+      expect(booking.canReview, isFalse, reason: 'on the booking page canReview is only for the person it is for');
+    });
+
+    test('an older server without the fields: a completed visit is offered, as before', () {
+      expect(BookingSummaryJson.fromListItem(listItem({'status': 'Completed'}), now: now).canReview, isTrue);
+      expect(BookingSummaryJson.fromListItem(listItem(), now: now).canReview, isFalse);
+      expect(BookingSummaryJson.fromListItem(listItem(), now: now).reviewStatus, isNull);
+    });
   });
 }

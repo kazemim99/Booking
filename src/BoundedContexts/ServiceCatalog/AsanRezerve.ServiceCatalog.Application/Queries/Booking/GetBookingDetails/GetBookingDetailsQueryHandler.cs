@@ -15,6 +15,8 @@ namespace AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetBookingDetai
         private readonly IProviderReadRepository _providerRepository;
         private readonly IServiceReadRepository _serviceRepository;
         private readonly IBookingStaffNames _staffNames;
+        private readonly IBookingCustomer _bookingCustomer;
+        private readonly IReviewReadRepository _reviews;
         private readonly ILogger<GetBookingDetailsQueryHandler> _logger;
 
         public GetBookingDetailsQueryHandler(
@@ -22,12 +24,16 @@ namespace AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetBookingDetai
             IProviderReadRepository providerRepository,
             IServiceReadRepository serviceRepository,
             IBookingStaffNames staffNames,
+            IBookingCustomer bookingCustomer,
+            IReviewReadRepository reviews,
             ILogger<GetBookingDetailsQueryHandler> logger)
         {
             _bookingRepository = bookingRepository;
             _providerRepository = providerRepository;
             _serviceRepository = serviceRepository;
             _staffNames = staffNames;
+            _bookingCustomer = bookingCustomer;
+            _reviews = reviews;
             _logger = logger;
         }
 
@@ -49,6 +55,14 @@ namespace AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetBookingDetai
             var provider = await _providerRepository.GetByIdAsync(booking.ProviderId, cancellationToken);
             var service = await _serviceRepository.GetByIdAsync(booking.ServiceId, cancellationToken);
 
+            var isForCaller = request.CallerId is { } callerId
+                && await _bookingCustomer.IsForAsync(booking, callerId, cancellationToken);
+            var review = BookingReviewStanding.None;
+            if (isForCaller)
+            {
+                var states = await _reviews.GetStatesByBookingIdsAsync(new[] { booking.Id.Value }, cancellationToken);
+                review = BookingReviewStanding.Of(booking, states.GetValueOrDefault(booking.Id.Value));
+            }
 
             return new BookingDetailsViewModel(
                 BookingId: booking.Id.Value,
@@ -86,7 +100,12 @@ namespace AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetBookingDetai
                         h.OccurredAt))
                     .ToList(),
                 StaffName: await _staffNames.ForAsync(provider, booking.StaffId, cancellationToken),
-                RescheduleBlockedReason: booking.RescheduleBlockedReason());
+                RescheduleBlockedReason: booking.RescheduleBlockedReason(),
+                IsForCaller: isForCaller,
+                CanReview: review.CanReview,
+                ReviewBlockedReason: review.ReviewBlockedReason,
+                ReviewId: review.ReviewId,
+                ReviewStatus: review.ReviewStatus);
         }
     }
 }

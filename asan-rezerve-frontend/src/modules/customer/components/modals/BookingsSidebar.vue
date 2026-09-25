@@ -128,9 +128,23 @@
                   <p v-if="booking.staffName" class="staff-name">👤 {{ booking.staffName }}</p>
                   <p class="booking-time">🕐 {{ booking.formattedTime }}</p>
                   <p class="booking-price">💰 {{ booking.formattedPrice }}</p>
+                  <p v-if="booking.reviewStatusLabel" class="review-line" data-testid="sidebar-review-state">
+                    ⭐ نظر شما: {{ booking.reviewStatusLabel }}
+                  </p>
+                  <p v-else-if="booking.reviewBlockedReason" class="review-line" data-testid="sidebar-review-waiting">
+                    ⏳ {{ booking.reviewBlockedReason }}
+                  </p>
                 </div>
 
                 <div class="booking-actions">
+                  <button
+                    v-if="booking.canReview"
+                    @click="reviewing = booking"
+                    class="btn-review"
+                    data-testid="sidebar-review-button"
+                  >
+                    ⭐ ثبت نظر
+                  </button>
                   <button
                     @click="handleRebookBooking(booking)"
                     class="btn-rebook"
@@ -145,6 +159,16 @@
       </aside>
     </div>
   </transition>
+
+  <!-- Writing a review for a past visit -->
+  <WriteReviewModal
+    v-if="reviewing"
+    :is-open="!!reviewing"
+    :booking-id="reviewing.bookingId"
+    :subject="`${reviewing.providerName} · ${reviewing.serviceName}`"
+    @close="reviewing = null"
+    @saved="reviewed"
+  />
 
   <!-- Cancel Booking Confirmation Modal -->
   <CancelBookingModal
@@ -186,6 +210,7 @@ import CancelBookingModal from './CancelBookingModal.vue'
 import RescheduleBookingModal from './RescheduleBookingModal.vue'
 import ProfileEditModal from './ProfileEditModal.vue'
 import RescheduleAction from './RescheduleAction.vue'
+import WriteReviewModal from '@/modules/reviews/components/WriteReviewModal.vue'
 import { useNameBeforeBooking } from '@/modules/booking/composables/useNameBeforeBooking'
 
 interface Props {
@@ -219,6 +244,19 @@ const bookingToRebook = ref<EnrichedBookingView | null>(null)
 // Bookings data
 const upcomingBookings = ref<EnrichedBookingView[]>([])
 const pastBookings = ref<EnrichedBookingView[]>([])
+
+// The past visit being reviewed, while its modal is open.
+const reviewing = ref<EnrichedBookingView | null>(null)
+
+function reviewed(reviewId: string) {
+  const id = reviewing.value?.bookingId
+  pastBookings.value = pastBookings.value.map(b =>
+    b.bookingId === id
+      ? { ...b, canReview: false, reviewId, reviewStatus: 'Pending' as const, reviewStatusLabel: 'در انتظار تأیید' }
+      : b,
+  )
+  reviewing.value = null
+}
 
 const loading = ref({
   upcoming: false,
@@ -664,6 +702,20 @@ function showErrorMessage(message: string): void {
   &:hover {
     background: #c7d2fe;
   }
+}
+
+.btn-review {
+  padding: 0.5rem 1rem;
+  border: 1px solid #f59e0b;
+  background: #fffbeb;
+  color: #92400e;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.review-line {
+  font-size: 0.8rem;
+  color: #6b7280;
 }
 
 .btn-rebook {
