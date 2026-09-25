@@ -51,7 +51,7 @@ implementation task. `scripts/verify.sh fast` after each task, `full` to finish.
 - [x] 4.1 Controller unit tests: authorization outcomes and request→command mapping for the three controllers.
 - [x] 4.2 ProviderPromotionsController, AdminPromotionsController, offers + POST Bookings/quote (auth, rate limited).
 - [x] 4.3 Integration tests (Host, Testcontainers): end-to-end discount booking, cancel release, concurrency, authz.
-- [ ] 4.4 API_ENDPOINTS.md + DTO docs updated.
+- [x] 4.4 API_ENDPOINTS.md + DTO docs updated.
 
 ## 5. Admin panel (asan-rezerve-admin)
 - [x] 5.1 promotions.api.ts + types + unit tests (URLs, payload mapping).
@@ -77,7 +77,7 @@ implementation task. `scripts/verify.sh fast` after each task, `full` to finish.
 - [x] 8.3 Booking detail shows the discount; flutter analyze + test green.
 
 ## 9. Finish
-- [ ] 9.1 openspec validate --strict; project.md / KNOWLEDGE_MAP touch-ups; FOLLOW-UPS rows for out-of-scope items.
+- [x] 9.1 openspec validate --strict; project.md / KNOWLEDGE_MAP touch-ups; FOLLOW-UPS rows for out-of-scope items.
 - [ ] 9.2 scripts/verify.sh full; report.
 
 ## Decisions
