@@ -4,7 +4,9 @@ using AsanRezerve.ServiceCatalog.Application.Services.Notifications;
 using AsanRezerve.ServiceCatalog.Domain.Enums;
 using AsanRezerve.ServiceCatalog.Infrastructure.BackgroundJobs;
 using AsanRezerve.ServiceCatalog.Infrastructure.Persistence.Context;
+using AsanRezerve.ServiceCatalog.Domain.Policies;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -320,10 +322,27 @@ public class NotificationInboxTests : ServiceCatalogIntegrationTestBase
             await context.SaveChangesAsync();
         }
 
-        using (var scope = Factory.Services.CreateScope())
+        // The host's own NotificationOutboxService sweeps every 15 s too, and the claim is FOR UPDATE SKIP LOCKED: when
+        // its pass has just claimed this row, our sweep steps over it and returns at once, and the test read the inbox
+        // before that pass had sent it (the list said 0, the badge a moment later 1 — FULL verify, 2026-09-25). So sweep
+        // until none of this recipient's due rows is still pending or claimed, whoever sends them.
+        var deadline = System.Diagnostics.Stopwatch.StartNew();
+        while (true)
         {
-            var job = scope.ServiceProvider.GetRequiredService<ProcessNotificationOutboxJob>();
-            await job.ExecuteAsync();
+            using var scope = Factory.Services.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<ProcessNotificationOutboxJob>().ExecuteAsync();
+
+            var context = scope.ServiceProvider.GetRequiredService<ServiceCatalogDbContext>();
+            var now = DateTime.UtcNow;
+            var inFlight = await context.NotificationOutbox.AsNoTracking().AnyAsync(o =>
+                o.RecipientId == recipientId
+                && (o.State == NotificationOutboxState.Pending || o.State == NotificationOutboxState.Claimed)
+                && (o.ScheduledFor == null || o.ScheduledFor <= now));
+            if (!inFlight)
+                return;
+
+            deadline.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(10), "the raised notification should leave the outbox");
+            await Task.Yield();
         }
     }
 
