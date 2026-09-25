@@ -63,10 +63,15 @@ class AppointmentDetailState extends Equatable {
 /// page too.
 class AppointmentDetailCubit extends Cubit<AppointmentDetailState> {
   final BookingsRepository repository;
-  final String bookingId;
 
-  AppointmentDetailCubit(this.repository, this.bookingId)
-      : super(const AppointmentDetailState());
+  /// The booking shown. It changes once: a reschedule closes this booking and
+  /// opens a new one, which the screen then follows.
+  String get bookingId => _bookingId;
+  String _bookingId;
+
+  AppointmentDetailCubit(this.repository, String bookingId)
+      : _bookingId = bookingId,
+        super(const AppointmentDetailState());
 
   Future<void> load() async {
     // A review saved in this session outlives a reload (retry): the
@@ -124,11 +129,23 @@ class AppointmentDetailCubit extends Cubit<AppointmentDetailState> {
     );
   }
 
-  /// The reschedule screen succeeded with [newStartTime].
-  Future<void> rescheduled(DateTime newStartTime) async {
+  /// The reschedule screen succeeded with [newStartTime]. The server closed
+  /// this booking (`Rescheduled`) and opened [newBookingId] for the new time;
+  /// from here the screen is that booking, so the refresh reads it — not the
+  /// closed one (reviews-and-reschedule-round2 item 9).
+  Future<void> rescheduled(DateTime newStartTime, {String? newBookingId}) async {
     final booking = state.booking;
     if (booking == null) return;
-    emit(state.copyWith(booking: booking.copyWith(startTime: newStartTime)));
+    if (newBookingId != null && newBookingId.isNotEmpty) {
+      _bookingId = newBookingId;
+    }
+    // The new time goes back to the salon to confirm: «در انتظار تأیید» until it does.
+    emit(state.copyWith(
+        booking: booking.copyWith(
+            id: _bookingId, startTime: newStartTime, status: 'Requested')));
+    // Without the new id, the server's copy of THIS id is the closed booking:
+    // what is shown now is the better picture until the next load.
+    if (newBookingId == null || newBookingId.isEmpty) return;
     await _refresh();
   }
 

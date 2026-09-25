@@ -14,6 +14,7 @@ import '../../../reviews/domain/entities/review.dart';
 import '../../../reviews/presentation/write_review_flow.dart';
 import '../../domain/entities/booking_summary.dart';
 import '../bloc/appointments_bloc.dart';
+import '../bloc/reschedule_cubit.dart';
 import 'reschedule_page.dart';
 
 /// Appointments tab: upcoming/past segmentation with status-driven cards,
@@ -209,13 +210,14 @@ class _AppointmentsViewState extends State<_AppointmentsView> {
   ) async {
     final bloc = context.read<AppointmentsBloc>();
     // On the root navigator: rescheduling is a single-purpose task and covers the tab bar, as booking does.
-    final newStartTime = await Navigator.of(context, rootNavigator: true).push<DateTime>(
+    final outcome = await Navigator.of(context, rootNavigator: true).push<RescheduleOutcome>(
       MaterialPageRoute(
         builder: (_) => ReschedulePage(booking: booking),
       ),
     );
-    if (newStartTime != null) {
-      bloc.add(AppointmentRescheduled(booking.id, newStartTime));
+    if (outcome != null) {
+      bloc.add(AppointmentRescheduled(booking.id, outcome.newStartTime,
+          newBookingId: outcome.newBookingId));
     }
   }
 
@@ -228,6 +230,18 @@ class _AppointmentsViewState extends State<_AppointmentsView> {
       bookingId: booking.id,
       subject: reviewSubject(booking.providerName, booking.serviceName),
     );
+    if (saved) bloc.add(AppointmentReviewed(booking.id));
+  }
+
+  /// «ویرایش نظر» on a visit whose salon the customer already reviewed.
+  Future<void> _editReview(BuildContext context, BookingSummary booking) async {
+    final bloc = context.read<AppointmentsBloc>();
+    final saved = await editReviewForBooking(
+      context,
+      reviewId: booking.reviewId!,
+      subject: reviewSubject(booking.providerName, booking.serviceName),
+    );
+    // An edit goes back to approval: the card says so, as after a new review.
     if (saved) bloc.add(AppointmentReviewed(booking.id));
   }
 
@@ -314,6 +328,8 @@ class _AppointmentsViewState extends State<_AppointmentsView> {
                           onReschedule: () =>
                               _reschedule(context, bookings[index]),
                           onReview: () => _review(context, bookings[index]),
+                          onEditReview: () =>
+                              _editReview(context, bookings[index]),
                         ),
                       ),
                     );
@@ -356,12 +372,14 @@ class _BookingCard extends StatelessWidget {
   final VoidCallback onCancel;
   final VoidCallback onReschedule;
   final VoidCallback onReview;
+  final VoidCallback onEditReview;
 
   const _BookingCard({
     required this.booking,
     required this.onCancel,
     required this.onReschedule,
     required this.onReview,
+    required this.onEditReview,
   });
 
   @override
@@ -471,7 +489,9 @@ class _BookingCard extends StatelessWidget {
           ],
           // A visit that took place can be reviewed, and booked again: same
           // salon, same service already chosen.
-          if (booking.canReview || booking.canRebook) ...[
+          if (booking.canReview ||
+              booking.canEditReview ||
+              booking.canRebook) ...[
             const SizedBox(height: AppSpacing.xs),
             Wrap(
               children: [
@@ -481,6 +501,14 @@ class _BookingCard extends StatelessWidget {
                     label: AppStrings.reviewWriteAction,
                     icon: Icons.star_outline_rounded,
                     onPressed: onReview,
+                  )
+                // One review per salon: a later visit edits it instead.
+                else if (booking.canEditReview)
+                  AppButton.text(
+                    key: Key('booking-card-edit-review-${booking.id}'),
+                    label: AppStrings.reviewEditExisting,
+                    icon: Icons.edit_outlined,
+                    onPressed: onEditReview,
                   ),
                 if (booking.canRebook)
                   AppButton.text(
@@ -511,7 +539,9 @@ class _BookingCard extends StatelessWidget {
     };
     return (
       Icons.rate_review_outlined,
-      AppStrings.reviewCardStatus(label),
+      booking.reviewFromOtherVisit
+          ? '${AppStrings.reviewAlreadyForSalon} · $label'
+          : AppStrings.reviewCardStatus(label),
       'booking-card-review-status-${booking.id}',
     );
   }

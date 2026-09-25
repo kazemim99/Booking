@@ -19,6 +19,7 @@ import 'package:asan_rezerve_customer_app/features/bookings/presentation/pages/r
 import 'package:asan_rezerve_customer_app/features/reviews/domain/entities/review.dart';
 import 'package:asan_rezerve_customer_app/features/reviews/domain/repositories/review_repository.dart';
 
+import '../../helpers/review_dialog.dart';
 import 'bookings_fakes.dart';
 import 'vazir_font.dart';
 
@@ -35,8 +36,28 @@ class _FakeReviews implements ReviewRepository {
     required double rating,
     String? comment,
     Map<ReviewDimension, double> dimensions = const {},
+    bool showName = true,
   }) async {
     created.add(bookingId);
+    return const Right(null);
+  }
+
+  /// The customer's own reviews, as «نظرهای من» reads them — where an edit from a booking loads its review.
+  List<MyReview> mine = const [];
+  final edited = <(String, double, Map<ReviewDimension, double>, bool)>[];
+
+  @override
+  Future<Either<Failure, List<MyReview>>> getMyReviews() async => Right(mine);
+
+  @override
+  Future<Either<Failure, void>> editReview({
+    required String reviewId,
+    required double rating,
+    String? comment,
+    Map<ReviewDimension, double> dimensions = const {},
+    bool showName = true,
+  }) async {
+    edited.add((reviewId, rating, dimensions, showName));
     return const Right(null);
   }
 
@@ -240,12 +261,21 @@ void main() {
 
       await tester.tap(find.text(JalaliFormatter.formatTime(newStart)));
       await _settle(tester);
+      // Told before confirming: the new time goes back to the salon (reviews-and-reschedule-round2 item 9).
+      expect(find.text(AppStrings.rescheduleReconfirmNotice), findsOneWidget);
       await tester.tap(find.byKey(const Key('reschedule-submit')));
       await _settle(tester);
 
       expect(find.byType(ReschedulePage), findsNothing);
       expect(find.text(JalaliFormatter.formatTime(newStart)), findsOneWidget);
       expect(find.text(JalaliFormatter.formatDate(newStart)), findsOneWidget);
+      // …and after: the booking now waits for the salon's confirmation.
+      expect(find.text(AppStrings.rescheduleSuccess), findsOneWidget);
+      expect(find.text(AppStrings.statusPending), findsOneWidget);
+      expect(find.text(AppStrings.statusConfirmed), findsNothing);
+      // The refresh after it read the NEW booking, not the one the server closed.
+      expect(find.text(AppStrings.statusRescheduled), findsNothing);
+      expect(_bookings.byIdCalls, isNot(contains('b1')));
     });
 
     // Decision 4 (single-purpose tasks leave the tab shell), applied to rescheduling by the review of the merge.
@@ -301,7 +331,7 @@ void main() {
 
       await tester.tap(find.byKey(const Key('appointment-write-review')));
       await _settle(tester);
-      await tester.tap(find.byKey(const Key('review-star-5')));
+      await rateAllAspects(tester, stars: 5);
       await tester.pump();
       await tester.tap(find.byKey(const Key('review-submit')));
       await _settle(tester);
@@ -355,6 +385,69 @@ void main() {
       expect(find.byKey(const Key('appointment-write-review')), findsNothing);
       expect(find.text(AppStrings.reviewSubmittedPublished), findsOneWidget);
       expect(find.byKey(const Key('appointment-my-reviews')), findsOneWidget);
+    });
+
+    // reviews-and-reschedule-round2 item 8: one review per salon, edited from any visit to it.
+    testWidgets('an editable review offers «ویرایش نظر», which opens it and saves through the edit', (tester) async {
+      _bookings.past = [
+        fakeBooking('br', status: 'Completed', start: DateTime(2026, 5, 10, 14), actionable: false,
+            reviewStatus: ReviewModerationStatus.published, reviewEditable: true),
+      ];
+      _reviews.mine = const [
+        MyReview(
+          id: 'r-br',
+          providerName: 'سالن نمونه',
+          rating: 4,
+          comment: 'کار تمیز و به‌موقع بود، ممنون',
+          status: ReviewModerationStatus.published,
+          canEdit: true,
+          showName: false,
+        ),
+      ];
+      await _open(tester, 'br');
+
+      expect(find.byKey(const Key('appointment-write-review')), findsNothing);
+      await tester.tap(find.byKey(const Key('appointment-edit-review')));
+      await _settle(tester);
+
+      // The same dialog, in edit mode, opened on what was said — an old review with only an overall star has each
+      // aspect prefilled with it, so it can be saved as it stands.
+      expect(find.descendant(of: find.byType(AlertDialog), matching: find.text(AppStrings.reviewEditTitle)),
+          findsOneWidget);
+      expect(find.text('کار تمیز و به‌موقع بود، ممنون'), findsOneWidget);
+      expect(tester.widget<CheckboxListTile>(find.byKey(const Key('review-hide-name'))).value, isTrue);
+      await tester.tap(find.byKey(const Key('review-submit')));
+      await _settle(tester);
+
+      expect(_reviews.created, isEmpty, reason: 'never a second review');
+      expect(_reviews.edited.single.$1, 'r-br');
+      expect(_reviews.edited.single.$2, 4);
+      expect(_reviews.edited.single.$4, isFalse);
+      expect(find.text(AppStrings.reviewSubmittedPending), findsOneWidget, reason: 'an edit goes back to approval');
+    });
+
+    testWidgets('a review that can no longer be edited keeps the submitted state, no edit', (tester) async {
+      _bookings.past = [
+        fakeBooking('br', status: 'Completed', start: DateTime(2026, 5, 10, 14), actionable: false,
+            reviewStatus: ReviewModerationStatus.published),
+      ];
+      await _open(tester, 'br');
+
+      expect(find.byKey(const Key('appointment-edit-review')), findsNothing);
+      expect(find.text(AppStrings.reviewSubmittedTitle), findsOneWidget);
+    });
+
+    testWidgets('a review written from another visit says the salon was already reviewed', (tester) async {
+      _bookings.past = [
+        fakeBooking('b2', status: 'Completed', start: DateTime(2026, 5, 10, 14), actionable: false,
+            canReview: false, reviewStatus: ReviewModerationStatus.published, reviewEditable: true,
+            reviewBookingId: 'b1'),
+      ];
+      await _open(tester, 'b2');
+
+      expect(find.text(AppStrings.reviewAlreadyForSalon), findsOneWidget);
+      expect(find.byKey(const Key('appointment-edit-review')), findsOneWidget);
+      expect(find.byKey(const Key('appointment-write-review')), findsNothing);
     });
 
     testWidgets('the review block fits a 360 phone at 1.3x text', (tester) async {

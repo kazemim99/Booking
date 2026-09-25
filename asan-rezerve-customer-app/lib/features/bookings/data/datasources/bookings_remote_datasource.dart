@@ -89,7 +89,10 @@ class BookingsRemoteDataSource {
     }
   }
 
-  Future<void> rescheduleBooking({
+  /// Moves the booking. The server closes this one (`Rescheduled`) and
+  /// creates a new one in `Requested` for the salon to confirm; the new
+  /// booking's id is returned when the answer names it, else null.
+  Future<String?> rescheduleBooking({
     required String bookingId,
     required DateTime newStartTime,
     String? newStaffId,
@@ -109,5 +112,35 @@ class BookingsRemoteDataSource {
         message: 'Failed to reschedule booking',
       );
     }
+    return newBookingIdFrom(response.data);
+  }
+
+  static final _guid = RegExp(
+      r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}');
+
+  /// The new booking's id in the reschedule answer: a `newBookingId` field
+  /// (top level or inside `data`) when the server sends one, else the id the
+  /// message names — today the endpoint answers only
+  /// `{ message: "Booking rescheduled successfully. New booking ID: <guid>" }`.
+  static String? newBookingIdFrom(Object? body) {
+    final levels = [
+      if (body is Map) body,
+      if (body is Map && body['data'] is Map) body['data'] as Map,
+    ];
+    for (final level in levels) {
+      final id = level['newBookingId'];
+      if (id is String && id.trim().isNotEmpty) return id.trim();
+    }
+    for (final level in levels) {
+      final message = level['message'];
+      if (message is String) {
+        final marker = message.indexOf('New booking ID');
+        if (marker >= 0) {
+          final match = _guid.firstMatch(message.substring(marker));
+          if (match != null) return match.group(0);
+        }
+      }
+    }
+    return null;
   }
 }

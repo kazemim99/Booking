@@ -11,12 +11,15 @@ abstract class ReviewRepository {
       {int page = 1});
 
   /// A review belongs to a booking: only someone who actually went can write one.
-  /// It is public only once an administrator approves it.
+  /// It is public only once an administrator approves it. [rating] is the
+  /// overall the four [dimensions] give (sent for older servers); [showName]
+  /// false signs it «مشتری».
   Future<Either<Failure, void>> createReview({
     required String bookingId,
     required double rating,
     String? comment,
     Map<ReviewDimension, double> dimensions = const {},
+    bool showName = true,
   });
 
   /// The author's own edit. It goes back to approval before it is public again.
@@ -25,6 +28,7 @@ abstract class ReviewRepository {
     required double rating,
     String? comment,
     Map<ReviewDimension, double> dimensions = const {},
+    bool showName = true,
   });
 
   /// The same vote again withdraws it; the other one moves it. Signed-in only.

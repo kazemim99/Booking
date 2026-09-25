@@ -1,5 +1,6 @@
 import 'package:asan_rezerve_customer_app/config/theme/app_colors.dart';
 import 'package:asan_rezerve_customer_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
 import 'package:asan_rezerve_customer_app/core/utils/persian_formatter.dart';
 import 'package:asan_rezerve_customer_app/core/widgets/app_button.dart';
 import 'package:asan_rezerve_customer_app/core/widgets/app_text_field.dart';
@@ -7,6 +8,8 @@ import 'package:asan_rezerve_customer_app/features/reviews/domain/entities/revie
 import 'package:asan_rezerve_customer_app/features/reviews/presentation/widgets/write_review_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../helpers/review_dialog.dart';
 
 /// The review dialog on the app's own components, and stars a screen reader and a thumb can both use
 /// (UX review 2026-09-23, G.1: it was the one screen on FilledButton and a raw outline border, the overall
@@ -93,53 +96,171 @@ void main() {
         findsOneWidget);
   });
 
-  testWidgets('each overall star says how many stars it is, and which is chosen',
-      (tester) async {
-    final semantics = tester.ensureSemantics();
+  // reviews-and-reschedule-round2 D1: no separate overall row; the four aspects are the review.
+  testWidgets('shows the four aspects directly, with no overall row and no disclosure', (tester) async {
     await open(tester)();
 
-    for (var n = 1; n <= 5; n++) {
-      expect(
-        tester.getSemantics(find.byKey(Key('review-star-$n'))),
-        isSemantics(
-            tooltip: stars(n), isButton: true, hasSelectedState: true, isSelected: false),
-      );
+    for (final d in ReviewDimension.values) {
+      expect(find.text(d.label), findsOneWidget);
+      expect(find.byKey(Key('review-dim-${d.name}-1')), findsOneWidget);
+    }
+    expect(find.byType(ExpansionTile), findsNothing);
+    expect(find.byKey(const Key('review-star-1')), findsNothing);
+    expect(find.text('امتیاز شما'), findsNothing);
+  });
+
+  testWidgets('the overall is live: the aspects\' average to the nearest half, in Persian digits', (tester) async {
+    await open(tester)();
+    expect(find.byKey(const Key('review-overall')), findsNothing, reason: 'nothing to average yet');
+
+    // 3, 3, 4, 3 → 3.25 → ۳.۵, shown with a half star.
+    await rateAllAspects(tester, each: {
+      ReviewDimension.cleanliness: 3,
+      ReviewDimension.skill: 3,
+      ReviewDimension.punctuality: 4,
+      ReviewDimension.conduct: 3,
+    });
+    expect(find.text(AppStrings.reviewOverallLabel('۳.۵')), findsOneWidget);
+    Icon star(int n) => tester.widget<Icon>(find.byKey(Key('review-overall-star-$n')));
+    expect(star(3).icon, Icons.star_rounded);
+    expect(star(4).icon, Icons.star_half_rounded);
+    expect(star(5).icon, Icons.star_border_rounded);
+
+    // One more star on conduct: 3, 3, 4, 4 → 3.5; then 4, 3, 4, 4 → 3.75 → ۴.۰.
+    await tester.tap(find.byKey(const Key('review-dim-conduct-4')));
+    await tester.pump();
+    expect(find.text(AppStrings.reviewOverallLabel('۳.۵')), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('review-dim-cleanliness-4')));
+    await tester.tap(find.byKey(const Key('review-dim-cleanliness-4')));
+    await tester.pump();
+    expect(find.text(AppStrings.reviewOverallLabel('۴.۰')), findsOneWidget);
+  });
+
+  testWidgets('submit waits for all four aspects', (tester) async {
+    await open(tester)();
+
+    AppButton submit() => tester.widget<AppButton>(find.byKey(const Key('review-submit')));
+    expect(submit().onPressed, isNull);
+    await rateAllAspects(tester, stars: 4);
+    expect(submit().onPressed, isNotNull);
+    await tester.tap(find.byKey(const Key('review-submit')));
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsNothing);
+  });
+
+  group('ReviewDraft.overallOf', () {
+    double of(List<double> v) => ReviewDraft.overallOf({
+          for (var i = 0; i < v.length; i++) ReviewDimension.values[i]: v[i],
+        });
+
+    test('rounds to the nearest half, halves away from zero', () {
+      expect(of([3, 3, 4, 3]), 3.5, reason: '3.25');
+      expect(of([4, 3, 4, 4]), 4.0, reason: '3.75');
+      expect(of([5, 5, 5, 5]), 5.0);
+      expect(of([1, 1, 1, 2]), 1.5, reason: '1.25');
+      expect(of([4, 4, 5, 4]), 4.5, reason: '4.25');
+      expect(of([1, 1, 1, 1]), 1.0);
+    });
+
+    test('nothing rated is zero', () {
+      expect(ReviewDraft.overallOf(const {}), 0);
+    });
+  });
+
+  group('the name choice', () {
+    Future<ReviewDraft?> submitWith(WidgetTester tester,
+        {ReviewDraft? initial, bool tick = false, Map<ReviewDimension, int>? each}) async {
+      ReviewDraft? result;
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.light,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              key: const Key('open'),
+              onPressed: () async => result = await showWriteReviewDialog(context, initial: initial),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ));
+      await tester.tap(find.byKey(const Key('open')));
+      await tester.pumpAndSettle();
+      if (initial == null) await rateAllAspects(tester, stars: 4, each: each);
+      if (tick) {
+        await tester.ensureVisible(find.byKey(const Key('review-hide-name')));
+        await tester.tap(find.byKey(const Key('review-hide-name')));
+        await tester.pump();
+      }
+      await tester.tap(find.byKey(const Key('review-submit')));
+      await tester.pumpAndSettle();
+      return result;
     }
 
-    await tester.tap(find.byKey(const Key('review-star-3')));
-    await tester.pumpAndSettle();
+    testWidgets('is unticked by default: the name signs the review', (tester) async {
+      final draft = await submitWith(tester);
+      expect(find.text(AppStrings.reviewHideName), findsNothing, reason: 'dialog closed');
+      expect(draft?.showName, isTrue);
+      expect(draft?.rating, 4);
+      expect(draft?.dimensions.length, 4);
+    });
 
-    expect(tester.getSemantics(find.byKey(const Key('review-star-3'))),
-        isSemantics(isSelected: true));
-    expect(tester.getSemantics(find.byKey(const Key('review-star-4'))),
-        isSemantics(isSelected: false));
-    semantics.dispose();
+    testWidgets('the draft carries the aspects and their rounded average', (tester) async {
+      final draft = await submitWith(tester, each: {
+        ReviewDimension.cleanliness: 5,
+        ReviewDimension.skill: 4,
+        ReviewDimension.punctuality: 4,
+        ReviewDimension.conduct: 4,
+      });
+      expect(draft?.rating, 4.5, reason: '4.25 → 4.5');
+      expect(draft?.dimensions[ReviewDimension.cleanliness], 5);
+    });
+
+    testWidgets('ticked, the review is signed «مشتری»', (tester) async {
+      final draft = await submitWith(tester, tick: true);
+      expect(draft?.showName, isFalse);
+    });
+
+    testWidgets('an edit opens with the review\'s own choice, and can change it', (tester) async {
+      const hidden = ReviewDraft(rating: 4, showName: false, dimensions: {
+        ReviewDimension.cleanliness: 4,
+        ReviewDimension.skill: 4,
+        ReviewDimension.punctuality: 4,
+        ReviewDimension.conduct: 4,
+      });
+      expect((await submitWith(tester, initial: hidden))?.showName, isFalse);
+      expect((await submitWith(tester, initial: hidden, tick: true))?.showName, isTrue);
+    });
+
+    testWidgets('an old review with only an overall star opens with each aspect at that star, ready to save',
+        (tester) async {
+      final draft = await submitWith(tester, initial: const ReviewDraft(rating: 4.5));
+      expect(draft?.dimensions, {for (final d in ReviewDimension.values) d: 5.0},
+          reason: '4.5 rounds to 5 for a whole-star aspect');
+      expect(draft?.rating, 5);
+      expect(draft?.showName, isTrue);
+    });
   });
 
   testWidgets('filled stars are the one star colour, empty ones the muted ink', (tester) async {
     await open(tester)();
-    await tester.tap(find.byKey(const Key('review-star-2')));
+    await tester.tap(find.byKey(const Key('review-dim-cleanliness-2')));
     await tester.pumpAndSettle();
 
     Icon icon(String key) => tester.widget<Icon>(find.descendant(
         of: find.byKey(Key(key)), matching: find.byType(Icon)));
     final scheme = AppTheme.light.colorScheme;
 
-    expect(icon('review-star-2').icon, Icons.star);
+    expect(icon('review-dim-cleanliness-2').icon, Icons.star);
     // Was AppColors.warning (1.52:1 on white); the star colour is now the AA-graphic AppColors.star.
-    expect(icon('review-star-2').color, AppColors.star);
-    expect(icon('review-star-3').icon, Icons.star_border);
-    expect(icon('review-star-3').color, scheme.onSurfaceVariant);
+    expect(icon('review-dim-cleanliness-2').color, AppColors.star);
+    expect(icon('review-dim-cleanliness-3').icon, Icons.star_border);
+    expect(icon('review-dim-cleanliness-3').color, scheme.onSurfaceVariant);
   });
 
-  testWidgets('every star, overall and per dimension, is at least 48 dp',
-      (tester) async {
+  testWidgets('every aspect star is at least 48 dp', (tester) async {
     await open(tester)();
-    await tester.tap(find.byKey(const Key('review-dimensions')));
-    await tester.pumpAndSettle();
 
     final keys = [
-      for (var n = 1; n <= 5; n++) 'review-star-$n',
       for (final d in ReviewDimension.values)
         for (var n = 1; n <= 5; n++) 'review-dim-${d.name}-$n',
     ];
@@ -155,11 +276,16 @@ void main() {
     expect(label.bottom, lessThanOrEqualTo(star.top));
   });
 
-  testWidgets('a dimension star still says what it rates', (tester) async {
+  testWidgets('an aspect star says what it rates, and which is chosen', (tester) async {
     final semantics = tester.ensureSemantics();
     await open(tester)();
-    await tester.tap(find.byKey(const Key('review-dimensions')));
-    await tester.pumpAndSettle();
+
+    for (var n = 1; n <= 5; n++) {
+      expect(
+        tester.getSemantics(find.byKey(Key('review-dim-cleanliness-$n'))),
+        isSemantics(isButton: true, hasSelectedState: true, isSelected: false),
+      );
+    }
 
     await tester.tap(find.byKey(const Key('review-dim-skill-4')));
     await tester.pumpAndSettle();
@@ -173,29 +299,25 @@ void main() {
 
   // Both scales: Material's dialog padding shrinks as text grows, so 1.0× is the tighter fit for the stars.
   for (final scale in [1.0, 1.3]) {
-    testWidgets('fits a 360×640 phone at $scale× text, dimensions open',
-        (tester) async {
+    testWidgets('fits a 360×640 phone at $scale× text', (tester) async {
       tester.view.devicePixelRatio = 1;
       tester.view.physicalSize = const Size(360, 640);
       addTearDown(tester.view.reset);
 
       await open(tester, textScale: scale)();
-      await tester.tap(find.byKey(const Key('review-dimensions')));
-      await tester.pumpAndSettle();
+      await rateAllAspects(tester, stars: 3);
 
       expect(tester.takeException(), isNull);
       // Every star lies inside the dialog: the 16 dp inset leaves a 328 dp
-      // dialog and 280 dp of content for five 48 dp stars (240 dp) — not
-      // the 232 dp Material's default 40 dp inset would.
+      // dialog and 280 dp of content for five 48 dp stars (240 dp).
       final dialog = tester.getRect(find.descendant(
           of: find.byType(AlertDialog), matching: find.byType(Material)).first);
-      for (final key in [
-        for (var star = 1; star <= 5; star++) 'review-star-$star',
-        for (var star = 1; star <= 5; star++) 'review-dim-skill-$star',
-      ]) {
-        final star = tester.getRect(find.byKey(Key(key)));
-        expect(star.left, greaterThanOrEqualTo(dialog.left), reason: key);
-        expect(star.right, lessThanOrEqualTo(dialog.right), reason: key);
+      for (final d in ReviewDimension.values) {
+        for (var star = 1; star <= 5; star++) {
+          final rect = tester.getRect(find.byKey(Key('review-dim-${d.name}-$star')));
+          expect(rect.left, greaterThanOrEqualTo(dialog.left), reason: '${d.name}-$star');
+          expect(rect.right, lessThanOrEqualTo(dialog.right), reason: '${d.name}-$star');
+        }
       }
     });
   }

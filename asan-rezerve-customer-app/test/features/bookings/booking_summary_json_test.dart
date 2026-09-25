@@ -1,6 +1,7 @@
 import 'package:asan_rezerve_customer_app/features/bookings/data/booking_summary_json.dart';
 import 'package:asan_rezerve_customer_app/features/reviews/domain/entities/review.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:asan_rezerve_customer_app/features/bookings/domain/entities/booking_summary.dart';
 
 /// Who does the work (QA recording 2026-09-23 #8): the booking APIs send the staff member's name as `staffName`
 /// on both shapes — the `my-bookings` list item and `GET /Bookings/{id}`. It is optional: an API without it, or a
@@ -130,6 +131,37 @@ void main() {
     test('the server has the last word over the status', () {
       final booking = BookingSummaryJson.fromDetails(details({'status': 'Completed', 'canReview': false}), now: now);
       expect(booking.canReview, isFalse, reason: 'on the booking page canReview is only for the person it is for');
+    });
+
+    // reviews-and-reschedule-round2 item 8: the review state is per salon, and says whether it can be edited.
+    test('reviewEditable is read on both shapes; the edit is offered only with a review', () {
+      final item = BookingSummaryJson.fromListItem(
+          listItem({'status': 'Completed', 'canReview': false, 'reviewId': 'r1', 'reviewStatus': 'Published',
+              'reviewEditable': true}),
+          now: now);
+      final byId = BookingSummaryJson.fromDetails(
+          details({'canReview': false, 'reviewId': 'r1', 'reviewStatus': 'Pending', 'reviewEditable': true}),
+          now: now);
+      expect(item.reviewEditable, isTrue);
+      expect(item.canEditReview, isTrue);
+      expect(byId.canEditReview, isTrue);
+
+      final locked = BookingSummaryJson.fromListItem(
+          listItem({'reviewId': 'r1', 'reviewStatus': 'Published', 'reviewEditable': false}), now: now);
+      expect(locked.canEditReview, isFalse);
+      final noReview = BookingSummaryJson.fromListItem(listItem({'reviewEditable': true}), now: now);
+      expect(noReview.canEditReview, isFalse);
+      expect(BookingSummaryJson.fromListItem(listItem({'reviewId': 'r1'}), now: now).reviewEditable, isFalse,
+          reason: 'an older server never said it could be edited here');
+    });
+
+    test('a review written from another visit to the salon is told apart when the server names the visit', () {
+      BookingSummary read(Map<String, dynamic> extra) =>
+          BookingSummaryJson.fromListItem(listItem({'reviewId': 'r1', 'reviewStatus': 'Published', ...extra}), now: now);
+      final id = read(const {}).id;
+      expect(read({'reviewBookingId': 'another'}).reviewFromOtherVisit, isTrue);
+      expect(read({'reviewBookingId': id}).reviewFromOtherVisit, isFalse);
+      expect(read(const {}).reviewFromOtherVisit, isFalse);
     });
 
     test('an older server without the fields: a completed visit is offered, as before', () {

@@ -4,6 +4,7 @@ import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/utils/jalali_formatter.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/provider_image.dart';
 import '../../../../core/widgets/provider_rating.dart';
 import '../../domain/entities/review.dart';
 
@@ -38,6 +39,11 @@ class ProviderReviewsSection extends StatefulWidget {
   /// nothing tappable; the page decides what a guest's tap means.
   final void Function(Review review, bool helpful)? onVote;
 
+  /// The salon's name and logo, so its reply under a review is signed
+  /// «پاسخ {نام سالن}» with its own picture. Either may be absent.
+  final String? salonName;
+  final String? salonLogoUrl;
+
   /// How many reviews show before «مشاهده همه نظرها».
   static const collapsedCount = 3;
 
@@ -50,6 +56,8 @@ class ProviderReviewsSection extends StatefulWidget {
     this.onRetry,
     this.onLoadMore,
     this.onVote,
+    this.salonName,
+    this.salonLogoUrl,
   });
 
   @override
@@ -163,7 +171,12 @@ class _ProviderReviewsSectionState extends State<ProviderReviewsSection> {
           )
         else ...[
           for (final review in shown)
-            _ReviewTile(review: review, onVote: widget.onVote),
+            _ReviewTile(
+              review: review,
+              onVote: widget.onVote,
+              salonName: widget.salonName,
+              salonLogoUrl: widget.salonLogoUrl,
+            ),
           if (!_expanded && hiddenCount > 0)
             AppButton.secondary(
               key: const Key('provider-reviews-show-all'),
@@ -246,8 +259,11 @@ class _Distribution extends StatelessWidget {
 class _ReviewTile extends StatelessWidget {
   final Review review;
   final void Function(Review review, bool helpful)? onVote;
+  final String? salonName;
+  final String? salonLogoUrl;
 
-  const _ReviewTile({required this.review, this.onVote});
+  const _ReviewTile(
+      {required this.review, this.onVote, this.salonName, this.salonLogoUrl});
 
   @override
   Widget build(BuildContext context) {
@@ -315,29 +331,11 @@ class _ReviewTile extends StatelessWidget {
           _VoteRow(review: review, onVote: onVote),
           if (review.providerResponse != null &&
               review.providerResponse!.isNotEmpty)
-            Container(
+            SalonReply(
               key: Key('review-${review.id}-reply'),
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.storefront_outlined, size: 16, color: theme.colorScheme.onSurfaceVariant),
-                      const SizedBox(width: AppSpacing.xxs),
-                      Text(AppStrings.reviewProviderReply, style: muted),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.xxs),
-                  Text(review.providerResponse!,
-                      style: theme.textTheme.bodyMedium),
-                ],
-              ),
+              text: review.providerResponse!,
+              salonName: salonName,
+              salonLogoUrl: salonLogoUrl,
             ),
         ],
       ),
@@ -384,6 +382,100 @@ class _VoteRow extends StatelessWidget {
 
     return Row(
       children: [control(true), const SizedBox(width: AppSpacing.sm), control(false)],
+    );
+  }
+}
+
+/// The salon's answer to ONE review, drawn as a reply to it: indented under it
+/// from the start edge with a thin connector in the brand colour, on a tinted
+/// ground, signed with the salon's picture and name and a reply icon
+/// (reviews-and-reschedule-round2 item 7 — a grey box read as a separate note).
+class SalonReply extends StatelessWidget {
+  final String text;
+  final String? salonName;
+  final String? salonLogoUrl;
+
+  const SalonReply({
+    super.key,
+    required this.text,
+    this.salonName,
+    this.salonLogoUrl,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final name = salonName?.trim();
+    final title = name == null || name.isEmpty
+        ? AppStrings.reviewProviderReply
+        : AppStrings.reviewProviderReplyFrom(name);
+
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(
+          start: AppSpacing.lg, top: AppSpacing.xs),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // The thread line from the review down to its answer.
+            Container(
+              key: const Key('salon-reply-connector'),
+              width: 2,
+              decoration: BoxDecoration(
+                color: scheme.primary,
+                borderRadius: BorderRadius.circular(AppRadius.full),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: scheme.primaryContainer.withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        ExcludeSemantics(
+                          child: ClipOval(
+                            child: ProviderImage(
+                              key: const Key('salon-reply-avatar'),
+                              imageUrl: salonLogoUrl,
+                              width: AppIconSize.md + AppSpacing.xxs,
+                              height: AppIconSize.md + AppSpacing.xxs,
+                              placeholderIconSize: AppIconSize.sm,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Icon(Icons.reply_rounded,
+                            size: AppIconSize.sm, color: scheme.primary),
+                        const SizedBox(width: AppSpacing.xxs),
+                        Expanded(
+                          child: Text(
+                            title,
+                            key: const Key('salon-reply-title'),
+                            style: theme.textTheme.labelLarge
+                                ?.copyWith(color: scheme.primary),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(text, style: theme.textTheme.bodyMedium),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

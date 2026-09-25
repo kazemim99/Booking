@@ -348,6 +348,8 @@ class _ProviderContent extends StatelessWidget {
                     .read<ProviderDetailCubit>()
                     .loadMoreReviews(provider.id),
                 onVote: (review, helpful) => _vote(context, review, helpful),
+                salonName: provider.businessName,
+                salonLogoUrl: provider.logoUrl,
               ),
             ],
           ),

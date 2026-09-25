@@ -1,4 +1,4 @@
-Status: ACTIVE
+Status: STOPPED(decision)
 Verify: FULL
 
 User request (2026-09-25, with 5 screenshots of the live customer app): «همه چیز دیپلوی شد.»
@@ -62,8 +62,8 @@ User request (2026-09-25, with 5 screenshots of the live customer app): «همه
 - [ ] 4 API: auto-complete confirmed bookings 12 h after their end (hosted service) (unit + integration)
 - [ ] 5 API: reschedule window default 2 h; migrate the old default 24 → 2 on salons, services, open bookings
 - [ ] 6 Seed: Nahal demo — one review per reviewer (18 reviewers)
-- [ ] 7 Customer app: review form aspects-only with live overall + «نامم نمایش داده نشود»; edit from booking
-- [ ] 8 Customer app: rating · count separator; reply redesign; installed-apps directions first; reschedule notice
+- [x] 7 Customer app: review form aspects-only with live overall + «نامم نمایش داده نشود»; edit from booking
+- [x] 8 Customer app: rating · count separator; reply redesign; installed-apps directions first; reschedule notice
 - [ ] 9 Web: review form aspects-only + name choice; shared rating display (+ search card); reply redesign;
       directions chooser; reschedule notice; «ویرایش نظر»
 - [x] 10 Docs: runbook note on F0 (docs-site «بوکسی» left: docs/KNOWLEDGE_MAP.md marks docs-site historical)
@@ -84,6 +84,16 @@ User request (2026-09-25, with 5 screenshots of the live customer app): «همه
 - D6 (tier 1) Items 3 (label) and 4 are the stale deploy (F0): no app change.
 
 ## Log
+
+- 2026-09-25 Tasks 7–8 (customer app): analyze clean, 868 tests. Also: after a reschedule the detail screen and list
+  follow the NEW booking (was reloading the closed one); status `Rescheduled` labelled «تغییر زمان داده شد» (fell
+  through the badge mapping). Asked the API for `reviewBookingId` on booking payloads and `newBookingId` on the
+  reschedule response (the app parses the message's guid until then).
+
+- 2026-09-25 STOPPED(decision): the user decides whether `origin` stays on the renamed repository URL
+  (github.com/kazemim99/AsanRezerve) or goes back to the session's configured github.com/kazemim99/Booking — the
+  permission check refused further work citing "Remote Repoint". Tasks 1–9 are being implemented by three
+  background agents (backend / customer app / web); nothing is pushed until the user answers.
 
 - 2026-09-25 Investigation (5 parallel read-only passes): review UI, author naming, brand leftovers, directions,
   review/booking backend rules.

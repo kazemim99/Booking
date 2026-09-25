@@ -18,6 +18,7 @@ import 'package:asan_rezerve_customer_app/features/reviews/domain/repositories/r
 import 'package:dartz/dartz.dart';
 
 import '../../helpers/fake_auth_bloc.dart';
+import '../../helpers/review_dialog.dart';
 import 'bookings_fakes.dart';
 
 /// The appointments tab (UX review 2026-09-23): the Past tab has its own empty text (E.3), a completed visit can
@@ -37,9 +38,29 @@ class _FakeReviews implements ReviewRepository {
     required double rating,
     String? comment,
     Map<ReviewDimension, double> dimensions = const {},
+    bool showName = true,
   }) async {
     if (failure case final f?) return Left(f);
     created.add(bookingId);
+    return const Right(null);
+  }
+
+  /// The customer's own reviews, as «نظرهای من» reads them — where an edit from a booking loads its review.
+  List<MyReview> mine = const [];
+  final edited = <(String, double, Map<ReviewDimension, double>, bool)>[];
+
+  @override
+  Future<Either<Failure, List<MyReview>>> getMyReviews() async => Right(mine);
+
+  @override
+  Future<Either<Failure, void>> editReview({
+    required String reviewId,
+    required double rating,
+    String? comment,
+    Map<ReviewDimension, double> dimensions = const {},
+    bool showName = true,
+  }) async {
+    edited.add((reviewId, rating, dimensions, showName));
     return const Right(null);
   }
 
@@ -211,7 +232,7 @@ void main() {
 
       await tester.tap(find.byKey(const Key('booking-card-review-b0')));
       await _settle(tester);
-      await tester.tap(find.byKey(const Key('review-star-5')));
+      await rateAllAspects(tester, stars: 5);
       await tester.pump();
       await tester.tap(find.byKey(const Key('review-submit')));
       await _settle(tester);
@@ -229,7 +250,7 @@ void main() {
 
       await tester.tap(find.byKey(const Key('booking-card-review-b0')));
       await _settle(tester);
-      await tester.tap(find.byKey(const Key('review-star-4')));
+      await rateAllAspects(tester, stars: 4);
       await tester.pump();
       await tester.tap(find.byKey(const Key('review-submit')));
       await _settle(tester);
@@ -264,6 +285,55 @@ void main() {
       expect(find.text(AppStrings.bookAgain), findsOneWidget, reason: 'a reviewed visit can still be booked again');
     });
 
+    // reviews-and-reschedule-round2 item 8.
+    testWidgets('a salon already reviewed offers «ویرایش نظر» on the card, saved through the edit', (tester) async {
+      _bookings.past = [
+        fakeBooking('b2', status: 'Completed', start: DateTime(2026, 5, 10, 14), actionable: false,
+            canReview: false, reviewStatus: ReviewModerationStatus.published, reviewEditable: true,
+            reviewBookingId: 'b1'),
+      ];
+      _reviews.mine = const [
+        MyReview(
+          id: 'r-b2',
+          rating: 3.5,
+          dimensions: {
+            ReviewDimension.cleanliness: 4,
+            ReviewDimension.skill: 3,
+            ReviewDimension.punctuality: 4,
+            ReviewDimension.conduct: 3,
+          },
+          status: ReviewModerationStatus.published,
+          canEdit: true,
+        ),
+      ];
+      await _open(tester);
+      await _showPast(tester);
+
+      expect(find.byKey(const Key('booking-card-review-b2')), findsNothing);
+      expect(find.textContaining(AppStrings.reviewAlreadyForSalon), findsOneWidget);
+      await tester.tap(find.byKey(const Key('booking-card-edit-review-b2')));
+      await _settle(tester);
+      await rateAllAspects(tester, stars: 5);
+      await tester.tap(find.byKey(const Key('review-submit')));
+      await _settle(tester);
+
+      expect(_reviews.created, isEmpty);
+      expect(_reviews.edited.single.$1, 'r-b2');
+      expect(_reviews.edited.single.$2, 5);
+      expect(_reviews.edited.single.$4, isTrue);
+    });
+
+    testWidgets('a review that is not editable shows no edit action', (tester) async {
+      _bookings.past = [
+        fakeBooking('br', status: 'Completed', start: DateTime(2026, 5, 10, 14), actionable: false,
+            reviewStatus: ReviewModerationStatus.published),
+      ];
+      await _open(tester);
+      await _showPast(tester);
+
+      expect(find.byKey(const Key('booking-card-edit-review-br')), findsNothing);
+    });
+
     testWidgets('a card with both actions and a status fits a 360 phone at 1.3x text', (tester) async {
       _bookings.past = [
         fakeBooking('b0', status: 'Completed', start: DateTime(2026, 5, 10, 14), actionable: false),
@@ -275,6 +345,18 @@ void main() {
 
       expect(tester.takeException(), isNull);
     });
+  });
+
+  // reviews-and-reschedule-round2 item 9.
+  testWidgets('a booking closed by a reschedule reads «تغییر زمان داده شد», not «لغو شده»', (tester) async {
+    _bookings.past = [
+      fakeBooking('bo', status: 'Rescheduled', start: DateTime(2026, 5, 10, 14), actionable: false),
+    ];
+    await _open(tester);
+    await _showPast(tester);
+
+    expect(find.text(AppStrings.statusRescheduled), findsOneWidget);
+    expect(find.text(AppStrings.statusCancelled), findsNothing);
   });
 
   group('book again', () {

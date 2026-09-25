@@ -157,7 +157,9 @@ class AppStrings {
       'آیا از لغو این نوبت مطمئن هستید؟ این عملیات قابل بازگشت نیست.';
   static const String cancelBookingSuccess = 'نوبت لغو شد';
   static const String rescheduleBooking = 'تغییر زمان';
-  static const String rescheduleSuccess = 'زمان نوبت تغییر کرد';
+  // A moved booking goes back to the salon to confirm (reviews-and-reschedule-round2 item 9): said before and after.
+  static const String rescheduleSuccess = 'زمان نوبت تغییر کرد و اکنون در انتظار تأیید سالن است.';
+  static const String rescheduleReconfirmNotice = 'زمان جدید باید دوباره توسط سالن تأیید شود.';
 
   // Booking statuses
   static const String statusConfirmed = 'تایید شده';
@@ -165,6 +167,7 @@ class AppStrings {
   static const String statusCompleted = 'انجام شده';
   static const String statusCancelled = 'لغو شده';
   static const String statusNoShow = 'عدم مراجعه';
+  static const String statusRescheduled = 'تغییر زمان داده شد';
 
   // Profile
   static const String profileTitle = 'پروفایل';
@@ -288,11 +291,16 @@ class AppStrings {
       'پس از انجام نوبت، از همان نوبت در «$appointmentsTitle» می‌توانید برای این سالن نظر ثبت کنید.';
   static const String reviewAnonymous = 'مشتری';
   static const String reviewProviderReply = 'پاسخ سالن';
+  static String reviewProviderReplyFrom(String salon) => 'پاسخ $salon';
   static const String reviewWriteAction = 'ثبت نظر';
   static const String reviewDialogTitle = 'نظر شما دربارهٔ این سالن';
-  static const String reviewRatingLabel = 'امتیاز شما';
   static const String reviewCommentLabel = 'نظر شما (اختیاری)';
-  static const String reviewRatingRequired = 'لطفاً امتیاز را انتخاب کنید';
+  static const String reviewAspectsRequired = 'به هر چهار مورد امتیاز دهید';
+  static String reviewOverallLabel(String value) => 'امتیاز کلی: $value';
+  static const String reviewHideName = 'نامم در نظر نمایش داده نشود';
+  static const String reviewEditExisting = 'ویرایش نظر';
+  static const String reviewAlreadyForSalon = 'برای این سالن قبلاً نظر داده‌اید';
+  static const String reviewNotFound = 'نظر شما پیدا نشد؛ از «نظرهای من» ویرایشش کنید.';
   static const String reviewCommentTooShort = 'نظر باید حداقل ۱۰ حرف باشد';
   static const String reviewSaved =
       'نظر شما ثبت شد و پس از تأیید نمایش داده می‌شود. ممنون!';
@@ -316,7 +324,6 @@ class AppStrings {
   static const String reviewSubmittedHidden =
       'فعلاً پنهان است؛ جزئیات در «نظرهای من».';
   static String reviewCardStatus(String status) => 'نظر شما: $status';
-  static const String reviewDimensionsToggle = 'امتیاز جزئی‌تر (اختیاری)';
   static const String reviewHelpful = 'مفید بود';
   static const String reviewNotHelpful = 'مفید نبود';
   static const String noReviewsYet = 'هنوز نظری ندارد';
@@ -338,6 +345,8 @@ class AppStrings {
   static const String directionsNeshan = 'نشان';
   static const String directionsBalad = 'بلد';
   static const String directionsGoogleMaps = 'گوگل مپ';
+  static const String directionsWaze = 'ویز';
+  static const String directionsPhoneApps = 'برنامه‌های مسیریابی گوشی';
   static const String providerPhoneLabel = 'تلفن تماس';
   static const String providerAddressLabel = 'نشانی';
   static const String noServicesYet = 'خدمتی برای این سالن ثبت نشده است';

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -35,18 +36,49 @@ class ProviderLocationCard extends StatelessWidget {
   static const double _mapHeight = 160;
   static const double _zoom = 16;
 
-  /// The map apps people here actually use, then Google Maps for everyone else.
-  static List<({String label, String url})> directionsFor(double lat, double lng) => [
-        (label: AppStrings.directionsNeshan, url: 'https://neshan.org/maps/@$lat,$lng,16z'),
-        (
-          label: AppStrings.directionsBalad,
-          url: 'https://balad.ir/location?latitude=$lat&longitude=$lng&zoom=16'
-        ),
-        (
-          label: AppStrings.directionsGoogleMaps,
-          url: 'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng'
-        ),
-      ];
+  /// First the phone's own chooser of installed map apps, as other apps do
+  /// (reviews-and-reschedule-round2 item 5) — a `geo:` link on Android, which
+  /// the system offers to every installed navigator, and Apple Maps' link on
+  /// iOS, which hands off to it or another installed handler. The platform is
+  /// the device's, also on the web build (customer.nahalkmi.ir), so a phone's
+  /// browser gets it too; a desktop has no such chooser and starts with the
+  /// named apps. Then the map apps people here actually use, Google Maps, and
+  /// Waze.
+  static List<({String label, String url, bool system})> directionsFor(
+    double lat,
+    double lng, {
+    TargetPlatform? platform,
+  }) {
+    final system = switch (platform ?? defaultTargetPlatform) {
+      TargetPlatform.android => 'geo:$lat,$lng?q=$lat,$lng',
+      TargetPlatform.iOS => 'https://maps.apple.com/?daddr=$lat,$lng',
+      _ => null,
+    };
+    return [
+      if (system != null)
+        (label: AppStrings.directionsPhoneApps, url: system, system: true),
+      (
+        label: AppStrings.directionsNeshan,
+        url: 'https://neshan.org/maps/@$lat,$lng,16z',
+        system: false
+      ),
+      (
+        label: AppStrings.directionsBalad,
+        url: 'https://balad.ir/location?latitude=$lat&longitude=$lng&zoom=16',
+        system: false
+      ),
+      (
+        label: AppStrings.directionsGoogleMaps,
+        url: 'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng',
+        system: false
+      ),
+      (
+        label: AppStrings.directionsWaze,
+        url: 'https://waze.com/ul?ll=$lat,$lng&navigate=yes',
+        system: false
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -116,23 +148,30 @@ class ProviderLocationCard extends StatelessWidget {
     final choice = await showModalBottomSheet<String>(
       context: context,
       builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Text(
-                AppStrings.directionsSheetTitle,
-                style: Theme.of(sheetContext).textTheme.titleMedium,
+        // Five choices and a title: scrolls rather than overflows on a short
+        // screen or at a large text size.
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Text(
+                  AppStrings.directionsSheetTitle,
+                  style: Theme.of(sheetContext).textTheme.titleMedium,
+                ),
               ),
-            ),
-            for (final option in directionsFor(lat, lng))
-              ListTile(
-                leading: const Icon(Icons.navigation_outlined),
-                title: Text(option.label),
-                onTap: () => Navigator.of(sheetContext).pop(option.url),
-              ),
-          ],
+              for (final option in directionsFor(lat, lng))
+                ListTile(
+                  key: Key('directions-${option.label}'),
+                  leading: Icon(option.system
+                      ? Icons.apps_rounded
+                      : Icons.navigation_outlined),
+                  title: Text(option.label),
+                  onTap: () => Navigator.of(sheetContext).pop(option.url),
+                ),
+            ],
+          ),
         ),
       ),
     );

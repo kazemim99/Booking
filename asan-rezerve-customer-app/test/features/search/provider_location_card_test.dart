@@ -1,5 +1,6 @@
 import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
 import 'package:asan_rezerve_customer_app/features/search/presentation/widgets/provider_location_card.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -77,5 +78,68 @@ void main() {
     expect(opened, hasLength(1));
     expect(opened.single, contains('39.643089'));
     expect(opened.single, contains('47.897802'));
+  });
+
+  // reviews-and-reschedule-round2 item 5: first the phone's own chooser of installed map apps, as other apps do.
+  group('the phone\'s own map apps come first', () {
+    const lat = 39.643089, lng = 47.897802;
+
+    Future<List<String>> openFirst(WidgetTester tester) async {
+      final opened = <String>[];
+      await pump(tester, latitude: lat, longitude: lng, opened: opened);
+      await tester.tap(find.byKey(const Key('provider-directions')));
+      await tester.pumpAndSettle();
+      final tiles = tester.widgetList<ListTile>(find.byType(ListTile)).toList();
+      expect((tiles.first.title! as Text).data, AppStrings.directionsPhoneApps);
+      expect(
+        [for (final t in tiles.skip(1)) (t.title! as Text).data],
+        [
+          AppStrings.directionsNeshan,
+          AppStrings.directionsBalad,
+          AppStrings.directionsGoogleMaps,
+          AppStrings.directionsWaze,
+        ],
+      );
+      await tester.tap(find.text(AppStrings.directionsPhoneApps));
+      await tester.pumpAndSettle();
+      return opened;
+    }
+
+    testWidgets('Android: a geo: link, which Android offers to every installed navigator', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+      final opened = await openFirst(tester);
+      expect(opened, ['geo:$lat,$lng?q=$lat,$lng']);
+      debugDefaultTargetPlatformOverride = null;
+    });
+
+    testWidgets('iOS: Apple Maps\' directions link, which hands off to the installed handler', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+      final opened = await openFirst(tester);
+      expect(opened, ['https://maps.apple.com/?daddr=$lat,$lng']);
+      debugDefaultTargetPlatformOverride = null;
+    });
+
+    test('a desktop has no such chooser: the named apps only', () {
+      for (final platform in [TargetPlatform.linux, TargetPlatform.windows, TargetPlatform.macOS]) {
+        final options = ProviderLocationCard.directionsFor(lat, lng, platform: platform);
+        expect(options.map((o) => o.label), [
+          AppStrings.directionsNeshan,
+          AppStrings.directionsBalad,
+          AppStrings.directionsGoogleMaps,
+          AppStrings.directionsWaze,
+        ]);
+        expect(options.any((o) => o.system), isFalse);
+      }
+    });
+
+    test('Waze navigates to the point', () {
+      final waze = ProviderLocationCard.directionsFor(lat, lng, platform: TargetPlatform.android)
+          .singleWhere((o) => o.label == AppStrings.directionsWaze);
+      expect(waze.url, 'https://waze.com/ul?ll=$lat,$lng&navigate=yes');
+    });
   });
 }

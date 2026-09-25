@@ -54,6 +54,7 @@ void main() {
     expect(adapter.last.path, '/v1/Reviews/bookings/b1');
     expect(adapter.last.data, {
       'rating': 4.5,
+      'showName': true,
       'comment': 'خیلی خوب بود، ممنونم',
       'skillRating': 5.0,
       'conductRating': 4.0,
@@ -74,7 +75,45 @@ void main() {
     expect(adapter.last.method, 'PUT');
     expect(adapter.last.path, '/v1/Reviews/r1');
     expect(adapter.last.data,
-        {'rating': 3.0, 'comment': 'بعد از چند روز نظرم عوض شد', 'cleanlinessRating': 2.0});
+        {'rating': 3.0, 'showName': true, 'comment': 'بعد از چند روز نظرم عوض شد', 'cleanlinessRating': 2.0});
+  });
+
+  // reviews-and-reschedule-round2: the four aspects, the overall they give (for an older server), and the name choice.
+  test('a review sends all four aspects, their overall, and showName', () async {
+    await repository.createReview(
+      bookingId: 'b1',
+      rating: 3.5,
+      showName: false,
+      dimensions: const {
+        ReviewDimension.cleanliness: 3,
+        ReviewDimension.skill: 3,
+        ReviewDimension.punctuality: 4,
+        ReviewDimension.conduct: 3,
+      },
+    );
+    expect(adapter.last.data, {
+      'rating': 3.5,
+      'showName': false,
+      'cleanlinessRating': 3.0,
+      'skillRating': 3.0,
+      'punctualityRating': 4.0,
+      'conductRating': 3.0,
+    });
+
+    await repository.editReview(reviewId: 'r1', rating: 4, showName: true);
+    expect((adapter.last.data as Map)['showName'], isTrue);
+  });
+
+  test('the author\'s own reviews carry showName, true when an older server leaves it out', () async {
+    adapter.body = {
+      'items': [
+        {'reviewId': 'r1', 'rating': 4, 'moderationStatus': 'Published', 'showName': false},
+        {'reviewId': 'r2', 'rating': 5, 'moderationStatus': 'Published'},
+      ],
+    };
+    final mine = (await repository.getMyReviews()).getOrElse(() => throw 'x');
+    expect(mine[0].showName, isFalse);
+    expect(mine[1].showName, isTrue);
   });
 
   test('a vote is a PUT, and the answer is the server\'s tally', () async {

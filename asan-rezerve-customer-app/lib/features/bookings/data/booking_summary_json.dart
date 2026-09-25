@@ -128,6 +128,9 @@ class BookingSummaryJson {
       reviewBlockedReason: _text(review['reviewBlockedReason']),
       reviewId: reviewId,
       reviewStatus: reviewId == null ? null : ReviewModerationStatus.parse(review['reviewStatus']),
+      // Per salon since reviews-and-reschedule-round2; absent on an older server, which never offered an edit here.
+      reviewEditable: reviewId != null && review['reviewEditable'] == true,
+      reviewBookingId: reviewId == null ? null : _text(review['reviewBookingId']),
       cancellationReason: cancellationReason,
       // Optional and additive; blank is none.
       rescheduleBlockedReason: _text(rescheduleBlockedReason),

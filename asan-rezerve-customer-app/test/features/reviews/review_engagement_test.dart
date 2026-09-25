@@ -14,6 +14,8 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/review_dialog.dart';
+
 /// Rating in dimensions, voting on what others wrote, and a customer's own
 /// reviews with where each one stands (openspec/changes/provider-reviews-and-ratings).
 void main() {
@@ -49,8 +51,7 @@ void main() {
       };
     }
 
-    testWidgets('the four dimensions wait behind a disclosure and are optional',
-        (tester) async {
+    testWidgets('the four aspects are the review; the overall follows from them', (tester) async {
       ReviewDraft? result;
       await tester.pumpWidget(
         MaterialApp(
@@ -69,25 +70,26 @@ void main() {
       await tester.tap(find.byKey(const Key('open')));
       await tester.pumpAndSettle();
 
-      // Closed by default: the overall star is the whole required review.
-      expect(find.byKey(const Key('review-dim-cleanliness-1')), findsNothing);
-      await tester.tap(find.byKey(const Key('review-dimensions')));
-      await tester.pumpAndSettle();
+      // No disclosure: every aspect is there from the start.
       for (final d in ReviewDimension.values) {
         expect(find.text(d.label), findsOneWidget);
       }
-
-      await tester.tap(find.byKey(const Key('review-star-5')));
-      await tester.tap(find.byKey(const Key('review-dim-cleanliness-4')));
-      await tester.tap(find.byKey(const Key('review-dim-punctuality-2')));
+      await rateAllAspects(tester, each: {
+        ReviewDimension.cleanliness: 4,
+        ReviewDimension.skill: 5,
+        ReviewDimension.punctuality: 2,
+        ReviewDimension.conduct: 4,
+      });
       await tester.tap(find.byKey(const Key('review-submit')));
       await tester.pumpAndSettle();
 
-      expect(result?.rating, 5);
+      expect(result?.rating, 4, reason: '3.75 to the nearest half');
       expect(result?.dimensions, {
         ReviewDimension.cleanliness: 4.0,
+        ReviewDimension.skill: 5.0,
         ReviewDimension.punctuality: 2.0,
-      }, reason: 'a dimension left untouched is not sent as zero');
+        ReviewDimension.conduct: 4.0,
+      });
     });
 
     testWidgets('editing opens on what was said before', (tester) async {
@@ -100,8 +102,13 @@ void main() {
       await open();
 
       expect(find.text('کار تمیز و به‌موقع بود، ممنون'), findsOneWidget);
-      // A given dimension opens the disclosure, so the customer sees it.
-      expect(find.byKey(const Key('review-dim-skill-5')), findsOneWidget);
+      // The given aspect as it was; the others start at the overall star.
+      final skill = tester.widget<IconButton>(
+          find.descendant(of: find.byKey(const Key('review-dim-skill-5')), matching: find.byType(IconButton)));
+      expect(skill.isSelected, isTrue);
+      final cleanliness = tester.widget<IconButton>(find.descendant(
+          of: find.byKey(const Key('review-dim-cleanliness-4')), matching: find.byType(IconButton)));
+      expect(cleanliness.isSelected, isTrue);
       expect(find.text(AppStrings.reviewEditNotice), findsOneWidget,
           reason: 'an edit returns to approval, and the customer is told first');
     });

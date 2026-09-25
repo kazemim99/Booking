@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:asan_rezerve_customer_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
 import 'package:asan_rezerve_customer_app/core/di/injection.dart';
 import 'package:asan_rezerve_customer_app/core/utils/jalali_formatter.dart';
 import 'package:asan_rezerve_customer_app/features/booking/domain/entities/booking_entities.dart';
@@ -78,6 +79,24 @@ void main() {
     await open(tester);
 
     expect(find.text('مجموعه در این روز تعطیل است.'), findsOneWidget);
+  });
+
+  // reviews-and-reschedule-round2 item 9: the moved booking goes back to the salon, said before confirming.
+  testWidgets('says, before the customer confirms, that the salon must confirm the new time again', (tester) async {
+    await open(tester);
+
+    final notice = find.byKey(const Key('reschedule-reconfirm-notice'));
+    expect(notice, findsOneWidget);
+    expect(find.text(AppStrings.rescheduleReconfirmNotice), findsOneWidget);
+    expect(tester.getRect(notice).bottom,
+        lessThanOrEqualTo(tester.getRect(find.byKey(const Key('reschedule-submit'))).top),
+        reason: 'read right above the button that confirms');
+  });
+
+  test('the app holds no window of its own: the server\'s rescheduleBlockedReason decides', () {
+    // The 24-hour rule was never hardcoded; the default is now 2 h on the server. Nothing here names either.
+    expect(AppStrings.rescheduleReconfirmNotice, isNot(contains('24')));
+    expect(AppStrings.rescheduleReconfirmNotice, isNot(contains('۲۴')));
   });
 
   testWidgets('fits a 360x640 phone at 1.3x text', (tester) async {

@@ -33,9 +33,17 @@ class BookingSummary extends Equatable {
   /// the salon can do. Null when it can be, when it never will be, or while the visit is still ahead.
   final String? reviewBlockedReason;
 
-  /// The review the customer wrote for this visit, and where moderation stands on it; null when there is none.
+  /// The customer's review of this SALON — one per salon, so it may have been written from another visit — and
+  /// where moderation stands on it; null when there is none (reviews-and-reschedule-round2 item 8).
   final String? reviewId;
   final ReviewModerationStatus? reviewStatus;
+
+  /// The author may still edit that review: the card offers «ویرایش نظر» instead of «ثبت نظر».
+  final bool reviewEditable;
+
+  /// The visit the review was written from, when the server says (optional, additive). Another visit's review is
+  /// said as «برای این سالن قبلاً نظر داده‌اید».
+  final String? reviewBookingId;
 
   final String? cancellationReason;
 
@@ -64,12 +72,21 @@ class BookingSummary extends Equatable {
     this.reviewBlockedReason,
     this.reviewId,
     this.reviewStatus,
+    this.reviewEditable = false,
+    this.reviewBookingId,
     this.cancellationReason,
     this.rescheduleBlockedReason,
   });
 
-  /// The customer has written a review for this visit, in whatever state.
+  /// The customer has written a review for this salon, in whatever state.
   bool get hasReview => reviewStatus != null;
+
+  /// The review on record was written from another visit to this salon.
+  bool get reviewFromOtherVisit =>
+      reviewId != null && reviewBookingId != null && reviewBookingId != id;
+
+  /// «ویرایش نظر» is offered: a review exists and its author may still change it.
+  bool get canEditReview => reviewId != null && reviewEditable;
 
   bool get isUpcoming => startTime.isAfter(DateTime.now());
 
@@ -79,6 +96,7 @@ class BookingSummary extends Equatable {
       status.toLowerCase() == 'completed' && providerId.isNotEmpty;
 
   BookingSummary copyWith({
+    String? id,
     DateTime? startTime,
     String? status,
     bool? canCancel,
@@ -87,7 +105,7 @@ class BookingSummary extends Equatable {
     ReviewModerationStatus? reviewStatus,
   }) {
     return BookingSummary(
-      id: id,
+      id: id ?? this.id,
       providerId: providerId,
       providerName: providerName,
       providerImageUrl: providerImageUrl,
@@ -106,6 +124,8 @@ class BookingSummary extends Equatable {
       reviewBlockedReason: reviewBlockedReason,
       reviewId: reviewId,
       reviewStatus: reviewStatus ?? this.reviewStatus,
+      reviewEditable: reviewEditable,
+      reviewBookingId: reviewBookingId,
       cancellationReason: cancellationReason,
       rescheduleBlockedReason: rescheduleBlockedReason,
     );
@@ -132,6 +152,8 @@ class BookingSummary extends Equatable {
         reviewBlockedReason,
         reviewId,
         reviewStatus,
+        reviewEditable,
+        reviewBookingId,
         cancellationReason,
         rescheduleBlockedReason,
       ];

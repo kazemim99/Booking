@@ -123,6 +123,49 @@ void main() {
     final state = await settled(cubit);
 
     expect(state.booking!.startTime, newStart);
+    // The new time waits for the salon again (reviews-and-reschedule-round2 item 9).
+    expect(state.booking!.status, 'Requested');
+    await cubit.close();
+  });
+
+  // reviews-and-reschedule-round2 item 9: the server closes the booking and opens a new one; the screen follows it.
+  test('after a reschedule the screen follows the new booking, awaiting the salon', () async {
+    final repo = FakeBookings(upcoming: [fakeBooking('b1')]);
+    final cubit = AppointmentDetailCubit(repo, 'b1')..load();
+    await settled(cubit);
+
+    final newStart = DateTime(2026, 9, 27, 11);
+    final newId = (await repo.rescheduleBooking(bookingId: 'b1', newStartTime: newStart))
+        .getOrElse(() => throw 'x');
+    await cubit.rescheduled(newStart, newBookingId: newId);
+    final state = await settled(cubit);
+
+    expect(cubit.bookingId, 'b1-moved');
+    expect(state.booking!.id, 'b1-moved', reason: 'the refresh read the new booking, not the closed one');
+    expect(state.booking!.status, 'Requested');
+    expect(state.booking!.startTime, newStart);
+
+    // A reload (pull to refresh, retry) stays on the moved booking too.
+    await cubit.load();
+    expect((await settled(cubit)).booking!.status, 'Requested');
+    await cubit.close();
+  });
+
+  test('a reschedule whose answer names no new booking keeps showing the moved time, not the closed booking',
+      () async {
+    final repo = FakeBookings(upcoming: [fakeBooking('b1')])..namesNewBooking = false;
+    final cubit = AppointmentDetailCubit(repo, 'b1')..load();
+    await settled(cubit);
+
+    final newStart = DateTime(2026, 9, 27, 11);
+    final newId = (await repo.rescheduleBooking(bookingId: 'b1', newStartTime: newStart))
+        .getOrElse(() => throw 'x');
+    expect(newId, isNull);
+    await cubit.rescheduled(newStart, newBookingId: newId);
+    final state = await settled(cubit);
+
+    expect(state.booking!.status, 'Requested', reason: 'never the old booking\'s «Rescheduled»');
+    expect(state.booking!.startTime, newStart);
     await cubit.close();
   });
 

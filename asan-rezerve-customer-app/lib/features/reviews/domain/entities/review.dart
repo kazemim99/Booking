@@ -223,6 +223,9 @@ class MyReview extends Equatable {
   final DateTime? editedAt;
   final bool canEdit;
 
+  /// Whether the author's name signs it in public (else «مشتری»).
+  final bool showName;
+
   const MyReview({
     required this.id,
     this.providerId,
@@ -238,6 +241,7 @@ class MyReview extends Equatable {
     this.createdAt,
     this.editedAt,
     this.canEdit = false,
+    this.showName = true,
   });
 
   bool get isEdited => editedAt != null;
@@ -258,5 +262,6 @@ class MyReview extends Equatable {
         createdAt,
         editedAt,
         canEdit,
+        showName,
       ];
 }

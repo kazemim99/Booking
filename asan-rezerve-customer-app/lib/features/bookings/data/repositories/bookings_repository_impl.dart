@@ -79,18 +79,17 @@ class BookingsRepositoryImpl implements BookingsRepository {
   }
 
   @override
-  Future<Either<Failure, Unit>> rescheduleBooking({
+  Future<Either<Failure, String?>> rescheduleBooking({
     required String bookingId,
     required DateTime newStartTime,
     String? newStaffId,
   }) async {
     try {
-      await remoteDataSource.rescheduleBooking(
+      return Right(await remoteDataSource.rescheduleBooking(
         bookingId: bookingId,
         newStartTime: newStartTime,
         newStaffId: newStaffId,
-      );
-      return const Right(unit);
+      ));
     } on DioException catch (e) {
       return Left(mapDioFailure(e));
     } catch (e) {

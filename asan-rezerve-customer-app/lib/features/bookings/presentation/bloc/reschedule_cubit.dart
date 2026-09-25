@@ -6,6 +6,16 @@ import '../../../booking/domain/repositories/booking_repository.dart';
 import '../../domain/entities/booking_summary.dart';
 import '../../domain/repositories/bookings_repository.dart';
 
+/// What the reschedule screen hands back: the new time and, when the server
+/// named it, the booking that now holds it — the old one is closed
+/// (`Rescheduled`), so the screens follow the new id (reviews-and-reschedule-round2 item 9).
+class RescheduleOutcome {
+  final DateTime newStartTime;
+  final String? newBookingId;
+
+  const RescheduleOutcome(this.newStartTime, {this.newBookingId});
+}
+
 enum RescheduleStatus { pickingSlots, loadingSlots, slotsError, submitting, success, failure }
 
 class RescheduleState extends Equatable {
@@ -28,6 +38,10 @@ class RescheduleState extends Equatable {
   /// flow's does. Empty until the profile arrives (no day is treated as closed).
   final List<BusinessHour> businessHours;
 
+  /// After success: the booking the server opened for the new time (it closes
+  /// the old one), when it named it.
+  final String? newBookingId;
+
   const RescheduleState({
     required this.status,
     required this.selectedDate,
@@ -37,6 +51,7 @@ class RescheduleState extends Equatable {
     this.slotsReason,
     this.maxAdvanceBookingDays = RescheduleCubit.defaultBookingWindowDays,
     this.businessHours = const [],
+    this.newBookingId,
   });
 
   RescheduleState copyWith({
@@ -48,6 +63,7 @@ class RescheduleState extends Equatable {
     String? Function()? slotsReason,
     int? maxAdvanceBookingDays,
     List<BusinessHour>? businessHours,
+    String? newBookingId,
   }) {
     return RescheduleState(
       status: status ?? this.status,
@@ -60,6 +76,7 @@ class RescheduleState extends Equatable {
       maxAdvanceBookingDays:
           maxAdvanceBookingDays ?? this.maxAdvanceBookingDays,
       businessHours: businessHours ?? this.businessHours,
+      newBookingId: newBookingId ?? this.newBookingId,
     );
   }
 
@@ -73,6 +90,7 @@ class RescheduleState extends Equatable {
         slotsReason,
         maxAdvanceBookingDays,
         businessHours,
+        newBookingId,
       ];
 }
 
@@ -193,9 +211,10 @@ class RescheduleCubit extends Cubit<RescheduleState> {
         selectedSlot: () => slot,
         errorMessage: failure.message,
       )),
-      (_) => emit(state.copyWith(
+      (newBookingId) => emit(state.copyWith(
         status: RescheduleStatus.success,
         selectedSlot: () => slot,
+        newBookingId: newBookingId,
       )),
     );
   }

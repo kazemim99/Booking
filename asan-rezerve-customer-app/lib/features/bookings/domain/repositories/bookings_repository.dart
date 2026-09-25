@@ -18,7 +18,10 @@ abstract class BookingsRepository {
     required String reason,
   });
 
-  Future<Either<Failure, Unit>> rescheduleBooking({
+  /// Moves a booking. The server closes it (`Rescheduled`) and opens a new one
+  /// in `Requested`; the answer is that new booking's id, or null when the
+  /// server did not name it.
+  Future<Either<Failure, String?>> rescheduleBooking({
     required String bookingId,
     required DateTime newStartTime,
     String? newStaffId,

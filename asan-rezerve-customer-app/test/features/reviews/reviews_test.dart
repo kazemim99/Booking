@@ -1,9 +1,12 @@
 import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_customer_app/core/widgets/app_button.dart';
 import 'package:asan_rezerve_customer_app/features/reviews/domain/entities/review.dart';
 import 'package:asan_rezerve_customer_app/features/reviews/presentation/widgets/provider_reviews_section.dart';
 import 'package:asan_rezerve_customer_app/features/reviews/presentation/widgets/write_review_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../helpers/review_dialog.dart';
 
 /// Reading a salon's reviews, and leaving one after a visit
 /// (openspec/changes/customer-app-discovery-pass).
@@ -13,7 +16,8 @@ void main() {
       bool loading = false,
       bool failed = false,
       VoidCallback? onRetry,
-      VoidCallback? onLoadMore}) async {
+      VoidCallback? onLoadMore,
+      String? salonName}) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Directionality(
@@ -26,6 +30,7 @@ void main() {
                 failed: failed,
                 onRetry: onRetry,
                 onLoadMore: onLoadMore,
+                salonName: salonName,
               ),
             ),
           ),
@@ -178,6 +183,61 @@ void main() {
     });
   });
 
+  // reviews-and-reschedule-round2 item 7: the reply read as a separate grey note, not as the answer to that review.
+  group('the salon\'s reply', () {
+    ProviderReviews withReply() => const ProviderReviews(
+          averageRating: 4,
+          totalReviews: 1,
+          items: [
+            Review(id: 'r1', customerName: 'سارا احمدی', rating: 4, comment: 'خوب بود ولی کمی منتظر ماندم',
+                providerResponse: 'ممنون از صبرتان؛ جبران می‌کنیم.'),
+          ],
+        );
+
+    testWidgets('is signed with the salon\'s name, a reply icon and its picture', (tester) async {
+      await pumpSection(tester, reviews: withReply(), salonName: 'سالن نهال');
+
+      final reply = find.byKey(const Key('review-r1-reply'));
+      expect(reply, findsOneWidget);
+      expect(find.descendant(of: reply, matching: find.text(AppStrings.reviewProviderReplyFrom('سالن نهال'))),
+          findsOneWidget);
+      expect(find.descendant(of: reply, matching: find.byIcon(Icons.reply_rounded)), findsOneWidget);
+      expect(find.descendant(of: reply, matching: find.byIcon(Icons.storefront_outlined)), findsOneWidget,
+          reason: 'no logo: the storefront glyph in the avatar');
+      expect(find.descendant(of: reply, matching: find.byKey(const Key('salon-reply-connector'))), findsOneWidget);
+    });
+
+    testWidgets('says «پاسخ سالن» when the name is not at hand', (tester) async {
+      await pumpSection(tester, reviews: withReply());
+
+      expect(find.text(AppStrings.reviewProviderReply), findsOneWidget);
+    });
+
+    testWidgets('is indented under its review from the start edge (RTL: from the right)', (tester) async {
+      await pumpSection(tester, reviews: withReply(), salonName: 'سالن نهال');
+
+      final review = tester.getRect(find.byKey(const Key('review-r1')));
+      final reply = tester.getRect(find.byKey(const Key('salon-reply-connector')));
+      expect(reply.right, lessThan(review.right - 8), reason: 'indented from the right edge in RTL');
+      final comment = tester.getRect(find.text('خوب بود ولی کمی منتظر ماندم'));
+      expect(reply.top, greaterThan(comment.bottom), reason: 'under the review it answers');
+    });
+
+    testWidgets('is tinted from the theme\'s primary container, with a primary connector', (tester) async {
+      await pumpSection(tester, reviews: withReply(), salonName: 'سالن نهال');
+      final scheme = Theme.of(tester.element(find.byKey(const Key('review-r1-reply')))).colorScheme;
+
+      final connector = tester.widget<Container>(find.byKey(const Key('salon-reply-connector')));
+      expect((connector.decoration! as BoxDecoration).color, scheme.primary);
+      final tinted = tester.widgetList<Container>(find.descendant(
+          of: find.byKey(const Key('review-r1-reply')), matching: find.byType(Container)))
+          .map((c) => c.decoration)
+          .whereType<BoxDecoration>()
+          .map((d) => d.color);
+      expect(tinted, contains(scheme.primaryContainer.withValues(alpha: 0.35)));
+    });
+  });
+
   // QA recording 2026-09-23 #10: "where do I leave my review?" — the profile only shows reviews, and the only way
   // to write one is from a completed appointment, which nothing said.
   group('where a review is written', () {
@@ -235,26 +295,34 @@ void main() {
       return result;
     }
 
-    testWidgets('stars are required; the words are not', (tester) async {
+    testWidgets('all four aspects are required; the words are not', (tester) async {
       await open(tester);
 
-      await tester.tap(find.byKey(const Key('review-submit')));
-      await tester.pumpAndSettle();
-      expect(find.text(AppStrings.reviewRatingRequired), findsOneWidget);
+      AppButton submit() => tester.widget<AppButton>(find.byKey(const Key('review-submit')));
+      expect(submit().onPressed, isNull, reason: 'nothing rated yet');
 
-      await tester.tap(find.byKey(const Key('review-star-4')));
+      // Three of four is not a review yet.
+      for (final d in ReviewDimension.values.take(3)) {
+        await tester.ensureVisible(find.byKey(Key('review-dim-${d.name}-4')));
+        await tester.tap(find.byKey(Key('review-dim-${d.name}-4')));
+        await tester.pump();
+      }
+      expect(submit().onPressed, isNull);
+
+      await rateAllAspects(tester, stars: 4);
+      expect(submit().onPressed, isNotNull);
       await tester.tap(find.byKey(const Key('review-submit')));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('review-submit')), findsNothing,
-          reason: 'four stars alone is a complete review');
+          reason: 'four aspects without a word is a complete review');
     });
 
     testWidgets('a comment too short for the server is caught here first',
         (tester) async {
       await open(tester);
 
-      await tester.tap(find.byKey(const Key('review-star-5')));
+      await rateAllAspects(tester, stars: 5);
       await tester.enterText(find.byKey(const Key('review-comment')), 'خوب');
       await tester.tap(find.byKey(const Key('review-submit')));
       await tester.pumpAndSettle();

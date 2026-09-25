@@ -50,7 +50,19 @@ class ProviderRating extends StatelessWidget {
           style: theme.textTheme.bodySmall,
         ),
         if (count != null && count > 0) ...[
-          const SizedBox(width: AppSpacing.xxs),
+          // «⭐ ۴.۰ · ۱ نظر»: the dot and a muted count keep the two numbers
+          // apart — with only a gap, RTL read «۴.۰ ۱ نظر» as one number
+          // (reviews-and-reschedule-round2 item 2).
+          const SizedBox(width: AppSpacing.xs),
+          ExcludeSemantics(
+            child: Text(
+              '·',
+              key: const Key('provider-rating-separator'),
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.xs),
           // Flexible so a narrow card at a large font scale ellipsises the
           // review count instead of overflowing its row.
           Flexible(
@@ -58,7 +70,9 @@ class ProviderRating extends StatelessWidget {
               AppStrings.reviewCountLabel(
                 JalaliFormatter.toPersianDigits('$count'),
               ),
-              style: theme.textTheme.bodySmall,
+              key: const Key('provider-rating-count'),
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

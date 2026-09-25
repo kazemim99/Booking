@@ -14,6 +14,7 @@ import '../../../reviews/domain/entities/review.dart';
 import '../../../reviews/presentation/write_review_flow.dart';
 import '../../domain/entities/booking_summary.dart';
 import '../bloc/appointment_detail_cubit.dart';
+import '../bloc/reschedule_cubit.dart';
 import 'reschedule_page.dart';
 
 /// Appointment detail (deep-linkable at /appointments/:id, auth-gated by
@@ -92,10 +93,13 @@ class _DetailContent extends StatelessWidget {
   Future<void> _reschedule(BuildContext context) async {
     final cubit = context.read<AppointmentDetailCubit>();
     // On the root navigator: rescheduling is a single-purpose task and covers the tab bar, as booking does.
-    final newStartTime = await Navigator.of(context, rootNavigator: true).push<DateTime>(
+    final outcome = await Navigator.of(context, rootNavigator: true).push<RescheduleOutcome>(
       MaterialPageRoute(builder: (_) => ReschedulePage(booking: booking)),
     );
-    if (newStartTime != null) await cubit.rescheduled(newStartTime);
+    // The server moved the visit to a new booking; the screen follows it.
+    if (outcome != null) {
+      await cubit.rescheduled(outcome.newStartTime, newBookingId: outcome.newBookingId);
+    }
   }
 
   @override
@@ -271,6 +275,18 @@ class _ReviewSection extends StatelessWidget {
     if (saved) cubit.reviewed();
   }
 
+  /// The salon's one review, written from this visit or another, changed from here.
+  Future<void> _edit(BuildContext context) async {
+    final cubit = context.read<AppointmentDetailCubit>();
+    final saved = await editReviewForBooking(
+      context,
+      reviewId: booking.reviewId!,
+      subject: reviewSubject(booking.providerName, booking.serviceName),
+    );
+    // An edit goes back to approval, like a new review.
+    if (saved) cubit.reviewed();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -359,17 +375,32 @@ class _ReviewSection extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(AppStrings.reviewSubmittedTitle,
+                    Text(
+                        booking.reviewFromOtherVisit
+                            ? AppStrings.reviewAlreadyForSalon
+                            : AppStrings.reviewSubmittedTitle,
+                        key: const Key('appointment-review-status-title'),
                         style: theme.textTheme.titleSmall),
                     const SizedBox(height: AppSpacing.xxs),
                     Text(line, style: muted),
-                    Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: AppButton.text(
-                        key: const Key('appointment-my-reviews'),
-                        label: AppStrings.myReviewsTitle,
-                        onPressed: () => context.push(Routes.myReviews),
-                      ),
+                    Wrap(
+                      children: [
+                        // One review per salon: while it may still be
+                        // changed, this visit offers the edit, never a second
+                        // review (reviews-and-reschedule-round2 item 8).
+                        if (booking.canEditReview)
+                          AppButton.text(
+                            key: const Key('appointment-edit-review'),
+                            label: AppStrings.reviewEditExisting,
+                            icon: Icons.edit_outlined,
+                            onPressed: () => _edit(context),
+                          ),
+                        AppButton.text(
+                          key: const Key('appointment-my-reviews'),
+                          label: AppStrings.myReviewsTitle,
+                          onPressed: () => context.push(Routes.myReviews),
+                        ),
+                      ],
                     ),
                   ],
                 ),

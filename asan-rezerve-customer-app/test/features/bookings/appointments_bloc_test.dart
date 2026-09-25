@@ -30,7 +30,7 @@ class FakeBookingsRepository implements BookingsRepository {
   Either<Failure, List<BookingSummary>>? upcomingResult;
   Either<Failure, List<BookingSummary>>? pastResult;
   Either<Failure, Unit>? cancelResult;
-  Either<Failure, Unit>? rescheduleResult;
+  Either<Failure, String?>? rescheduleResult;
   int cancelCalls = 0;
 
   /// When set, list reads answer only once it completes, with the lists as
@@ -65,7 +65,7 @@ class FakeBookingsRepository implements BookingsRepository {
   }
 
   @override
-  Future<Either<Failure, Unit>> rescheduleBooking({
+  Future<Either<Failure, String?>> rescheduleBooking({
     required String bookingId,
     required DateTime newStartTime,
     String? newStaffId,
@@ -321,6 +321,28 @@ void main() {
       await _pump();
 
       expect(bloc.state.upcoming.single.startTime, newTime);
+      expect(bloc.state.upcoming.single.status, 'Requested',
+          reason: 'a moved booking waits for the salon to confirm it again');
+      await bloc.close();
+    });
+
+    test('a reschedule that names the new booking turns the card into it', () async {
+      final repo = FakeBookingsRepository()
+        ..upcomingResult = Right([_booking('b1')])
+        ..pastResult = const Right([]);
+      final bloc = AppointmentsBloc(repo);
+
+      bloc.add(const AppointmentsRequested());
+      await _pump();
+
+      final newTime = DateTime(2030, 1, 6, 11);
+      bloc.add(AppointmentRescheduled('b1', newTime, newBookingId: 'b1-new'));
+      await _pump();
+
+      final card = bloc.state.upcoming.single;
+      expect(card.id, 'b1-new', reason: 'opening the card shows the moved booking, not the closed one');
+      expect(card.status, 'Requested');
+      expect(card.startTime, newTime);
       await bloc.close();
     });
   });

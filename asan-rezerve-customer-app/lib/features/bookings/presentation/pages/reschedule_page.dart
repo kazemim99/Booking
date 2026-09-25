@@ -14,8 +14,8 @@ import '../../domain/entities/booking_summary.dart';
 import '../bloc/reschedule_cubit.dart';
 
 /// Reschedule screen: the shared slot picker scoped to the booking's
-/// provider/service/staff. Pops with the new start time on success so the
-/// appointments list can update the card in place.
+/// provider/service/staff. Pops with a [RescheduleOutcome] on success — the
+/// new time and the new booking's id — so the screens follow the moved booking.
 class ReschedulePage extends StatelessWidget {
   final BookingSummary booking;
 
@@ -43,7 +43,10 @@ class ReschedulePage extends StatelessWidget {
           if (state.status == RescheduleStatus.success) {
             AppSnackbar.success(context, AppStrings.rescheduleSuccess);
             // Pushed with Navigator.push, on the root navigator, by both callers (list and detail).
-            Navigator.of(context).pop(state.selectedSlot!.startTime);
+            Navigator.of(context).pop(RescheduleOutcome(
+              state.selectedSlot!.startTime,
+              newBookingId: state.newBookingId,
+            ));
           } else if (state.status == RescheduleStatus.failure) {
             AppSnackbar.error(
               context,
@@ -60,11 +63,41 @@ class ReschedulePage extends StatelessWidget {
             bottomNavigationBar: SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),
-                child: AppButton(
-                  key: const Key('reschedule-submit'),
-                  label: AppStrings.rescheduleBooking,
-                  loading: state.status == RescheduleStatus.submitting,
-                  onPressed: state.selectedSlot != null ? cubit.submit : null,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Said before the customer confirms: the moved booking
+                    // goes back to the salon (reviews-and-reschedule-round2 item 9).
+                    Row(
+                      key: const Key('reschedule-reconfirm-notice'),
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
+                          size: AppIconSize.sm,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Expanded(
+                          child: Text(
+                            AppStrings.rescheduleReconfirmNotice,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    AppButton(
+                      key: const Key('reschedule-submit'),
+                      label: AppStrings.rescheduleBooking,
+                      loading: state.status == RescheduleStatus.submitting,
+                      onPressed:
+                          state.selectedSlot != null ? cubit.submit : null,
+                    ),
+                  ],
                 ),
               ),
             ),

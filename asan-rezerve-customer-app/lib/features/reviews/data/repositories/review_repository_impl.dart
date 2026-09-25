@@ -59,9 +59,10 @@ class ReviewRepositoryImpl implements ReviewRepository {
     required double rating,
     String? comment,
     Map<ReviewDimension, double> dimensions = const {},
+    bool showName = true,
   }) =>
       _guard('ثبت نظر ناموفق بود', () => remoteDataSource.createReview(
-          bookingId: bookingId, body: _body(rating, comment, dimensions)));
+          bookingId: bookingId, body: _body(rating, comment, dimensions, showName)));
 
   @override
   Future<Either<Failure, void>> editReview({
@@ -69,9 +70,10 @@ class ReviewRepositoryImpl implements ReviewRepository {
     required double rating,
     String? comment,
     Map<ReviewDimension, double> dimensions = const {},
+    bool showName = true,
   }) =>
       _guard('ویرایش نظر ناموفق بود', () => remoteDataSource.editReview(
-          reviewId: reviewId, body: _body(rating, comment, dimensions)));
+          reviewId: reviewId, body: _body(rating, comment, dimensions, showName)));
 
   @override
   Future<Either<Failure, ReviewVoteResult>> vote(
@@ -110,16 +112,21 @@ class ReviewRepositoryImpl implements ReviewRepository {
                   createdAt: _date(r['createdAt']),
                   editedAt: _date(r['editedAt']),
                   canEdit: r['canEdit'] == true,
+                  // Absent on an older server: names were always shown.
+                  showName: r['showName'] is bool ? r['showName'] as bool : true,
                 ))
             .toList();
       });
 
-  /// Create and edit share a body: the overall star, the words if any, and only
-  /// the dimensions the customer actually rated — never a zero for the rest.
-  static Map<String, dynamic> _body(
-          double rating, String? comment, Map<ReviewDimension, double> dimensions) =>
+  /// Create and edit share a body: the overall star (the server derives it
+  /// when absent, but an older one requires it), the words if any, the
+  /// dimensions the customer rated — never a zero for the rest — and whether
+  /// their name signs it.
+  static Map<String, dynamic> _body(double rating, String? comment,
+          Map<ReviewDimension, double> dimensions, bool showName) =>
       {
         'rating': rating,
+        'showName': showName,
         if (comment != null && comment.trim().isNotEmpty) 'comment': comment.trim(),
         for (final e in dimensions.entries) e.key.wireName: e.value,
       };

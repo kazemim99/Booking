@@ -4,7 +4,7 @@ import '../../config/theme/app_text_styles.dart';
 import '../../config/theme/app_tokens.dart';
 import '../constants/app_strings.dart';
 
-enum BookingStatus { confirmed, pending, completed, cancelled, noShow }
+enum BookingStatus { confirmed, pending, completed, cancelled, noShow, rescheduled }
 
 /// Booking-status badge: tinted background + AA-contrast text + status icon,
 /// so status is never conveyed by color alone.
@@ -28,6 +28,9 @@ class StatusBadge extends StatelessWidget {
       case 'noshow':
       case 'no_show':
         return BookingStatus.noShow;
+      // The old booking a reschedule closed; its visit lives on in a new one.
+      case 'rescheduled':
+        return BookingStatus.rescheduled;
       default:
         return null;
     }
@@ -45,6 +48,8 @@ class StatusBadge extends StatelessWidget {
         return AppStrings.statusCancelled;
       case BookingStatus.noShow:
         return AppStrings.statusNoShow;
+      case BookingStatus.rescheduled:
+        return AppStrings.statusRescheduled;
     }
   }
 
@@ -75,6 +80,12 @@ class StatusBadge extends StatelessWidget {
           AppColors.errorTint,
           AppColors.errorText,
           Icons.person_off_outlined,
+        ),
+      // Not a failure: the visit moved. Informational, not the error red of «لغو شده».
+      BookingStatus.rescheduled => (
+          AppColors.infoTint,
+          AppColors.infoText,
+          Icons.update,
         ),
     };
 

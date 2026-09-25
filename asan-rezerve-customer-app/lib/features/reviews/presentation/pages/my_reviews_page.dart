@@ -56,6 +56,7 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
         rating: review.rating,
         comment: review.comment,
         dimensions: review.dimensions,
+        showName: review.showName,
       ),
     );
     if (draft == null || !mounted) return;
@@ -64,6 +65,7 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
       rating: draft.rating,
       comment: draft.comment,
       dimensions: draft.dimensions,
+      showName: draft.showName,
     );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(

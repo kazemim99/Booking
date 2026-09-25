@@ -43,10 +43,15 @@ class AppointmentRescheduled extends AppointmentsEvent {
   final String bookingId;
   final DateTime newStartTime;
 
-  const AppointmentRescheduled(this.bookingId, this.newStartTime);
+  /// The booking the server opened for the new time, when it named it: the
+  /// card becomes that booking, so opening it shows the moved visit.
+  final String? newBookingId;
+
+  const AppointmentRescheduled(this.bookingId, this.newStartTime,
+      {this.newBookingId});
 
   @override
-  List<Object?> get props => [bookingId, newStartTime];
+  List<Object?> get props => [bookingId, newStartTime, newBookingId];
 }
 
 /// A review was saved for a past visit from its card; the card shows it as
@@ -240,7 +245,12 @@ class AppointmentsBloc extends Bloc<AppointmentsEvent, AppointmentsState> {
       upcoming: [
         for (final b in state.upcoming)
           if (b.id == event.bookingId)
-            b.copyWith(startTime: event.newStartTime)
+            // A moved booking waits for the salon again: «در انتظار تأیید».
+            b.copyWith(
+              id: event.newBookingId,
+              startTime: event.newStartTime,
+              status: 'Requested',
+            )
           else
             b,
       ],

@@ -24,6 +24,8 @@ BookingSummary fakeBooking(
   String? rescheduleBlockedReason,
   String? reviewBlockedReason,
   ReviewModerationStatus? reviewStatus,
+  bool reviewEditable = false,
+  String? reviewBookingId,
 }) {
   final active = actionable ?? const {'confirmed', 'pending', 'requested'}.contains(status.toLowerCase());
   return BookingSummary(
@@ -46,6 +48,8 @@ BookingSummary fakeBooking(
     reviewBlockedReason: reviewBlockedReason,
     reviewId: reviewStatus == null ? null : 'r-$id',
     reviewStatus: reviewStatus,
+    reviewEditable: reviewEditable,
+    reviewBookingId: reviewBookingId,
   );
 }
 
@@ -117,16 +121,29 @@ class FakeBookings implements BookingsRepository {
     return const Right(unit);
   }
 
+  /// False plays an older server whose answer does not name the new booking.
+  bool namesNewBooking = true;
+
   @override
-  Future<Either<Failure, Unit>> rescheduleBooking({
+  Future<Either<Failure, String?>> rescheduleBooking({
     required String bookingId,
     required DateTime newStartTime,
     String? newStaffId,
   }) async {
     if (rescheduleFailure != null) return Left(rescheduleFailure!);
     final found = _find(bookingId);
-    if (found != null) _replace(found.copyWith(startTime: newStartTime));
-    return const Right(unit);
+    if (found == null) return const Right(null);
+    // As the server does: the old booking is closed as Rescheduled, and a new one holds the new time, Requested
+    // again for the salon to confirm.
+    final newId = '$bookingId-moved';
+    _replace(found.copyWith(status: 'Rescheduled', canCancel: false, canReschedule: false));
+    final moved = found.copyWith(id: newId, startTime: newStartTime, status: 'Requested');
+    if (upcoming.any((b) => b.id == bookingId)) {
+      upcoming = [...upcoming, moved];
+    } else {
+      onlyById = {...onlyById, newId: moved};
+    }
+    return Right(namesNewBooking ? newId : null);
   }
 }
 

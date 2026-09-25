@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:asan_rezerve_customer_app/config/theme/app_colors.dart';
 import 'package:asan_rezerve_customer_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_tokens.dart';
 import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
 import 'package:asan_rezerve_customer_app/core/utils/price_formatter.dart';
 import 'package:asan_rezerve_customer_app/core/widgets/widgets.dart';
@@ -155,6 +156,15 @@ void main() {
       expect(StatusBadge.tryParse('CANCELLED'), BookingStatus.cancelled);
       expect(StatusBadge.tryParse('no_show'), BookingStatus.noShow);
       expect(StatusBadge.tryParse('bogus'), isNull);
+    });
+
+    // reviews-and-reschedule-round2 item 9: the booking a reschedule closed says it moved, never «لغو شده».
+    testWidgets('a Rescheduled booking reads «تغییر زمان داده شد», not cancelled', (tester) async {
+      expect(StatusBadge.tryParse('Rescheduled'), BookingStatus.rescheduled);
+      await tester.pumpWidget(_wrap(const StatusBadge(status: BookingStatus.rescheduled)));
+      expect(find.text(AppStrings.statusRescheduled), findsOneWidget);
+      expect(find.text(AppStrings.statusCancelled), findsNothing);
+      expect(find.byIcon(Icons.cancel_outlined), findsNothing);
     });
   });
 
@@ -409,6 +419,34 @@ void main() {
       expect(find.text(AppStrings.reviewCountLabel('۲۳')), findsOneWidget);
     });
 
+    testWidgets('rating and count read as two things: «⭐ ۴.۰ · ۱ نظر»',
+        (tester) async {
+      await tester.pumpWidget(
+        _wrap(const ProviderRating(rating: 4, reviewCount: 1)),
+      );
+      final context = tester.element(find.byType(ProviderRating));
+      final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+
+      // A dot between them, with a real gap on both sides.
+      final dot = find.byKey(const Key('provider-rating-separator'));
+      expect(dot, findsOneWidget);
+      final rating = tester.getRect(find.text('۴.۰'));
+      final count = tester.getRect(find.text(AppStrings.reviewCountLabel('۱')));
+      final dotRect = tester.getRect(dot);
+      // RTL: the rating is to the right of the dot, the count to its left.
+      expect(rating.left - dotRect.right, greaterThanOrEqualTo(AppSpacing.xs));
+      expect(dotRect.left - count.right, greaterThanOrEqualTo(AppSpacing.xs));
+      // The count is muted, so it does not read as part of the rating.
+      final countText = tester.widget<Text>(
+          find.byKey(const Key('provider-rating-count')));
+      expect(countText.style?.color, muted);
+    });
+
+    testWidgets('no separator without a count', (tester) async {
+      await tester.pumpWidget(_wrap(const ProviderRating(rating: 4.5)));
+      expect(find.byKey(const Key('provider-rating-separator')), findsNothing);
+    });
+
     testWidgets('omits the review count when there are no reviews',
         (tester) async {
       await tester.pumpWidget(
@@ -467,6 +505,17 @@ void main() {
       expect(find.text('۴.۲'), findsOneWidget);
       expect(find.text(AppStrings.reviewCountLabel('۷')), findsOneWidget);
       expect(find.byKey(const Key('provider-no-reviews')), findsNothing);
+    });
+
+    testWidgets('the rating\'s own dot is the only one between rating and count',
+        (tester) async {
+      await tester.pumpWidget(
+        _wrap(const ProviderMetaLine(
+            category: 'پارس‌آباد', rating: 4.2, reviewCount: 7, startingPrice: 90000)),
+      );
+      // category · ⭐ ۴.۲ · ۷ نظر · از … — three dots, never two in a row.
+      expect(find.text('·'), findsNWidgets(3));
+      expect(find.byKey(const Key('provider-rating-separator')), findsOneWidget);
     });
   });
 
