@@ -1,5 +1,5 @@
-# Booksy - Run Dev Stack (selectable)
-# Launches any combination of: infra (docker), backend (Booksy.Host), the two
+# AsanRezerve - Run Dev Stack (selectable)
+# Launches any combination of: infra (docker), backend (AsanRezerve.Host), the two
 # Flutter apps, the admin panel, and the legacy customer web frontend.
 #
 # Usage:
@@ -56,11 +56,11 @@ function Test-CommandExists {
 
 $serviceLabels = [ordered]@{
     Infra    = "Infrastructure   (Postgres/Redis/Seq/pgAdmin - Docker)"
-    Backend  = "Backend API      (Booksy.Host, :5000)"
+    Backend  = "Backend API      (AsanRezerve.Host, :5000)"
     Customer = "Customer App     (Flutter, web)"
     Provider = "Provider App     (Flutter, web)"
     Admin    = "Admin Panel      (Vue, Vite)"
-    Frontend = "Customer Web     (booksy-frontend, legacy Vue site)"
+    Frontend = "Customer Web     (asanrezerve-frontend, legacy Vue site)"
 }
 
 # One background/foreground pair per service window, so you can tell them
@@ -97,7 +97,7 @@ function Select-Services {
 
     if (-not $canInteract) {
         Write-Host ""
-        Write-Host "  Booksy Dev Launcher" -ForegroundColor Cyan
+        Write-Host "  AsanRezerve Dev Launcher" -ForegroundColor Cyan
         for ($i = 0; $i -lt $count; $i++) {
             Write-Host ("  {0}) {1}" -f ($i + 1), $Labels[$i])
         }
@@ -114,7 +114,7 @@ function Select-Services {
 
     $header = @(
         "",
-        "  Booksy Dev Launcher - select what to start",
+        "  AsanRezerve Dev Launcher - select what to start",
         "  Up/Down move    Space toggle    A all    Enter run    Esc cancel",
         ""
     )
@@ -253,7 +253,7 @@ if ($selected.Backend) {
             Write-Host "Waiting for Postgres to report healthy before starting the backend..." -ForegroundColor Yellow
             $healthy = $false
             for ($i = 0; $i -lt 15; $i++) {
-                $status = docker inspect --format='{{.State.Health.Status}}' booksy-postgres 2>$null
+                $status = docker inspect --format='{{.State.Health.Status}}' asanrezerve-postgres 2>$null
                 if ($status -eq 'healthy') { $healthy = $true; break }
                 Start-Sleep -Seconds 2
             }
@@ -261,14 +261,14 @@ if ($selected.Backend) {
                 Write-Host "Postgres not confirmed healthy yet - starting backend anyway; it will retry its own connection." -ForegroundColor Yellow
             }
         }
-        $runCommand = "dotnet run --project src\Host\Booksy.Host\Booksy.Host.csproj"
+        $runCommand = "dotnet run --project src\Host\AsanRezerve.Host\AsanRezerve.Host.csproj"
         if ($NoOtpSandbox) {
             Write-Host "OTP sandbox pinning disabled - verification codes will be random (check the backend log)." -ForegroundColor Yellow
         } else {
             Write-Host "OTP codes pinned to '$OtpSandboxCode' for this run (pass -NoOtpSandbox to disable)." -ForegroundColor Cyan
             $runCommand = "`$env:OTP_SANDBOX_CODE = '$OtpSandboxCode'; $runCommand"
         }
-        Start-InNewWindow -Title "Booksy Backend (:5000)" `
+        Start-InNewWindow -Title "AsanRezerve Backend (:5000)" `
             -WorkingDirectory $repoRoot `
             -Command $runCommand `
             -BackgroundColor $serviceColors.Backend.Bg -ForegroundColor $serviceColors.Backend.Fg
@@ -280,8 +280,8 @@ if ($selected.Customer) {
     if (-not (Test-CommandExists "flutter")) {
         Write-Host "flutter not found on PATH - skipping customer app." -ForegroundColor Red
     } else {
-        Start-InNewWindow -Title "Booksy Customer App (Flutter)" `
-            -WorkingDirectory (Join-Path $repoRoot "booksy-customer-app") `
+        Start-InNewWindow -Title "AsanRezerve Customer App (Flutter)" `
+            -WorkingDirectory (Join-Path $repoRoot "asanrezerve-customer-app") `
             -Command "flutter run -d chrome" `
             -BackgroundColor $serviceColors.Customer.Bg -ForegroundColor $serviceColors.Customer.Fg
     }
@@ -292,8 +292,8 @@ if ($selected.Provider) {
     if (-not (Test-CommandExists "flutter")) {
         Write-Host "flutter not found on PATH - skipping provider app." -ForegroundColor Red
     } else {
-        Start-InNewWindow -Title "Booksy Provider App (Flutter)" `
-            -WorkingDirectory (Join-Path $repoRoot "booksy-provider-app") `
+        Start-InNewWindow -Title "AsanRezerve Provider App (Flutter)" `
+            -WorkingDirectory (Join-Path $repoRoot "asanrezerve-provider-app") `
             -Command "flutter run -d chrome" `
             -BackgroundColor $serviceColors.Provider.Bg -ForegroundColor $serviceColors.Provider.Fg
     }
@@ -304,8 +304,8 @@ if ($selected.Admin) {
     if (-not (Test-CommandExists "npm")) {
         Write-Host "npm not found on PATH - skipping admin panel." -ForegroundColor Red
     } else {
-        Start-InNewWindow -Title "Booksy Admin Panel (Vite)" `
-            -WorkingDirectory (Join-Path $repoRoot "booksy-admin") `
+        Start-InNewWindow -Title "AsanRezerve Admin Panel (Vite)" `
+            -WorkingDirectory (Join-Path $repoRoot "asanrezerve-admin") `
             -Command "npm run dev" `
             -BackgroundColor $serviceColors.Admin.Bg -ForegroundColor $serviceColors.Admin.Fg
     }
@@ -316,8 +316,8 @@ if ($selected.Frontend) {
     if (-not (Test-CommandExists "npm")) {
         Write-Host "npm not found on PATH - skipping customer web frontend." -ForegroundColor Red
     } else {
-        Start-InNewWindow -Title "Booksy Customer Web (Vite)" `
-            -WorkingDirectory (Join-Path $repoRoot "booksy-frontend") `
+        Start-InNewWindow -Title "AsanRezerve Customer Web (Vite)" `
+            -WorkingDirectory (Join-Path $repoRoot "asanrezerve-frontend") `
             -Command "npm run dev" `
             -BackgroundColor $serviceColors.Frontend.Bg -ForegroundColor $serviceColors.Frontend.Fg
     }

@@ -1,7 +1,7 @@
 # feedback-states Specification
 
 ## Purpose
-Standardizes how `booksy-provider-app` screens present loading, empty, and error states (`AppLoading`/`AppEmptyState`/`AppErrorState`) so every screen's "nothing to show yet" moment looks and behaves the same way, instead of each feature inventing its own spinner or blank state.
+Standardizes how `asanrezerve-provider-app` screens present loading, empty, and error states (`AppLoading`/`AppEmptyState`/`AppErrorState`) so every screen's "nothing to show yet" moment looks and behaves the same way, instead of each feature inventing its own spinner or blank state.
 ## Requirements
 ### Requirement: Loading state component
 The system SHALL provide `AppLoading`: the single loading presentation for all screens, rendering a Material circular spinner (brand primary) with an optional muted message beneath it, in inline and centered layouts. Raw `CircularProgressIndicator` instances MUST NOT appear directly in feature screens; all existing call sites (splash, city-list loading, map geocoding overlay, button internals excepted via `AppButton`) SHALL migrate to `AppLoading` or a loading-aware shared component.

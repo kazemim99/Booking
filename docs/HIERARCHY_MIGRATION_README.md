@@ -136,7 +136,7 @@ No frontend changes required for this migration. The API contracts remain the sa
 
 ### Related Documentation
 
-4. **[HIERARCHY_API_STATUS.md](../booksy-frontend/HIERARCHY_API_STATUS.md)**
+4. **[HIERARCHY_API_STATUS.md](../asanrezerve-frontend/HIERARCHY_API_STATUS.md)**
    - Provider Hierarchy API status (100% MVP complete)
    - Available endpoints
    - Frontend integration status
@@ -162,22 +162,22 @@ git pull origin feature/ux-role-based-navigation
 
 #### 2. Verify Build
 ```bash
-dotnet build src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application
+dotnet build src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application
 ```
 
 Expected: ✅ Build succeeded (warnings ok, 0 errors)
 
 #### 3. Verify Database
 ```bash
-cd src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api
-dotnet ef migrations list --project ../Booksy.ServiceCatalog.Infrastructure
+cd src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api
+dotnet ef migrations list --project ../AsanRezerve.ServiceCatalog.Infrastructure
 ```
 
 Expected: All migrations listed, including hierarchy migrations
 
 #### 4. Update Database (if needed)
 ```bash
-dotnet ef database update --project ../Booksy.ServiceCatalog.Infrastructure
+dotnet ef database update --project ../AsanRezerve.ServiceCatalog.Infrastructure
 ```
 
 Expected: "No migrations were applied. The database is already up to date."
@@ -301,7 +301,7 @@ public async Task BookingFlow_WithHierarchy_CompletesSuccessfully()
 #### Error: "Provider is a namespace but is used like a type"
 **Solution**: Add namespace alias in using statements
 ```csharp
-using ProviderAggregate = Booksy.ServiceCatalog.Domain.Aggregates.Provider;
+using ProviderAggregate = AsanRezerve.ServiceCatalog.Domain.Aggregates.Provider;
 ```
 
 #### Error: "cannot convert from Staff to Provider"
@@ -330,13 +330,13 @@ var individualProvider = await _providerRepository.GetByIdAsync(staffProviderId)
 
 #### Migration not applied
 ```bash
-cd src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api
-dotnet ef database update --project ../Booksy.ServiceCatalog.Infrastructure
+cd src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api
+dotnet ef database update --project ../AsanRezerve.ServiceCatalog.Infrastructure
 ```
 
 #### Check migration status
 ```bash
-dotnet ef migrations list --project ../Booksy.ServiceCatalog.Infrastructure
+dotnet ef migrations list --project ../AsanRezerve.ServiceCatalog.Infrastructure
 ```
 
 Look for:
@@ -456,7 +456,7 @@ Monitor these metrics and optimize if needed.
 
 ### Questions?
 - Review documentation in `docs/` folder
-- Check [HIERARCHY_API_STATUS.md](../booksy-frontend/HIERARCHY_API_STATUS.md)
+- Check [HIERARCHY_API_STATUS.md](../asanrezerve-frontend/HIERARCHY_API_STATUS.md)
 - Refer to [HIERARCHY_MIGRATION_COMPLETED.md](./HIERARCHY_MIGRATION_COMPLETED.md)
 
 ### Found a Bug?

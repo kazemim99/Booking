@@ -261,20 +261,20 @@ If issues occur:
 ```bash
 # Backend
 cd c:\Repos\Booking
-dotnet build src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Booksy.ServiceCatalog.Api.csproj
+dotnet build src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api/AsanRezerve.ServiceCatalog.Api.csproj
 
 # Frontend (if applicable)
-cd booksy-frontend
+cd asanrezerve-frontend
 npm run build
 ```
 
 ### Test Commands
 ```bash
 # Backend Unit Tests
-dotnet test tests/Booksy.ServiceCatalog.Application.UnitTests/
+dotnet test tests/AsanRezerve.ServiceCatalog.Application.UnitTests/
 
 # Backend Integration Tests
-dotnet test tests/Booksy.ServiceCatalog.IntegrationTests/
+dotnet test tests/AsanRezerve.ServiceCatalog.IntegrationTests/
 
 # Frontend Tests
 npm run test
@@ -283,7 +283,7 @@ npm run test
 ### API Test
 ```bash
 # Create booking test
-curl -X POST "https://api.booksy.com/api/v1/bookings" \
+curl -X POST "https://api.asanrezerve.com/api/v1/bookings" \
   -H "Authorization: Bearer TOKEN" \
   -H "Content-Type: application/json" \
   -d '{

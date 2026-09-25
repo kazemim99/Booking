@@ -341,7 +341,7 @@ Authorization: Bearer {token}
 
 ### Create Booking
 ```bash
-curl -X POST "https://api.booksy.com/api/v1/bookings" \
+curl -X POST "https://api.asanrezerve.com/api/v1/bookings" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{

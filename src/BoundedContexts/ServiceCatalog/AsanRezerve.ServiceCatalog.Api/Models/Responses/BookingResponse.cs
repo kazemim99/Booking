@@ -1,0 +1,38 @@
+namespace AsanRezerve.ServiceCatalog.Api.Models.Responses;
+
+/// <summary>
+/// Response model for booking summary
+/// </summary>
+public class BookingResponse
+{
+    public Guid Id { get; set; }
+    public Guid CustomerId { get; set; }
+    public Guid ProviderId { get; set; }
+    public Guid ServiceId { get; set; }
+    public Guid? StaffProviderId { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public DateTime StartTime { get; set; }
+    public DateTime EndTime { get; set; }
+    public int DurationMinutes { get; set; }
+    public decimal TotalPrice { get; set; }
+    public string Currency { get; set; } = string.Empty;
+    public string PaymentStatus { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// Who the booking is for: the customer's real name, or the salon's own book name for a walk-in. Null when
+    /// there is no real name (a placeholder or a phone is never sent as one). Filled on the salon's booking list.
+    /// </summary>
+    public string? CustomerName { get; set; }
+
+    /// <summary>
+    /// Names of every service bundled in the visit (multi-service bookings).
+    /// Empty on rows written before line items existed.
+    /// </summary>
+    public List<string> ServiceNames { get; set; } = new();
+
+    /// <summary>
+    /// Alias for StaffProviderId (backward compatibility)
+    /// </summary>
+    public Guid? StaffId { get => StaffProviderId; set => StaffProviderId = value; }
+}

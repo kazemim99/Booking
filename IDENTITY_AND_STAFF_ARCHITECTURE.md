@@ -14,7 +14,7 @@
 > its identity mechanism — **`ParentProviderId`-as-membership**. Its remaining 58 tasks were
 > deliberately not carried forward (see that change's proposal for the reasoning); the one live
 > remnant, migrating the Vue hierarchy UI off sub-providers, is task 8.7 here.
-> **Scope:** `Booksy.UserManagement` + `Booksy.ServiceCatalog` bounded contexts (backend) and `booksy-provider-app` (Flutter). The Vue `booksy-frontend` is a secondary consumer flagged for follow-up alignment.
+> **Scope:** `AsanRezerve.UserManagement` + `AsanRezerve.ServiceCatalog` bounded contexts (backend) and `asanrezerve-provider-app` (Flutter). The Vue `asanrezerve-frontend` is a secondary consumer flagged for follow-up alignment.
 > **Author:** Architecture audit, 2026-07-21.
 
 ---
@@ -40,13 +40,13 @@ This document audits the current architecture, catalogs the problems against the
 
 | Model | Origin | Staff identity | Consumer | Multi-org? | Owner-as-staff? |
 |---|---|---|---|---|---|
-| **A — Staff child-record** | `complete-business-profile`, Flutter `implement-staff-management` | Inline name/email/phone on a record; **no account link** | **booksy-provider-app (Flutter)** | No concept | No concept |
-| **B — Individual = child Provider** | `add-provider-hierarchy` (backend + Vue mostly built) | A whole `Provider(Individual)` with singular `ParentProviderId` | booksy-frontend (Vue) | **Explicitly rejected** (design Q#2 = "No") | **Deliberately implicit** (design Q#3 = Option B) |
+| **A — Staff child-record** | `complete-business-profile`, Flutter `implement-staff-management` | Inline name/email/phone on a record; **no account link** | **asanrezerve-provider-app (Flutter)** | No concept | No concept |
+| **B — Individual = child Provider** | `add-provider-hierarchy` (backend + Vue mostly built) | A whole `Provider(Individual)` with singular `ParentProviderId` | asanrezerve-frontend (Vue) | **Explicitly rejected** (design Q#2 = "No") | **Deliberately implicit** (design Q#3 = Option B) |
 | **Identity** | `UserManagement` | `User` keyed by email; phone optional/unindexed | Both | n/a | n/a |
 
 Both A and B are partially wired into the same backend. The Flutter app calls the Model-A path (`POST /Providers/{id}/staff` → `AddStaffToProviderCommandHandler`), while the hierarchy invitation/join aggregates from Model B sit alongside, reachable only from Vue.
 
-### 1.2 Identity — `Booksy.UserManagement`
+### 1.2 Identity — `AsanRezerve.UserManagement`
 
 ```
 User (AggregateRoot<UserId>)
@@ -65,7 +65,7 @@ User (AggregateRoot<UserId>)
 - **Cross-context link:** ServiceCatalog `Provider.OwnerId` is the same `UserId`. Provider records are created *pull-based* by ServiceCatalog during onboarding from the JWT's user id. A `UserCreatedIntegrationEvent` handler exists but is a **no-op stub**.
 - Login enrichment (`providerId` in the JWT) is fetched by an **HTTP call to `GET /api/v1/Providers/by-owner/{id}`** — an over-the-wire hop inside a single in-process monolith.
 
-### 1.3 Provider / "Staff" — `Booksy.ServiceCatalog`
+### 1.3 Provider / "Staff" — `AsanRezerve.ServiceCatalog`
 
 ```
 Provider (AggregateRoot<ProviderId>)
@@ -89,7 +89,7 @@ ProviderJoinRequest (AggregateRoot<Guid>)  — existing Individual provider → 
 - `StaffRole` enum exists but is **never persisted** — the staff read model hardcodes `Role: "Staff"`, `LeftAt: null`, and fabricates `JoinedAt`.
 - Dead weight: commented-out `Staff.cs`, no-op `StaffSeeder`/`StaffDataSeeder`, six never-raised `Staff*Event` records with live-but-unreachable handlers.
 
-### 1.4 Frontend — `booksy-provider-app` (Flutter)
+### 1.4 Frontend — `asanrezerve-provider-app` (Flutter)
 
 - **Onboarding:** an 8-step linear wizard (business info → category → location → services → hours → gallery → preview → completion). **No "do you provide services?" step, no branching, owner never becomes staff.** A finished salon has **zero** staff, which the composer (`_NoStaffNotice`) and the Home activation checklist (`hasStaff`) both flag as a problem.
 - **Staff:** `/more/staff` list + `StaffFormSheet` → `POST /Providers/{id}/staff`. Fields: first name (required), last name, **phone (optional)**, role (optional). **No invitation, no SMS, no account link.** `ProviderStaffMember` has no `userId`.
@@ -130,7 +130,7 @@ Bookings can reference an `IndividualProviderId`, but for a solo org the org its
 
 - **No unique constraint or index on `users.phone`** — uniqueness is best-effort application code only.
 - Email/password registration leaves `User.PhoneNumber` null → later OTP login **creates a duplicate** for the same phone.
-- Customer vs Provider on one phone → **two `User` rows** with synthesized emails (`{n}@booksy.customer` / `.provider`); email-unique never catches them.
+- Customer vs Provider on one phone → **two `User` rows** with synthesized emails (`{n}@asanrezerve.customer` / `.provider`); email-unique never catches them.
 - **OTP login never checks `Status`** → `Banned`/`Suspended`/`Inactive` users still get a fresh JWT (the status guard in `User.Authenticate()` is bypassed).
 - `ExistsByEmailAsync` is **inverted** (returns `user == null`); only works today via double-negation.
 - No `ExistsByPhoneNumberAsync`; phone lookups are unindexed full scans OR-ing several `EquivalentForms()`.
@@ -279,7 +279,7 @@ No new user, ever. History rows for membership A are retained.
 - The provider app gains a **salon switcher** (in the app bar / More header). Switching sets the active membership; all Home/Calendar/Clients queries are scoped to it.
 - A person with one membership sees no switcher (unchanged UX).
 
-### 4.5 Screens to add in `booksy-provider-app`
+### 4.5 Screens to add in `asanrezerve-provider-app`
 
 | Screen | Purpose | Status |
 |---|---|---|
@@ -451,7 +451,7 @@ Phased, backward-compatible, feature-flagged (`identity-membership-model`):
 5. **Rewire reads:** staff list, booking attribution, session `memberships[]` read from the new tables.
 6. **Flutter:** onboarding branch, invite/accept/complete-profile screens, salon switcher, `ProviderSession.memberships[]`.
 7. **Cleanup:** drop `parent_provider_id`, delete `Staff.cs`/dead events/no-op seeders, remove deprecated endpoints after the flag is 100%.
-8. **Vue `booksy-frontend`:** align its hierarchy UI to the membership endpoints (follow-up change, tracked separately).
+8. **Vue `asanrezerve-frontend`:** align its hierarchy UI to the membership endpoints (follow-up change, tracked separately).
 
 Rollback: the flag gates reads; membership tables are additive; legacy columns retained until the final cleanup phase.
 

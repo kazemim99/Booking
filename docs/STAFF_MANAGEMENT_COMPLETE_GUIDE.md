@@ -1,7 +1,7 @@
 # Staff Management - Complete Implementation Guide
 
 ## Overview
-This document provides a comprehensive guide to the staff management system in the Booksy application, including invitations, staff display, removal, and all UI interactions.
+This document provides a comprehensive guide to the staff management system in the AsanRezerve application, including invitations, staff display, removal, and all UI interactions.
 
 ## Table of Contents
 1. [Features](#features)

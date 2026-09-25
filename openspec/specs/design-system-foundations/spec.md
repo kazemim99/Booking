@@ -1,7 +1,7 @@
 # design-system-foundations Specification
 
 ## Purpose
-Defines the Coliride-derived design tokens (spacing, motion, icon size, radius, color, chrome) that every shared widget and screen in `booksy-provider-app` draws from, so the app has one visual vocabulary instead of ad-hoc literals scattered per screen.
+Defines the Coliride-derived design tokens (spacing, motion, icon size, radius, color, chrome) that every shared widget and screen in `asanrezerve-provider-app` draws from, so the app has one visual vocabulary instead of ad-hoc literals scattered per screen.
 ## Requirements
 ### Requirement: Structural design tokens
 The design system SHALL define structural (non-brand) tokens in `lib/config/theme/app_tokens.dart` alongside the existing brand tokens: motion durations and curves (`AppMotion.fast = 180ms`, `AppMotion.medium = 250ms`, `AppMotion.curve = easeOutCubic`, `AppMotion.reverseCurve = easeInCubic`), icon sizes (`AppIconSize.sm = 16`, `AppIconSize.md = 24`, `AppIconSize.action = 20` glyph in a 44dp container, `AppIconSize.hero = 72`), and overlay barrier colors (dialog `0x24000000`, bottom sheet `0x47000000`). All animated affordances and icon usages in shared components MUST consume these tokens rather than inline literals.

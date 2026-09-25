@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  asanrezerve-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: asanrezerve-admin
+    ports:
+      - "3000:80"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    networks:
+      - asanrezerve-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+networks:
+  asanrezerve-network:
+    external: true

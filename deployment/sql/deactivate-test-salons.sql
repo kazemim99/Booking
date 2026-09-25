@@ -12,8 +12,8 @@
 -- second run reports "(0 rows)" and changes nothing. A salon renamed since this was decided is left alone.
 -- Everything happens in one transaction.
 --
--- Run (on the box, as booksy, from the directory holding this file):
---   docker exec -i booksy-postgres sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
+-- Run (on the box, as asan-rezerve, from the directory holding this file):
+--   docker exec -i asan-rezerve-postgres sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
 --     < deactivate-test-salons.sql
 -- The output shows, in order: both salons as they are now; the rows archived, with the status each had (expect 2
 -- rows the first time, 0 after); both salons afterwards. If fewer than 2 rows were archived on the first run, read
@@ -21,14 +21,14 @@
 --
 -- Then flush the provider cache. Provider.Deactivate would have run ProviderCacheInvalidationEventHandler, which
 -- removes "Provider:<id>" and every "Provider:owner:*" entry (RedisCacheService prefixes keys with Cache:KeyPrefix,
--- "booksy"). A raw UPDATE raises no event, so without this the salon page itself can keep serving the old status
+-- "asan-rezerve"). A raw UPDATE raises no event, so without this the salon page itself can keep serving the old status
 -- from Redis until its sliding 15-minute expiry lapses (search and the map read the database and are right at once):
---   docker exec booksy-redis sh -c 'redis-cli -a "$REDIS_PASSWORD" --no-auth-warning DEL \
---     booksy:Provider:466e8bf3-c47d-417f-830d-9d0389f4eef6 booksy:Provider:9baeae5e-e9b5-4780-9816-16be959a02f0; \
---     redis-cli -a "$REDIS_PASSWORD" --no-auth-warning --scan --pattern "booksy:Provider:owner:*" \
+--   docker exec asan-rezerve-redis sh -c 'redis-cli -a "$REDIS_PASSWORD" --no-auth-warning DEL \
+--     asan-rezerve:Provider:466e8bf3-c47d-417f-830d-9d0389f4eef6 asan-rezerve:Provider:9baeae5e-e9b5-4780-9816-16be959a02f0; \
+--     redis-cli -a "$REDIS_PASSWORD" --no-auth-warning --scan --pattern "asan-rezerve:Provider:owner:*" \
 --     | xargs -r redis-cli -a "$REDIS_PASSWORD" --no-auth-warning DEL'
 -- If that deletes nothing (as on 2026-09-23), the API is using its in-memory cache (Cache:Provider=Redis needs
--- Cache__RedisConnectionString, which docker-compose.prod.yml does not set): restart booksy-api, or wait 15 minutes.
+-- Cache__RedisConnectionString, which docker-compose.prod.yml does not set): restart asan-rezerve-api, or wait 15 minutes.
 --
 -- REVERSE (restores the status each salon had; only touches rows this script archived and nobody renamed since):
 --   BEGIN;

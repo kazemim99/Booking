@@ -15,9 +15,9 @@ on:
 
 env:
   DOTNET_VERSION: '9.0.x'
-  SOLUTION_PATH: './Booksy.sln'
+  SOLUTION_PATH: './AsanRezerve.sln'
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ${{ github.repository_owner }}/booksy
+  IMAGE_PREFIX: ${{ github.repository_owner }}/asan-rezerve
 
 jobs:
   # Run all tests before deploying
@@ -29,13 +29,13 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: booksy_admin
+          POSTGRES_USER: asan_rezerve_admin
           POSTGRES_PASSWORD: TestPassword123!
-          POSTGRES_DB: booksy_test
+          POSTGRES_DB: asan_rezerve_test
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U booksy_admin -d booksy_test"
+          --health-cmd "pg_isready -U asan_rezerve_admin -d asan_rezerve_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -82,11 +82,11 @@ jobs:
           --verbosity normal
 
     # Integration test projects still target the retired per-service hosts; re-enable
-    # once they're retargeted to Booksy.Host (tracked in COMPLETION_ROADMAP Epic 3.1).
+    # once they're retargeted to AsanRezerve.Host (tracked in COMPLETION_ROADMAP Epic 3.1).
     # The keystone E2E job below covers the integration-level happy path in the meantime.
     # - name: Run Integration Tests
     #   env:
-    #     ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=booksy_test;Username=booksy_admin;Password=TestPassword123!;Include Error Detail=true"
+    #     ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=asan_rezerve_test;Username=asan_rezerve_admin;Password=TestPassword123!;Include Error Detail=true"
     #     ConnectionStrings__Redis: "localhost:6379"
     #   run: |
     #     dotnet test ${{ env.SOLUTION_PATH }} \
@@ -107,13 +107,13 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: booksy_admin
+          POSTGRES_USER: asan_rezerve_admin
           POSTGRES_PASSWORD: TestPassword123!
-          POSTGRES_DB: booksy_e2e
+          POSTGRES_DB: asan_rezerve_e2e
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U booksy_admin -d booksy_e2e"
+          --health-cmd "pg_isready -U asan_rezerve_admin -d asan_rezerve_e2e"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -148,11 +148,11 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore ${{ env.SOLUTION_PATH }}
 
-    - name: Start Booksy host (sandbox auth, no real SMS)
+    - name: Start AsanRezerve host (sandbox auth, no real SMS)
       env:
         ASPNETCORE_ENVIRONMENT: Development
         ASPNETCORE_URLS: http://localhost:5050
-        ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=booksy_e2e;Username=booksy_admin;Password=TestPassword123!;Include Error Detail=true"
+        ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=asan_rezerve_e2e;Username=asan_rezerve_admin;Password=TestPassword123!;Include Error Detail=true"
         ConnectionStrings__Redis: "localhost:6379"
         EventBus__Provider: "InMemory"
         OTP_SANDBOX_CODE: "123456"
@@ -180,7 +180,7 @@ jobs:
         # by default, overriding the ASPNETCORE_URLS=5050 set above. Without this flag the host
         # listens on 5000 while the health check below polls 5050, so the wait loop could never
         # succeed and this job always timed out after its full 240s.
-        dotnet run --project src/Host/Booksy.Host/Booksy.Host.csproj --configuration Release --no-launch-profile > host.log 2>&1 &
+        dotnet run --project src/Host/AsanRezerve.Host/AsanRezerve.Host.csproj --configuration Release --no-launch-profile > host.log 2>&1 &
         echo $! > host.pid
 
     - name: Wait for host to become healthy
@@ -207,7 +207,7 @@ jobs:
 
   # Build the modular-monolith API (single image replacing usermanagement + servicecatalog + gateway)
   build-api:
-    name: Build Booksy API (monolith)
+    name: Build AsanRezerve API (monolith)
     runs-on: ubuntu-latest
     needs: [test, e2e-keystone]
     permissions:
@@ -241,11 +241,11 @@ jobs:
       id: meta
       run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
-    - name: Build and push Booksy API
+    - name: Build and push AsanRezerve API
       uses: docker/build-push-action@v5
       with:
         context: .
-        file: ./src/Host/Booksy.Host/Dockerfile
+        file: ./src/Host/AsanRezerve.Host/Dockerfile
         push: true
         tags: |
           ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api:latest
@@ -271,14 +271,14 @@ jobs:
       with:
         node-version: '20'
         cache: 'npm'
-        cache-dependency-path: booksy-frontend/package-lock.json
+        cache-dependency-path: asan-rezerve-frontend/package-lock.json
 
     - name: Install frontend dependencies
-      working-directory: booksy-frontend
+      working-directory: asan-rezerve-frontend
       run: npm ci
 
     - name: Build frontend
-      working-directory: booksy-frontend
+      working-directory: asan-rezerve-frontend
       run: npm run build
 
     - name: Set up Docker Buildx
@@ -307,11 +307,11 @@ jobs:
     - name: Build and push Frontend
       uses: docker/build-push-action@v5
       with:
-        # Repo root, not booksy-frontend/: src/main.ts imports the shared token sheet
+        # Repo root, not asan-rezerve-frontend/: src/main.ts imports the shared token sheet
         # at ../../packages/design-tokens/tokens.css, which is outside that directory.
         # A narrower context leaves it out and the image build cannot resolve the import.
         context: .
-        file: ./booksy-frontend/Dockerfile
+        file: ./asan-rezerve-frontend/Dockerfile
         push: true
         tags: |
           ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:latest
@@ -319,14 +319,14 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-  # Provider app (Flutter web), served by host nginx from /var/www/booksy-provider on the box.
+  # Provider app (Flutter web), served by host nginx from /var/www/asan-rezerve-provider on the box.
   # Built here on a GitHub-hosted runner; the deploy job below publishes the artifact.
   build-provider-web:
     name: Build Provider App (web)
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: booksy-provider-app
+        working-directory: asan-rezerve-provider-app
 
     steps:
     - name: Checkout code
@@ -405,17 +405,17 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: provider-web
-        path: booksy-provider-app/build/web
+        path: asan-rezerve-provider-app/build/web
         retention-days: 7
 
-  # Customer app (Flutter web), served by host nginx from /var/www/booksy-customer
+  # Customer app (Flutter web), served by host nginx from /var/www/asan-rezerve-customer
   # on customer.nahalkmi.ir.
   build-customer-web:
     name: Build Customer App (web)
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: booksy-customer-app
+        working-directory: asan-rezerve-customer-app
 
     steps:
     - name: Checkout code
@@ -495,16 +495,16 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: customer-web
-        path: booksy-customer-app/build/web
+        path: asan-rezerve-customer-app/build/web
         retention-days: 7
 
-  # Admin panel (Vue), served by host nginx from /var/www/booksy-admin on admin.nahalkmi.ir.
+  # Admin panel (Vue), served by host nginx from /var/www/asan-rezerve-admin on admin.nahalkmi.ir.
   build-admin-web:
     name: Build Admin Panel (web)
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: booksy-admin
+        working-directory: asan-rezerve-admin
 
     steps:
     - name: Checkout code
@@ -515,7 +515,7 @@ jobs:
       with:
         node-version: '20'
         cache: 'npm'
-        cache-dependency-path: booksy-admin/package-lock.json
+        cache-dependency-path: asan-rezerve-admin/package-lock.json
 
     - name: Install dependencies
       run: npm ci
@@ -538,20 +538,20 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: admin-web
-        path: booksy-admin/dist
+        path: asan-rezerve-admin/dist
         retention-days: 7
 
   # Deploy on the production box itself, through a self-hosted runner installed there
-  # (labels: self-hosted, booksy-prod; runs as the `booksy` user). GitHub-hosted runners cannot
+  # (labels: self-hosted, asan-rezerve-prod; runs as the `asan-rezerve` user). GitHub-hosted runners cannot
   # reach this server's SSH at all -- its auth.log shows no connection from any of them --
   # so the old scp/ssh deploy could never work (openspec/changes/FOLLOW-UPS.md #59). The
   # runner only makes outbound connections to GitHub, which the box can do.
   #
-  # This box is SHARED with unrelated services: touch only /opt/booksy, the booksy-* containers
-  # and /var/www/booksy-provider. Never `docker image prune -a` or `docker system prune`.
+  # This box is SHARED with unrelated services: touch only /opt/asan-rezerve, the asan-rezerve-* containers
+  # and /var/www/asan-rezerve-provider. Never `docker image prune -a` or `docker system prune`.
   deploy:
     name: Deploy to Production Server
-    runs-on: [self-hosted, booksy-prod]
+    runs-on: [self-hosted, asan-rezerve-prod]
     needs:
       - build-api
       - build-frontend
@@ -566,10 +566,10 @@ jobs:
       name: production
       url: https://back.nahalkmi.ir
     env:
-      DEPLOY_PATH: /opt/booksy
-      PROVIDER_WEB_ROOT: /var/www/booksy-provider
-      CUSTOMER_WEB_ROOT: /var/www/booksy-customer
-      ADMIN_WEB_ROOT: /var/www/booksy-admin
+      DEPLOY_PATH: /opt/asan-rezerve
+      PROVIDER_WEB_ROOT: /var/www/asan-rezerve-provider
+      CUSTOMER_WEB_ROOT: /var/www/asan-rezerve-customer
+      ADMIN_WEB_ROOT: /var/www/asan-rezerve-admin
 
     steps:
     - name: Checkout compose file
@@ -592,11 +592,11 @@ jobs:
         cp docker-compose.prod.yml "$DEPLOY_PATH/docker-compose.prod.yml"
 
     - name: Pull images and start the backend
-      working-directory: /opt/booksy
+      working-directory: /opt/asan-rezerve
       run: |
         # Only the two images CI just pushed; postgres/redis keep their pinned tags.
         # No --profile: Seq/pgAdmin stay off on this shared box.
-        docker compose -f docker-compose.prod.yml pull booksy-api frontend
+        docker compose -f docker-compose.prod.yml pull asan-rezerve-api frontend
         # `up -d` recreates only containers whose image or config changed, so the
         # database and Redis keep running across a deploy.
         docker compose -f docker-compose.prod.yml up -d
@@ -604,12 +604,12 @@ jobs:
     - name: Wait for the API container to become healthy
       run: |
         for i in $(seq 1 60); do
-          status=$(docker inspect -f '{{.State.Health.Status}}' booksy-api 2>/dev/null || echo missing)
-          if [ "$status" = "healthy" ]; then echo "booksy-api healthy after ~$((i*5))s"; exit 0; fi
+          status=$(docker inspect -f '{{.State.Health.Status}}' asan-rezerve-api 2>/dev/null || echo missing)
+          if [ "$status" = "healthy" ]; then echo "asan-rezerve-api healthy after ~$((i*5))s"; exit 0; fi
           sleep 5
         done
-        echo "::error::booksy-api did not become healthy (last status: $status)"
-        docker logs --tail 200 booksy-api
+        echo "::error::asan-rezerve-api did not become healthy (last status: $status)"
+        docker logs --tail 200 asan-rezerve-api
         exit 1
 
     - name: Download provider web bundle

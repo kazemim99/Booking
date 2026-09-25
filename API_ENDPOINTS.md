@@ -1,6 +1,6 @@
-# Booksy API Endpoints Documentation
+# AsanRezerve API Endpoints Documentation
 
-Complete reference for all API endpoints across the Booksy platform. All endpoints are served by a single host (`booksy-api`) on `:5000`. Base URL: `http://napstar.ir/api`
+Complete reference for all API endpoints across the AsanRezerve platform. All endpoints are served by a single host (`asanrezerve-api`) on `:5000`. Base URL: `http://napstar.ir/api`
 
 **Last Updated**: 2026-01-05
 
@@ -23,7 +23,7 @@ Complete reference for all API endpoints across the Booksy platform. All endpoin
 
 ## UserManagement Endpoints
 
-> Served by the single `booksy-api` host on `:5000` under `/api/v1/...`.
+> Served by the single `asanrezerve-api` host on `:5000` under `/api/v1/...`.
 
 ### Authentication
 
@@ -293,7 +293,7 @@ DELETE /api/v1/Customers/{id}
 
 ## ServiceCatalog Endpoints
 
-> Served by the single `booksy-api` host on `:5000` under `/api/v1/...`.
+> Served by the single `asanrezerve-api` host on `:5000` under `/api/v1/...`.
 
 ### Categories
 
@@ -938,7 +938,7 @@ rated ones in both directions.
 
 ## Host & Routing (Port 5000)
 
-All endpoints are served by a single ASP.NET Core host (`booksy-api`) on `:5000` (internal port 80). There is no separate API gateway; ASP.NET Core routing dispatches requests to the controllers of whichever bounded context owns them. All requests reach the host via `http://napstar.ir/api` (the frontend's nginx proxies `/api` → `booksy-api:80`).
+All endpoints are served by a single ASP.NET Core host (`asanrezerve-api`) on `:5000` (internal port 80). There is no separate API gateway; ASP.NET Core routing dispatches requests to the controllers of whichever bounded context owns them. All requests reach the host via `http://napstar.ir/api` (the frontend's nginx proxies `/api` → `asanrezerve-api:80`).
 
 ### Routing Notes
 
@@ -1044,4 +1044,4 @@ Pagination headers are also included in the response.
 ---
 
 **For detailed request/response schemas, refer to the Swagger documentation** (single host):
-- Booksy API: http://napstar.ir:5000/swagger
+- AsanRezerve API: http://napstar.ir:5000/swagger

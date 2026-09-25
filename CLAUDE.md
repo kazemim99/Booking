@@ -32,11 +32,11 @@ code is right.
 
 ## What this repository is
 
-Booksy, a **modular-monolith** booking platform: one ASP.NET Core host (`src/Host/Booksy.Host`,
-`booksy-api` on :5000) composes the UserManagement and ServiceCatalog bounded contexts in-process
+AsanRezerve, a **modular-monolith** booking platform: one ASP.NET Core host (`src/Host/AsanRezerve.Host`,
+`asanrezerve-api` on :5000) composes the UserManagement and ServiceCatalog bounded contexts in-process
 (DDD + CQRS, CAP in-memory integration events, one PostgreSQL database with schema-per-context,
-Redis, Seq). Clients: Vue web app (`booksy-frontend`), Vue admin (`booksy-admin`), Flutter
-customer and provider apps (`booksy-customer-app`, `booksy-provider-app`). Docker Compose and
+Redis, Seq). Clients: Vue web app (`asanrezerve-frontend`), Vue admin (`asanrezerve-admin`), Flutter
+customer and provider apps (`asanrezerve-customer-app`, `asanrezerve-provider-app`). Docker Compose and
 GitHub Actions deploy it. Migration history: [MONOLITH_MIGRATION_PLAN.md](MONOLITH_MIGRATION_PLAN.md).
 
 ## Test suites
@@ -47,10 +47,10 @@ Short version: if it needs Testcontainers, `WebApplicationFactory` or a `DbConte
 test; everything else belongs in a unit project.
 
 - **Backend unit/architecture**: the eight projects `scripts/verify` runs in FAST — no Docker, ~10 s
-  of test time for ~960 tests. Two of them (`Booksy.ServiceCatalog.Api.UnitTests`,
-  `Booksy.Infrastructure.External.UnitTests`) hold controller, specification, mapping and gateway-adapter
+  of test time for ~960 tests. Two of them (`AsanRezerve.ServiceCatalog.Api.UnitTests`,
+  `AsanRezerve.Infrastructure.External.UnitTests`) hold controller, specification, mapping and gateway-adapter
   tests that used to sit inside the integration project behind Docker.
-- **Integration** (`tests/Booksy.Host.IntegrationTests` — one project since Phase 2 slice 4, was three: ServiceCatalog, UserManagement and Host composition each booting their own host): real composed host against Testcontainers Postgres, plain xUnit, two collections (`ServiceCatalog`/`UserManagement` sharing one faked host, `Composition` on its own unfaked one) running in parallel. Reqnroll/Gherkin BDD was retired 2026-09-11 — see `openspec/changes/_inline/retire-reqnroll/tasks.md`.
+- **Integration** (`tests/AsanRezerve.Host.IntegrationTests` — one project since Phase 2 slice 4, was three: ServiceCatalog, UserManagement and Host composition each booting their own host): real composed host against Testcontainers Postgres, plain xUnit, two collections (`ServiceCatalog`/`UserManagement` sharing one faked host, `Composition` on its own unfaked one) running in parallel. Reqnroll/Gherkin BDD was retired 2026-09-11 — see `openspec/changes/_inline/retire-reqnroll/tasks.md`.
 - **Test-project conventions**: versions come from `tests/Directory.Packages.props` (one version per
   package; a `Version=` in a test csproj is a mistake). `tests/BannedSymbols.txt` fails the build's
   warning bar on `Task.Delay`, `Thread.Sleep`, `DateTime.Now/Today` and unseeded `Random` — a seeded
@@ -59,7 +59,7 @@ test; everything else belongs in a unit project.
 - **Per-test timings**: every FULL run writes `.verify/trx/*.trx` and `.verify/slowest.txt`. The first
   test of a class carries that class's fixture, so a 9-second "first test" is a class booting a host.
 - **API keystone smoke test** (`tests/e2e/keystone-booking-flow.sh`): curl script over the full provider→staff→customer→booking flow; CI deploy gate (`e2e-keystone`).
-- **Playwright E2E** (`booksy-frontend/e2e/`, `npm run e2e:pw`) and **Cypress** (`npm run test:e2e`): advisory, not deploy gates.
+- **Playwright E2E** (`asanrezerve-frontend/e2e/`, `npm run e2e:pw`) and **Cypress** (`npm run test:e2e`): advisory, not deploy gates.
 - **Flutter**: `flutter analyze` + `flutter test` in each app; policy detail in `AGENTS.md › Mobile App Testing`.
 
 ## Where the documents are
@@ -67,5 +67,5 @@ test; everything else belongs in a unit project.
 - Root (living): [API_ENDPOINTS.md](API_ENDPOINTS.md), [DTO_MAPPING.md](DTO_MAPPING.md), [TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md), [COMPLETION_ROADMAP.md](COMPLETION_ROADMAP.md), [ARCHITECTURAL_DECISIONS.md](ARCHITECTURAL_DECISIONS.md), [GEOLOCATION_GUIDE.md](GEOLOCATION_GUIDE.md), [VISUAL_STUDIO_DEBUGGING.md](VISUAL_STUDIO_DEBUGGING.md).
 - Operations: [docs/DEPLOYMENT_RUNBOOK.md](docs/DEPLOYMENT_RUNBOOK.md) — compose commands, health checks, resource limits, environment variables, troubleshooting (moved out of this file 2026-09-08). **Production is live** (`https://back.nahalkmi.ir`, `https://provider.nahalkmi.ir` on shared VPS 194.1.155.230) — read its "Current production state" section first: it has the manual deploy procedure, the shared-box gotchas, and two open items (sandbox OTP left **on** in prod, FOLLOW-UPS #58; CI deploy job still failing at `scp`, #59).
 - Navigation and staleness: [docs/KNOWLEDGE_MAP.md](docs/KNOWLEDGE_MAP.md). `docs/archive/` and `docs-site/` are historical.
-- Apps: [booksy-customer-app/PROJECT_SUMMARY.md](booksy-customer-app/PROJECT_SUMMARY.md), [booksy-customer-app/FLUTTER_BACKEND_CONNECTION.md](booksy-customer-app/FLUTTER_BACKEND_CONNECTION.md).
+- Apps: [asanrezerve-customer-app/PROJECT_SUMMARY.md](asanrezerve-customer-app/PROJECT_SUMMARY.md), [asanrezerve-customer-app/FLUTTER_BACKEND_CONNECTION.md](asanrezerve-customer-app/FLUTTER_BACKEND_CONNECTION.md).
 - Procedures: `.hermes/skills/` (`implementation-loop`, `openspec-change-lifecycle`, `verify-before-claiming`).

@@ -25,7 +25,7 @@ required at booking confirmation (the login stays phone-only). Each surface — 
 - [x] 5 After the salon confirms (or declines) a booking, the customer gets an inbox notice
 - [x] 6a Web push code: both web apps register (platform Web), prompt from a tap, route taps; backend sends webpush
 - [-] 6b Web push live — BLOCKED: needs the user's Firebase Web app config + VAPID public key (5 GitHub vars) and the
-      service-account JSON in /opt/booksy/.env; reachability from Iran unmeasured (runbook › Web push)
+      service-account JSON in /opt/asanrezerve/.env; reachability from Iran unmeasured (runbook › Web push)
 - [x] 7 Salon profile: one «تماس و موقعیت» section holding address + map; «موقعیت روی نقشه» duplicate removed
 - [x] 8 Appointment detail shows the staff member's name and what «در انتظار تأیید» means
 - [x] 9 A customer without a real name must enter it before a booking can be confirmed (no skip there)

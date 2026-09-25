@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\BoundedContexts\ServiceCatalog\AsanRezerve.ServiceCatalog.Application\AsanRezerve.ServiceCatalog.Application.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\AsanRezerve.Infrastructure.Core\AsanRezerve.Infrastructure.Core.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\AsanRezerve.Infrastructure.External\AsanRezerve.Infrastructure.External.csproj" />
+    <ProjectReference Include="..\AsanRezerve.UserManagement.Domain\AsanRezerve.UserManagement.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

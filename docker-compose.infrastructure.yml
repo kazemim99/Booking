@@ -4,20 +4,20 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
-    container_name: booksy-postgres
+    container_name: asan-rezerve-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: booksy_admin
-      POSTGRES_PASSWORD: Booksy@2024!
-      POSTGRES_DB: booksy_user_management
+      POSTGRES_USER: asan_rezerve_admin
+      POSTGRES_PASSWORD: AsanRezerve@2024!
+      POSTGRES_DB: asan_rezerve_user_management
     ports:
       - "54321:5432"  # Exposed to host for Visual Studio
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - booksy-network
+      - asan-rezerve-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U booksy_admin"]
+      test: ["CMD-SHELL", "pg_isready -U asan_rezerve_admin"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -25,7 +25,7 @@ services:
   # Redis Cache
   redis:
     image: redis:7-alpine
-    container_name: booksy-redis
+    container_name: asan-rezerve-redis
     restart: unless-stopped
     command: redis-server --requirepass Redis@2024! --maxmemory 512mb --maxmemory-policy allkeys-lru
     ports:
@@ -33,7 +33,7 @@ services:
     volumes:
       - redis_data:/data
     networks:
-      - booksy-network
+      - asan-rezerve-network
     healthcheck:
       test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
       interval: 10s
@@ -45,19 +45,19 @@ services:
   # Seq Logging
   seq:
     image: datalust/seq:latest
-    container_name: booksy-seq
+    container_name: asan-rezerve-seq
     restart: unless-stopped
     environment:
       ACCEPT_EULA: Y
       SEQ_FIRSTRUN_ADMINUSERNAME: admin
-      SEQ_FIRSTRUN_ADMINPASSWORD: Booksy@2024!
+      SEQ_FIRSTRUN_ADMINPASSWORD: AsanRezerve@2024!
     ports:
       - "5341:80"     # Seq UI
       - "5342:5341"   # Seq ingestion - Exposed to host for Visual Studio
     volumes:
       - seq_data:/data
     networks:
-      - booksy-network
+      - asan-rezerve-network
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/api/health"]
       interval: 30s
@@ -67,11 +67,11 @@ services:
   # pgAdmin (Database Management)
   pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: booksy-pgadmin
+    container_name: asan-rezerve-pgadmin
     restart: unless-stopped
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@booksy.local
-      PGADMIN_DEFAULT_PASSWORD: Booksy@2024!
+      PGADMIN_DEFAULT_EMAIL: admin@asanrezerve.local
+      PGADMIN_DEFAULT_PASSWORD: AsanRezerve@2024!
       PGADMIN_CONFIG_SERVER_MODE: 'False'
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
     ports:
@@ -79,12 +79,12 @@ services:
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     networks:
-      - booksy-network
+      - asan-rezerve-network
     depends_on:
       - postgres
 
 networks:
-  booksy-network:
+  asan-rezerve-network:
     driver: bridge
     ipam:
       config:

@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- AsanRezerve.Host is the system under test: every suite here boots the real composed monolith,
+         not a bounded context's own (retired) per-service entry point. One project, one host,
+         replacing AsanRezerve.ServiceCatalog.IntegrationTests, AsanRezerve.UserManagement.IntegrationTests and
+         AsanRezerve.Host.CompositionTests (docs/TEST_ARCHITECTURE_AUDIT.md Phase 2 slice 4). -->
+    <ProjectReference Include="..\..\src\Host\AsanRezerve.Host\AsanRezerve.Host.csproj" />
+    <ProjectReference Include="..\..\src\BoundedContexts\ServiceCatalog\AsanRezerve.ServiceCatalog.Api\AsanRezerve.ServiceCatalog.Api.csproj" />
+    <ProjectReference Include="..\..\src\BoundedContexts\ServiceCatalog\AsanRezerve.ServiceCatalog.Infrastructure\AsanRezerve.ServiceCatalog.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\UserManagement\AsanRezerve.UserManagement.Infrastructure\AsanRezerve.UserManagement.Infrastructure.csproj" />
+    <ProjectReference Include="..\AsanRezerve.Tests.Commons\AsanRezerve.Tests.Commons.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Read by xunit.runner.visualstudio from the output directory at run time (docs/TEST_ARCHITECTURE_AUDIT.md
+         Phase 2 slice 5): caps collection parallelism at 2, matching the two collections that exist
+         (AsanRezerveHostTestCollection, HostCompositionCollection) — see ServiceCatalog/AssemblyInfo.cs. -->
+    <None Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

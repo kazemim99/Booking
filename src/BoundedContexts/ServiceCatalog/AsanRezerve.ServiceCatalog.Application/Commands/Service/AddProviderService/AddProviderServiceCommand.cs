@@ -1,0 +1,24 @@
+using AsanRezerve.Core.Application.Abstractions.CQRS;
+
+namespace AsanRezerve.ServiceCatalog.Application.Commands.Service.AddProviderService;
+
+public sealed record AddProviderServiceCommand(
+    Guid ProviderId,
+    string ServiceName,
+    string? Description,
+    int DurationHours,
+    int Duration,
+    decimal Price,
+    string Currency,
+    string? Category,
+    bool IsMobileService =false,
+    Guid? IdempotencyKey = null) : ICommand<AddProviderServiceResult>;
+
+public sealed record AddProviderServiceResult(
+    Guid ServiceId,
+    Guid ProviderId,
+    string ServiceName,
+    decimal Price,
+    string Currency,
+    int TotalDurationMinutes,
+    DateTime CreatedAt);

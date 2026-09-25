@@ -34,7 +34,7 @@ public sealed class GalleryImage : Entity<Guid>
 
 ### 1. Add ModerationStatus to GalleryImage Entity
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Domain/Aggregates/ProviderAggregate/Entities/GalleryImage.cs`
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Domain/Aggregates/ProviderAggregate/Entities/GalleryImage.cs`
 
 ```csharp
 public sealed class GalleryImage : Entity<Guid>
@@ -79,10 +79,10 @@ public sealed class GalleryImage : Entity<Guid>
 
 ### 2. Create ModerationStatus Enum
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Domain/Enums/ModerationStatus.cs` (NEW)
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Domain/Enums/ModerationStatus.cs` (NEW)
 
 ```csharp
-namespace Booksy.ServiceCatalog.Domain.Enums;
+namespace AsanRezerve.ServiceCatalog.Domain.Enums;
 
 public enum ModerationStatus
 {
@@ -95,7 +95,7 @@ public enum ModerationStatus
 ### 3. Add Database Migration
 
 ```bash
-cd src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure
+cd src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Infrastructure
 dotnet ef migrations add AddGalleryImageModeration -o Persistence/Migrations
 ```
 
@@ -135,7 +135,7 @@ migrationBuilder.AddColumn<Guid>(
 
 ### 4. Update GalleryImageDto
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/DTOs/Provider/GalleryImageDto.cs`
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/DTOs/Provider/GalleryImageDto.cs`
 
 ```csharp
 public class GalleryImageDto
@@ -150,7 +150,7 @@ public class GalleryImageDto
 
 ### 5. Create Admin Gallery Query
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Queries/Admin/GetAllGalleryImages/GetAllGalleryImagesQuery.cs` (NEW)
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Queries/Admin/GetAllGalleryImages/GetAllGalleryImagesQuery.cs` (NEW)
 
 ```csharp
 public record GetAllGalleryImagesQuery(
@@ -189,7 +189,7 @@ public class GetAllGalleryImagesQueryHandler
 
 ### 6. Create Approve/Reject Commands
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Commands/Admin/ApproveGalleryImage/ApproveGalleryImageCommand.cs` (NEW)
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Commands/Admin/ApproveGalleryImage/ApproveGalleryImageCommand.cs` (NEW)
 
 ```csharp
 public record ApproveGalleryImageCommand(
@@ -198,7 +198,7 @@ public record ApproveGalleryImageCommand(
 ) : IRequest;
 ```
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Commands/Admin/RejectGalleryImage/RejectGalleryImageCommand.cs` (NEW)
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Commands/Admin/RejectGalleryImage/RejectGalleryImageCommand.cs` (NEW)
 
 ```csharp
 public record RejectGalleryImageCommand(
@@ -212,7 +212,7 @@ public record RejectGalleryImageCommand(
 
 **Option A: Extend ProvidersController**
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Controllers/V1/ProvidersController.cs`
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api/Controllers/V1/ProvidersController.cs`
 
 Add these endpoints to the existing controller:
 
@@ -253,7 +253,7 @@ public async Task<IActionResult> RejectGalleryImage(
 
 **Option B: Create Dedicated AdminController**
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Controllers/V1/AdminController.cs` (NEW)
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api/Controllers/V1/AdminController.cs` (NEW)
 
 ```csharp
 [ApiController]
@@ -282,7 +282,7 @@ public class AdminController : ControllerBase
 
 ### 8. Update GalleryImageResponse
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Models/Responses/GalleryImageResponse.cs`
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api/Models/Responses/GalleryImageResponse.cs`
 
 ```csharp
 public class GalleryImageResponse

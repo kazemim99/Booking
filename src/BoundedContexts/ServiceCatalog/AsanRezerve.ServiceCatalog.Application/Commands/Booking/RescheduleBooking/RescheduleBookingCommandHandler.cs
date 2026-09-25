@@ -1,0 +1,341 @@
+﻿// ========================================
+// AsanRezerve.ServiceCatalog.Application/Commands/Booking/RescheduleBooking/RescheduleBookingCommandHandler.cs
+// ========================================
+using AsanRezerve.Core.Application.Abstractions.CQRS;
+using AsanRezerve.ServiceCatalog.Application.Services.Notifications;
+using AsanRezerve.Core.Application.Abstractions.Persistence;
+using AsanRezerve.Core.Application.Exceptions;
+using AsanRezerve.ServiceCatalog.Application.Services;
+using AsanRezerve.ServiceCatalog.Domain.DomainServices;
+using AsanRezerve.ServiceCatalog.Domain.Enums;
+using AsanRezerve.ServiceCatalog.Domain.Repositories;
+using AsanRezerve.ServiceCatalog.Domain.ValueObjects;
+using Microsoft.Extensions.Logging;
+using ProviderAggregate = AsanRezerve.ServiceCatalog.Domain.Aggregates.Provider;
+
+namespace AsanRezerve.ServiceCatalog.Application.Commands.Booking.RescheduleBooking
+{
+    /// <summary>
+    /// Handler for rescheduling an existing booking
+    /// Atomically releases old availability slot and books new slot
+    /// </summary>
+    public sealed class RescheduleBookingCommandHandler : ICommandHandler<RescheduleBookingCommand, RescheduleBookingResult>
+    {
+        private readonly IBookingWriteRepository _bookingWriteRepository;
+        private readonly IBookingReminderScheduler _reminders;
+        private readonly INotificationRaiser _notifications;
+        private readonly IBookingReadRepository _bookingReadRepository;
+        private readonly IProviderReadRepository _providerRepository;
+        private readonly IBookableResourceResolver _resourceResolver;
+        private readonly IServiceReadRepository _serviceRepository;
+        private readonly IProviderAvailabilityWriteRepository _availabilityWriteRepository;
+        private readonly IAvailabilityService _availabilityService;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
+        private readonly ILogger<RescheduleBookingCommandHandler> _logger;
+
+        /// <summary>
+        /// Gap kept after an appointment: the SAME one booking creation and the free-time grid use, so a slot the
+        /// reschedule screen offers is never then refused as a conflict (QA 2026-09-24: 12:30 offered, refused).
+        /// </summary>
+        private const int BufferMinutes = Services.AvailabilityService.BufferTimeMinutes;
+
+        private readonly IBookingNotificationParameters _bookingParameters;
+
+        public RescheduleBookingCommandHandler(
+            IBookingWriteRepository bookingWriteRepository,
+            IBookingReadRepository bookingReadRepository,
+            IProviderReadRepository providerRepository,
+            IBookableResourceResolver resourceResolver,
+            IServiceReadRepository serviceRepository,
+            IProviderAvailabilityWriteRepository availabilityWriteRepository,
+            IAvailabilityService availabilityService,
+            IServiceCatalogUnitOfWork unitOfWork,
+            ILogger<RescheduleBookingCommandHandler> logger,
+            IBookingReminderScheduler reminders,
+            INotificationRaiser notifications,
+            IBookingNotificationParameters bookingParameters)
+        {
+            _bookingParameters = bookingParameters;
+            _bookingWriteRepository = bookingWriteRepository;
+            _bookingReadRepository = bookingReadRepository;
+            _providerRepository = providerRepository;
+            _resourceResolver = resourceResolver;
+            _serviceRepository = serviceRepository;
+            _availabilityWriteRepository = availabilityWriteRepository;
+            _availabilityService = availabilityService;
+            _unitOfWork = unitOfWork;
+            _reminders = reminders;
+            _notifications = notifications;
+            _logger = logger;
+        }
+
+        public async Task<RescheduleBookingResult> Handle(RescheduleBookingCommand request, CancellationToken cancellationToken)
+        {
+            _logger.LogInformation(
+                "Rescheduling booking {BookingId} to {NewStartTime}",
+                request.BookingId, request.NewStartTime);
+
+            // Load existing booking
+            var existingBooking = await _bookingWriteRepository.GetByIdAsync(
+                BookingId.From(request.BookingId),
+                cancellationToken);
+
+            if (existingBooking == null)
+                throw new NotFoundException("این نوبت پیدا نشد.");
+
+            // The reason the customer can act on comes first: a booking inside its reschedule window cannot be
+            // moved whatever slot is chosen, and checked after slot availability that reason hid behind
+            // «slot not available» (QA 2026-09-24).
+            existingBooking.EnsureCanBeRescheduled();
+
+            // Load provider and service for validation
+            var provider = await _providerRepository.GetByIdAsync(
+                existingBooking.ProviderId,
+                cancellationToken);
+
+            if (provider == null)
+                throw new NotFoundException("این کسب‌وکار پیدا نشد.");
+
+            var service = await _serviceRepository.GetByIdAsync(
+                existingBooking.ServiceId,
+                cancellationToken);
+
+            if (service == null)
+                throw new NotFoundException("این خدمت پیدا نشد.");
+
+            // Resolve the bookable resource the SAME way booking creation does: a
+            // membership, the organization itself, or a legacy individual sub-provider.
+            // This handler used to assume the third case unconditionally, which 404'd
+            // every booking made against a member — i.e. every booking under the current
+            // staff model. A caller-supplied NewStaffId is a genuine reassignment and
+            // must be bookable; the resource already on the booking is not re-litigated,
+            // so a member who has since been deactivated can still have their existing
+            // appointments moved.
+            var isStaffChange = request.NewStaffId is not null
+                && request.NewStaffId.Value != existingBooking.StaffId;
+            var newStaffId = request.NewStaffId ?? existingBooking.StaffId;
+
+            var resource = await _resourceResolver.ResolveAsync(
+                provider,
+                newStaffId,
+                requireBookable: isStaffChange,
+                cancellationToken);
+
+            // Validate booking constraints for the new time (status, business hours, holidays).
+            var validationResult = await _availabilityService.ValidateBookingConstraintsAsync(
+                provider,
+                service,
+                request.NewStartTime,
+                cancellationToken);
+
+            if (!validationResult.IsValid)
+                throw new ConflictException(string.Join("؛ ", validationResult.Errors));
+
+            // Does anything else already occupy the new time for this resource? Keyed by the
+            // resolved resource id, mirroring creation — IsTimeSlotAvailableAsync cannot be
+            // used here because its signature demands a staff Provider aggregate, which a
+            // member does not have. The booking being moved is excluded: a shift within its
+            // own buffer window would otherwise collide with itself.
+            var newEndTime = request.NewStartTime.AddMinutes(service.Duration.Value + BufferMinutes);
+            var conflicts = await _bookingReadRepository.GetConflictingBookingsAsync(
+                resource.ResourceId,
+                request.NewStartTime,
+                newEndTime,
+                cancellationToken);
+
+            if (conflicts.Any(b => b.Id != existingBooking.Id))
+                throw new ConflictException("این زمان دیگر خالی نیست؛ لطفاً زمان دیگری انتخاب کنید.");
+
+            // Reschedule the booking (returns new booking)
+            var newBooking = existingBooking.Reschedule(
+                request.NewStartTime,
+                newStaffId,
+                request.Reason);
+
+            // Update existing booking (marked as rescheduled)
+            await _bookingWriteRepository.UpdateBookingAsync(existingBooking, cancellationToken);
+
+            // Save new booking
+            await _bookingWriteRepository.SaveBookingAsync(newBooking, cancellationToken);
+
+            // Rescheduling closes the old booking and opens a new one, so the reminders move with it.
+            // Leaving the old ones would tell the customer to turn up at an hour that is no longer
+            // their appointment.
+            await _reminders.WithdrawAsync(existingBooking.Id.Value, cancellationToken);
+            await _reminders.ScheduleAsync(newBooking, cancellationToken);
+
+
+            // Tell whoever did not move it. Filed against the NEW booking: the old one is closed and
+            // everything attached to it has just been withdrawn, so a notice left there would be
+            // cancelled before it could ever go out.
+            //
+            // `provider` is already loaded and validated above, and the booking cannot change salon,
+            // so it is reused rather than fetched again.
+            var movedByProvider = provider.OwnerId.Value == request.ActingUserId;
+            var rescheduleParameters = await _bookingParameters.ForAsync(
+                newBooking, provider.Profile.BusinessName, cancellationToken);
+
+            await _notifications.RaiseAsync(
+                movedByProvider
+                    ? Domain.Enums.NotificationEventCode.BookingRescheduled
+                    : Domain.Enums.NotificationEventCode.BookingRescheduledByCustomer,
+                movedByProvider ? newBooking.CustomerId.Value : provider.OwnerId.Value,
+                dedupKey: newBooking.Id.Value,
+                parameters: rescheduleParameters,
+                subjectType: BookingReminderScheduler.BookingSubject,
+                subjectId: newBooking.Id.Value,
+                cancellationToken: cancellationToken);
+
+
+            // ========================================
+            // ATOMIC AVAILABILITY SLOT MANAGEMENT
+            // ========================================
+
+            // Step 1: Release old availability slots
+            await ReleaseOldAvailabilitySlotsAsync(
+                resource.SlotOwnerId,
+                resource.SlotStaffId,
+                existingBooking.TimeSlot.StartTime,
+                existingBooking.TimeSlot.EndTime,
+                existingBooking.Id.Value,
+                cancellationToken);
+
+            // Step 2: Mark new availability slots as booked
+            await MarkNewAvailabilitySlotsAsBookedAsync(
+                resource.SlotOwnerId,
+                resource.SlotStaffId,
+                newBooking.TimeSlot.StartTime,
+                newBooking.TimeSlot.EndTime,
+                newBooking.Id.Value,
+                cancellationToken);
+
+            _logger.LogInformation(
+                "Booking {OldBookingId} rescheduled successfully. New booking: {NewBookingId}",
+                existingBooking.Id, newBooking.Id);
+
+            return new RescheduleBookingResult(
+                OldBookingId: existingBooking.Id.Value,
+                NewBookingId: newBooking.Id.Value,
+                NewStartTime: newBooking.TimeSlot.StartTime,
+                NewEndTime: newBooking.TimeSlot.EndTime,
+                Status: newBooking.Status.ToString());
+        }
+
+        /// <summary>
+        /// Release old availability slots back to Available status
+        /// Finds all slots that overlap with the old booking time
+        /// </summary>
+        private async Task ReleaseOldAvailabilitySlotsAsync(
+            ProviderId providerId,
+            Guid? slotStaffId,
+            DateTime startTime,
+            DateTime endTime,
+            Guid bookingId,
+            CancellationToken cancellationToken)
+        {
+            var date = DateOnly.FromDateTime(startTime);
+            var startTimeOnly = TimeOnly.FromDateTime(startTime);
+            var endTimeOnly = TimeOnly.FromDateTime(endTime);
+
+            // Scoped to this booking's own member. The BookingId re-check below already made
+            // this path safe, so the filter is about not dragging a whole salon's slots back
+            // to release two of them.
+            var overlappingSlots = await _availabilityWriteRepository.FindOverlappingSlotsAsync(
+                providerId,
+                date.ToDateTime(TimeOnly.MinValue),
+                startTimeOnly,
+                endTimeOnly,
+                excludeSlotId: null,
+                staffId: slotStaffId,
+                cancellationToken);
+
+            // Release slots that were booked by this booking
+            foreach (var slot in overlappingSlots)
+            {
+                if (slot.Status == Domain.Enums.AvailabilityStatus.Booked &&
+                    slot.BookingId == bookingId)
+                {
+                    // Release the slot back to Available
+                    slot.Release("RescheduleBookingCommandHandler");
+                    await _availabilityWriteRepository.UpdateAsync(slot, cancellationToken);
+
+                    _logger.LogDebug(
+                        "Released availability slot {SlotId} for old booking {BookingId}",
+                        slot.Id,
+                        bookingId);
+                }
+            }
+
+            _logger.LogInformation(
+                "Released {Count} availability slots for old booking {BookingId}",
+                overlappingSlots.Count(s => s.BookingId == bookingId),
+                bookingId);
+        }
+
+        /// <summary>
+        /// Mark new availability slots as booked
+        /// Finds all slots that overlap with the new booking time
+        /// </summary>
+        private async Task MarkNewAvailabilitySlotsAsBookedAsync(
+            ProviderId providerId,
+            Guid? slotStaffId,
+            DateTime startTime,
+            DateTime endTime,
+            Guid newBookingId,
+            CancellationToken cancellationToken)
+        {
+            var date = DateOnly.FromDateTime(startTime);
+            var startTimeOnly = TimeOnly.FromDateTime(startTime);
+            var endTimeOnly = TimeOnly.FromDateTime(endTime);
+
+            // Scoped to the member being rescheduled onto. Unscoped, moving one booking to
+            // 14:00 marked every colleague's 14:00 slot as Booked as well -- the same
+            // whole-salon consumption CreateBooking had, reached by a different route.
+            var overlappingSlots = await _availabilityWriteRepository.FindOverlappingSlotsAsync(
+                providerId,
+                date.ToDateTime(TimeOnly.MinValue),
+                startTimeOnly,
+                endTimeOnly,
+                excludeSlotId: null,
+                staffId: slotStaffId,
+                cancellationToken);
+
+            if (!overlappingSlots.Any())
+            {
+                _logger.LogWarning(
+                    "No availability slots found for new booking time {StartTime} to {EndTime}. " +
+                    "Provider may not have availability data seeded for this time range.",
+                    startTime,
+                    endTime);
+                return;
+            }
+
+            // Mark slots as booked
+            foreach (var slot in overlappingSlots)
+            {
+                if (slot.Status == Domain.Enums.AvailabilityStatus.Available ||
+                    slot.Status == Domain.Enums.AvailabilityStatus.TentativeHold)
+                {
+                    slot.MarkAsBooked(newBookingId, "RescheduleBookingCommandHandler");
+                    await _availabilityWriteRepository.UpdateAsync(slot, cancellationToken);
+
+                    _logger.LogDebug(
+                        "Marked availability slot {SlotId} as booked for new booking {BookingId}",
+                        slot.Id,
+                        newBookingId);
+                }
+                else if (slot.Status == Domain.Enums.AvailabilityStatus.Booked)
+                {
+                    // This should not happen if validation passed
+                    throw new ConflictException(
+                        "همین الان مشتری دیگری این زمان را رزرو کرد؛ لطفاً زمان دیگری انتخاب کنید.");
+                }
+            }
+
+            _logger.LogInformation(
+                "Marked {Count} availability slots as booked for new booking {BookingId}",
+                overlappingSlots.Count,
+                newBookingId);
+        }
+    }
+}

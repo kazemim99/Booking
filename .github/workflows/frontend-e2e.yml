@@ -10,7 +10,7 @@ on:
 
 env:
   DOTNET_VERSION: '9.0.x'
-  SOLUTION_PATH: './Booksy.sln'
+  SOLUTION_PATH: './AsanRezerve.sln'
 
 jobs:
   playwright:
@@ -21,13 +21,13 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: booksy_admin
+          POSTGRES_USER: asan_rezerve_admin
           POSTGRES_PASSWORD: TestPassword123!
-          POSTGRES_DB: booksy_e2e
+          POSTGRES_DB: asan_rezerve_e2e
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U booksy_admin -d booksy_e2e"
+          --health-cmd "pg_isready -U asan_rezerve_admin -d asan_rezerve_e2e"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -56,16 +56,16 @@ jobs:
       with:
         node-version: '20'
         cache: 'npm'
-        cache-dependency-path: booksy-frontend/package-lock.json
+        cache-dependency-path: asan-rezerve-frontend/package-lock.json
 
     - name: Restore .NET
       run: dotnet restore ${{ env.SOLUTION_PATH }}
 
-    - name: Start Booksy host (sandbox auth, no real SMS)
+    - name: Start AsanRezerve host (sandbox auth, no real SMS)
       env:
         ASPNETCORE_ENVIRONMENT: Development
         ASPNETCORE_URLS: http://localhost:5050
-        ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=booksy_e2e;Username=booksy_admin;Password=TestPassword123!;Include Error Detail=true"
+        ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=asan_rezerve_e2e;Username=asan_rezerve_admin;Password=TestPassword123!;Include Error Detail=true"
         ConnectionStrings__Redis: "localhost:6379"
         EventBus__Provider: "InMemory"
         OTP_SANDBOX_CODE: "123456"
@@ -79,7 +79,7 @@ jobs:
         Services__UserManagement__BaseUrl: "http://localhost:5050/api"
         Services__ServiceCatalog__BaseUrl: "http://localhost:5050/api"
       run: |
-        dotnet run --project src/Host/Booksy.Host/Booksy.Host.csproj --configuration Release > host.log 2>&1 &
+        dotnet run --project src/Host/AsanRezerve.Host/AsanRezerve.Host.csproj --configuration Release > host.log 2>&1 &
         echo $! > host.pid
 
     - name: Wait for host to become healthy
@@ -92,15 +92,15 @@ jobs:
         echo "Host did not become healthy"; tail -n 200 host.log; exit 1
 
     - name: Install frontend deps
-      working-directory: booksy-frontend
+      working-directory: asan-rezerve-frontend
       run: npm ci
 
     - name: Install Playwright browser
-      working-directory: booksy-frontend
+      working-directory: asan-rezerve-frontend
       run: npx playwright install --with-deps chromium
 
     - name: Run Playwright keystone suite
-      working-directory: booksy-frontend
+      working-directory: asan-rezerve-frontend
       env:
         CI: 'true'
       run: npm run e2e:pw
@@ -111,8 +111,8 @@ jobs:
       with:
         name: playwright-report
         path: |
-          booksy-frontend/playwright-report
-          booksy-frontend/test-results
+          asan-rezerve-frontend/playwright-report
+          asan-rezerve-frontend/test-results
         retention-days: 7
         if-no-files-found: ignore
 

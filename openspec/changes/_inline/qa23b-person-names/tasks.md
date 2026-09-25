@@ -102,10 +102,10 @@ _Root causes, with evidence (file:line at 6912ca13)._
 
 ## Log
 
-- 2026-09-23 T10 FAST+: `dotnet build Booksy.sln` 0 errors; 9 unit/architecture projects green; the FULL
+- 2026-09-23 T10 FAST+: `dotnet build AsanRezerve.sln` 0 errors; 9 unit/architecture projects green; the FULL
   integration suite 817/817 green (Testcontainers). Flutter: analyze clean and all tests green in both apps
   (customer 671, provider 646 + 1 pre-existing skip). Vue web vitest src 156/156; admin vitest 80/80, vue-tsc clean.
-- 2026-09-23 T9b Admin (`booksy-admin`): the users list printed `firstName lastName` — «مشتری 9384444636» for a
+- 2026-09-23 T9b Admin (`asanrezerve-admin`): the users list printed `firstName lastName` — «مشتری 9384444636» for a
   phone sign-up. It now shows the real name or a muted «بدون نام» (`user.noName`, fa + en); the phone keeps its
   own column and the edit form still shows what is stored. The spec was written before the util but could not be
   run RED at the time (no node_modules in the worktree yet); vitest 80/80, vue-tsc clean.

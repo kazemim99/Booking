@@ -69,7 +69,7 @@ Use action-based naming:
 
 ### Step 1.1: Rename Request Models
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Models/Requests/BusinessHoursRequest.cs`
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api/Models/Requests/BusinessHoursRequest.cs`
 
 ```csharp
 // BEFORE
@@ -87,7 +87,7 @@ public class UpdateBusinessHoursRequest
 }
 ```
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Models/Requests/UpdateWorkingHoursRequest.cs`
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api/Models/Requests/UpdateWorkingHoursRequest.cs`
 
 ```csharp
 // BEFORE
@@ -103,7 +103,7 @@ public sealed class ProviderRegistrationBreakRequest { }
 
 ### Step 1.2: Rename Response Models
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Models/Responses/ProviderAvailabilityCalendarResponse.cs`
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api/Models/Responses/ProviderAvailabilityCalendarResponse.cs`
 
 ```csharp
 // BEFORE
@@ -117,7 +117,7 @@ public class AvailabilityTimeSlotResponse { }
 
 ### Step 2.1: Rename DTOs
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/DTOs/Provider/BusinessHoursDto.cs`
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/DTOs/Provider/BusinessHoursDto.cs`
 
 ```csharp
 // BEFORE
@@ -148,7 +148,7 @@ public sealed class BreakPeriodDto
 
 ### Step 2.2: Rename View Models
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Queries/Provider/GetProviderById/BusinessHoursViewModel.cs`
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Queries/Provider/GetProviderById/BusinessHoursViewModel.cs`
 
 ```csharp
 // BEFORE
@@ -179,10 +179,10 @@ public sealed class BreakPeriodViewModel
 
 Create a shared DTOs project/folder for common models:
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Contracts/DTOs/TimeSlotDto.cs`
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Contracts/DTOs/TimeSlotDto.cs`
 
 ```csharp
-namespace Booksy.ServiceCatalog.Contracts.DTOs;
+namespace AsanRezerve.ServiceCatalog.Contracts.DTOs;
 
 /// <summary>
 /// Represents a time slot (used across multiple contexts)
@@ -258,20 +258,20 @@ If renaming is too disruptive, use namespaces to differentiate:
 
 ```csharp
 // Registration context
-namespace Booksy.ServiceCatalog.Api.Models.Requests.Registration
+namespace AsanRezerve.ServiceCatalog.Api.Models.Requests.Registration
 {
     public class TimeSlotRequest { }
     public class BreakTimeRequest { }
 }
 
 // Availability context
-namespace Booksy.ServiceCatalog.Api.Models.Responses.Availability
+namespace AsanRezerve.ServiceCatalog.Api.Models.Responses.Availability
 {
     public class TimeSlotResponse { }
 }
 
 // Provider context
-namespace Booksy.ServiceCatalog.Application.DTOs.Provider
+namespace AsanRezerve.ServiceCatalog.Application.DTOs.Provider
 {
     public class BusinessHoursDto { }
 }

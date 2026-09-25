@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the complete staff invitation flow in the Booksy application, allowing organizations to invite individuals to join as staff members.
+This document describes the complete staff invitation flow in the AsanRezerve application, allowing organizations to invite individuals to join as staff members.
 
 ## Table of Contents
 
@@ -53,7 +53,7 @@ The staff invitation system follows a domain-driven design (DDD) approach with C
 
 #### Aggregates
 
-**ProviderInvitation** (`src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Domain/Aggregates/ProviderInvitationAggregate/ProviderInvitation.cs`)
+**ProviderInvitation** (`src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Domain/Aggregates/ProviderInvitationAggregate/ProviderInvitation.cs`)
 
 ```csharp
 public sealed class ProviderInvitation : AggregateRoot<Guid>
@@ -79,7 +79,7 @@ public sealed class ProviderInvitation : AggregateRoot<Guid>
 
 #### Domain Events
 
-**InvitationSentEvent** (`src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Domain/Events/InvitationSentEvent.cs`)
+**InvitationSentEvent** (`src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Domain/Events/InvitationSentEvent.cs`)
 
 ```csharp
 public sealed record InvitationSentEvent(
@@ -89,7 +89,7 @@ public sealed record InvitationSentEvent(
     DateTime SentAt) : DomainEvent;
 ```
 
-**InvitationAcceptedEvent** (`src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Domain/Events/InvitationAcceptedEvent.cs`)
+**InvitationAcceptedEvent** (`src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Domain/Events/InvitationAcceptedEvent.cs`)
 
 ```csharp
 public sealed record InvitationAcceptedEvent(
@@ -103,7 +103,7 @@ public sealed record InvitationAcceptedEvent(
 
 #### Commands
 
-**SendInvitationCommand** (`src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Commands/ProviderHierarchy/SendInvitation/`)
+**SendInvitationCommand** (`src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Commands/ProviderHierarchy/SendInvitation/`)
 
 ```csharp
 public sealed record SendInvitationCommand(
@@ -120,7 +120,7 @@ public sealed record SendInvitationCommand(
 - Saves to database
 - Returns invitation details
 
-**AcceptInvitationCommand** (`src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Commands/ProviderHierarchy/AcceptInvitation/`)
+**AcceptInvitationCommand** (`src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Commands/ProviderHierarchy/AcceptInvitation/`)
 
 ```csharp
 public sealed record AcceptInvitationCommand(
@@ -130,7 +130,7 @@ public sealed record AcceptInvitationCommand(
 
 #### Queries
 
-**GetInvitationQuery** (`src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Queries/ProviderHierarchy/GetInvitation/`)
+**GetInvitationQuery** (`src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Queries/ProviderHierarchy/GetInvitation/`)
 
 ```csharp
 public sealed record GetInvitationQuery(
@@ -156,7 +156,7 @@ public sealed record GetInvitationResult(
 
 #### Event Handlers
 
-**InvitationSentNotificationHandler** (`src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/EventHandlers/ProviderHierarchy/InvitationSentNotificationHandler.cs`)
+**InvitationSentNotificationHandler** (`src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/EventHandlers/ProviderHierarchy/InvitationSentNotificationHandler.cs`)
 
 ```csharp
 public sealed class InvitationSentNotificationHandler
@@ -186,7 +186,7 @@ public sealed class InvitationSentNotificationHandler
 
 ### API Layer
 
-**ProviderHierarchyController** (`src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Controllers/V1/ProviderHierarchyController.cs`)
+**ProviderHierarchyController** (`src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api/Controllers/V1/ProviderHierarchyController.cs`)
 
 #### Endpoints
 
@@ -222,7 +222,7 @@ public sealed class InvitationSentNotificationHandler
 ### Components
 
 #### InvitationCard
-**Location:** `booksy-frontend/src/modules/provider/components/staff/InvitationCard.vue`
+**Location:** `asanrezerve-frontend/src/modules/provider/components/staff/InvitationCard.vue`
 
 **Purpose:** Displays invitation details in the staff management dashboard
 
@@ -239,7 +239,7 @@ public sealed class InvitationSentNotificationHandler
 - `isExpired` - Computed property checking expiration
 
 #### AcceptInvitationView
-**Location:** `booksy-frontend/src/modules/provider/views/invitation/AcceptInvitationView.vue`
+**Location:** `asanrezerve-frontend/src/modules/provider/views/invitation/AcceptInvitationView.vue`
 
 **Purpose:** Public page for staff to accept invitations
 
@@ -269,7 +269,7 @@ public sealed class InvitationSentNotificationHandler
 - `formatDate()` - Formats dates with validation
 
 #### StaffManagementView
-**Location:** `booksy-frontend/src/modules/provider/views/staff/StaffManagementView.vue`
+**Location:** `asanrezerve-frontend/src/modules/provider/views/staff/StaffManagementView.vue`
 
 **Purpose:** Main dashboard for managing staff and invitations
 
@@ -282,7 +282,7 @@ public sealed class InvitationSentNotificationHandler
 ### Services
 
 #### HierarchyService
-**Location:** `booksy-frontend/src/modules/provider/services/hierarchy.service.ts`
+**Location:** `asanrezerve-frontend/src/modules/provider/services/hierarchy.service.ts`
 
 **Key Methods:**
 
@@ -344,7 +344,7 @@ function mapInvitationResponse(backendInvitation: any): ProviderInvitation {
 ### Store
 
 #### HierarchyStore
-**Location:** `booksy-frontend/src/modules/provider/stores/hierarchy.store.ts`
+**Location:** `asanrezerve-frontend/src/modules/provider/stores/hierarchy.store.ts`
 
 **State:**
 ```typescript
@@ -366,7 +366,7 @@ function mapInvitationResponse(backendInvitation: any): ProviderInvitation {
 
 ### Routes
 
-**Location:** `booksy-frontend/src/core/router/routes/provider.routes.ts`
+**Location:** `asanrezerve-frontend/src/core/router/routes/provider.routes.ts`
 
 ```typescript
 {
@@ -382,7 +382,7 @@ function mapInvitationResponse(backendInvitation: any): ProviderInvitation {
 
 ### Types
 
-**Location:** `booksy-frontend/src/modules/provider/types/hierarchy.types.ts`
+**Location:** `asanrezerve-frontend/src/modules/provider/types/hierarchy.types.ts`
 
 ```typescript
 export interface ProviderInvitation {

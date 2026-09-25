@@ -6,7 +6,7 @@ The `CreateBookingModal.vue` component provides a comprehensive form for creatin
 
 ## Location
 
-`booksy-frontend/src/modules/provider/components/modals/CreateBookingModal.vue`
+`asanrezerve-frontend/src/modules/provider/components/modals/CreateBookingModal.vue`
 
 ## Features
 

@@ -1,6 +1,6 @@
-# Stop Booksy Infrastructure Services
+# Stop AsanRezerve Infrastructure Services
 
-Write-Host "🛑 Stopping Booksy Infrastructure Services..." -ForegroundColor Yellow
+Write-Host "🛑 Stopping AsanRezerve Infrastructure Services..." -ForegroundColor Yellow
 
 docker-compose -f docker-compose.infrastructure.yml down
 

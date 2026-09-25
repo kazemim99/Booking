@@ -159,7 +159,7 @@ Backend:
 
 ### Step 1: Update InviteStaffModal.vue
 
-**File:** `booksy-frontend/src/modules/provider/components/staff/InviteStaffModal.vue`
+**File:** `asanrezerve-frontend/src/modules/provider/components/staff/InviteStaffModal.vue`
 
 **Changes Required:**
 
@@ -387,7 +387,7 @@ async function handleSubmit(): Promise<void> {
 
 ### Step 2: Update AcceptInvitationView.vue
 
-**File:** `booksy-frontend/src/modules/provider/views/invitation/AcceptInvitationView.vue`
+**File:** `asanrezerve-frontend/src/modules/provider/views/invitation/AcceptInvitationView.vue`
 
 **Note:** Frontend changes are already partially implemented (see system reminder). Need to add:
 
@@ -864,7 +864,7 @@ onBeforeUnmount(() => {
 
 ### Step 3: Update Hierarchy Store
 
-**File:** `booksy-frontend/src/modules/provider/stores/hierarchy.store.ts`
+**File:** `asanrezerve-frontend/src/modules/provider/stores/hierarchy.store.ts`
 
 **Add New Actions:**
 
@@ -960,7 +960,7 @@ export const useHierarchyStore = defineStore('hierarchy', {
 
 ### Step 4: Update Hierarchy Service
 
-**File:** `booksy-frontend/src/modules/provider/services/hierarchy.service.ts`
+**File:** `asanrezerve-frontend/src/modules/provider/services/hierarchy.service.ts`
 
 **Add New Methods:**
 
@@ -1028,7 +1028,7 @@ export const hierarchyService = new HierarchyService()
 
 ### Step 5: Update Types
 
-**File:** `booksy-frontend/src/modules/provider/types/hierarchy.types.ts`
+**File:** `asanrezerve-frontend/src/modules/provider/types/hierarchy.types.ts`
 
 **Update Interfaces:**
 
@@ -1100,7 +1100,7 @@ export interface AcceptInvitationWithCloningResponse {
 
 ### Step 1: Update Domain Model
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Domain/Aggregates/ProviderInvitationAggregate/ProviderInvitation.cs`
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Domain/Aggregates/ProviderInvitationAggregate/ProviderInvitation.cs`
 
 **Add Properties:**
 
@@ -1193,7 +1193,7 @@ public sealed class ProviderInvitation : AggregateRoot<Guid>
 
 ### Step 2: Update SendInvitationCommand
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Commands/ProviderHierarchy/SendInvitation/SendInvitationCommand.cs`
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Commands/ProviderHierarchy/SendInvitation/SendInvitationCommand.cs`
 
 ```csharp
 public sealed record SendInvitationCommand(
@@ -1288,7 +1288,7 @@ public async Task<SendInvitationResult> Handle(
 
 ### Step 3: Create OTP Service
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Services/OTPService.cs`
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Services/OTPService.cs`
 
 ```csharp
 public interface IOTPService
@@ -1401,7 +1401,7 @@ public class OTPService : IOTPService
 
 ### Step 4: Create Profile Cloning Service
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Services/ProfileCloningService.cs`
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Services/ProfileCloningService.cs`
 
 ```csharp
 public interface IProfileCloningService
@@ -1557,7 +1557,7 @@ public class ProfileCloningService : IProfileCloningService
 
 ### Step 5: Create AcceptInvitationWithCloningCommand
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Commands/ProviderHierarchy/AcceptInvitationWithCloning/AcceptInvitationWithCloningCommand.cs`
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Commands/ProviderHierarchy/AcceptInvitationWithCloning/AcceptInvitationWithCloningCommand.cs`
 
 ```csharp
 public sealed record AcceptInvitationWithCloningCommand(
@@ -1732,7 +1732,7 @@ public class AcceptInvitationWithCloningCommandHandler
 
 ### Step 6: Create SendInvitationOTPCommand
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Commands/ProviderHierarchy/SendInvitationOTP/SendInvitationOTPCommand.cs`
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Commands/ProviderHierarchy/SendInvitationOTP/SendInvitationOTPCommand.cs`
 
 ```csharp
 public sealed record SendInvitationOTPCommand(
@@ -1805,7 +1805,7 @@ public class SendInvitationOTPCommandHandler : ICommandHandler<SendInvitationOTP
 
 ### Step 7: Update API Controller
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Controllers/V1/ProviderHierarchyController.cs`
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api/Controllers/V1/ProviderHierarchyController.cs`
 
 **Add New Endpoints:**
 
@@ -1892,7 +1892,7 @@ public record AcceptInvitationWithCloningRequest(
 
 ### Migration: Add Name Fields to ProviderInvitation
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Persistence/Migrations/AddNameFieldsToProviderInvitation.cs`
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Infrastructure/Persistence/Migrations/AddNameFieldsToProviderInvitation.cs`
 
 ```csharp
 public partial class AddNameFieldsToProviderInvitation : Migration
@@ -1955,7 +1955,7 @@ public partial class AddNameFieldsToProviderInvitation : Migration
 
 ### Add Gallery Image Source Tracking
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Domain/Entities/GalleryImage.cs`
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Domain/Entities/GalleryImage.cs`
 
 ```csharp
 public class GalleryImage : Entity<Guid>

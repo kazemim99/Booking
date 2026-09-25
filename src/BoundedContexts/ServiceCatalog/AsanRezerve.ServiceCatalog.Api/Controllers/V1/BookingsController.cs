@@ -1,0 +1,861 @@
+using AsanRezerve.API.Extensions;
+using AsanRezerve.Core.Application.DTOs;
+using AsanRezerve.ServiceCatalog.API.Models.Requests;
+using AsanRezerve.ServiceCatalog.Api.Models.Responses;
+using AsanRezerve.ServiceCatalog.Application.Commands.Booking.AddNotes;
+using AsanRezerve.ServiceCatalog.Application.Commands.Booking.AssignStaff;
+using AsanRezerve.ServiceCatalog.Application.Commands.Booking.CancelBooking;
+using AsanRezerve.ServiceCatalog.Application.Commands.Booking.CompleteBooking;
+using AsanRezerve.ServiceCatalog.Application.Commands.Booking.ConfirmBooking;
+using AsanRezerve.ServiceCatalog.Application.Commands.Booking.CreateBooking;
+using AsanRezerve.ServiceCatalog.Application.Commands.Booking.MarkNoShow;
+using AsanRezerve.ServiceCatalog.Application.Commands.Booking.RescheduleBooking;
+using AsanRezerve.ServiceCatalog.Application.Queries.Membership.CanManageOrganization;
+using AsanRezerve.ServiceCatalog.Application.Services;
+using AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetAvailableSlots;
+using AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetBookingDetails;
+using AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetBookingStatistics;
+using AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetCustomerBookings;
+using AsanRezerve.ServiceCatalog.Application.Queries.Booking.SearchBookings;
+using AsanRezerve.ServiceCatalog.Application.Queries.Provider.GetOwnedProviderStatus;
+using AsanRezerve.ServiceCatalog.Domain.Repositories;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using AsanRezerve.Core.Domain.Exceptions;
+using AsanRezerve.Core.Domain.ValueObjects;
+using System.Security.Claims;
+
+namespace AsanRezerve.ServiceCatalog.API.Controllers.V1;
+
+/// <summary>
+/// Manages booking operations for service appointments
+/// </summary>
+[ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
+[Produces("application/json")]
+public class BookingsController : ControllerBase
+{
+    private readonly ISender _mediator;
+    private readonly ILogger<BookingsController> _logger;
+    private readonly IBookingReadRepository _bookingReadRepository;
+    private readonly IBookingCustomerNames _customerNames;
+
+    public BookingsController(
+        ISender mediator,
+        ILogger<BookingsController> logger,
+        IBookingReadRepository bookingReadRepository,
+        IBookingCustomerNames customerNames)
+    {
+        _customerNames = customerNames ?? throw new ArgumentNullException(nameof(customerNames));
+        _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _bookingReadRepository = bookingReadRepository ?? throw new ArgumentNullException(nameof(bookingReadRepository));
+    }
+
+    /// <summary>
+    /// Creates a new booking request
+    /// </summary>
+    /// <param name="request">Booking creation details</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Created booking information</returns>
+    /// <response code="201">Booking successfully created</response>
+    /// <response code="400">Invalid request data or time slot unavailable</response>
+    /// <response code="404">Provider, service, or staff not found</response>
+    [HttpPost]
+    [Authorize]
+    [ProducesResponseType(typeof(BookingResponse), StatusCodes.Status201Created)]
+    public async Task<IActionResult> CreateBooking(
+        [FromBody] CreateBookingRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var customerId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(customerId))
+        {
+            return Unauthorized();
+        }
+
+        var command = new CreateBookingCommand(
+            CustomerId: Guid.Parse(customerId),
+            ProviderId: request.ProviderId,
+            ServiceId: request.ServiceIds is { Count: > 0 }
+                ? request.ServiceIds[0]
+                : request.ServiceId,
+            StaffProviderId: request.StaffProviderId,
+            StartTime: request.StartTime,
+            CustomerNotes: request.CustomerNotes,
+            ServiceIds: request.ServiceIds is { Count: > 0 }
+                ? request.ServiceIds
+                : null,
+            ProviderCustomerId: request.ProviderCustomerId,
+            WalkInFirstName: request.WalkInFirstName,
+            WalkInLastName: request.WalkInLastName,
+            WalkInPhone: request.WalkInPhone,
+            NotifyCustomer: request.NotifyCustomer ?? true);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation(
+            "Booking {BookingId} created for customer {CustomerId} with provider {ProviderId}",
+            result.BookingId, customerId, request.ProviderId);
+
+        var response = new BookingResponse
+        {
+            Id = result.BookingId,
+            CustomerId = result.CustomerId,
+            ProviderId = result.ProviderId,
+            ServiceId = result.ServiceId,
+            StaffProviderId = result.StaffProviderId,
+            Status = result.Status,
+            StartTime = result.StartTime,
+            EndTime = result.EndTime,
+            DurationMinutes = result.DurationMinutes,
+            TotalPrice = result.TotalPrice,
+            Currency = result.Currency,
+            PaymentStatus = result.PaymentStatus,
+            CreatedAt = result.CreatedAt
+        };
+
+        return CreatedAtAction(nameof(GetBookingById), new { id = result.BookingId }, response);
+    }
+
+    /// <summary>
+    /// Gets a booking by its ID
+    /// </summary>
+    /// <param name="id">Booking ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Booking details</returns>
+    /// <response code="200">Booking found</response>
+    /// <response code="404">Booking not found</response>
+    /// <response code="403">Not authorized to view this booking</response>
+    [HttpGet("{id:guid}")]
+    [Authorize]
+    [ProducesResponseType(typeof(BookingDetailsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetBookingById(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetBookingDetailsQuery(BookingId: id);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        // Authorization check - only customer, provider, or admin can view
+        var currentUserId = GetCurrentUserId();
+        if (!CanViewBooking(result, currentUserId))
+        {
+            _logger.LogWarning("User {UserId} attempted to view booking {BookingId} without permission",
+                currentUserId, id);
+            return Forbid();
+        }
+
+        var response = MapToBookingDetailsResponse(result);
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Gets bookings for the current customer
+    /// </summary>
+    /// <param name="status">Optional status filter</param>
+    /// <param name="from">Optional start date filter (ISO 8601, e.g. with a "Z"/offset suffix)</param>
+    /// <param name="to">Optional end date filter (ISO 8601, e.g. with a "Z"/offset suffix)</param>
+    /// <param name="pageNumber">Page number (starts from 1)</param>
+    /// <param name="pageSize">Items per page</param>
+    /// <param name="sort">Sort field (currently only "StartTime" is honored; reserved for future use)</param>
+    /// <param name="sortDesc">Sort descending</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Paginated list of customer bookings with enriched data</returns>
+    /// <response code="200">Bookings retrieved successfully</response>
+    /// <response code="401">Not authenticated</response>
+    [HttpGet("my-bookings")]
+    [Authorize]
+    [ProducesResponseType(typeof(PagedResult<CustomerBookingDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<PagedResult<CustomerBookingDto>>> GetMyBookings(
+        [FromQuery] string? status = null,
+        [FromQuery] DateTimeOffset? from = null,
+        [FromQuery] DateTimeOffset? to = null,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? sort = null,
+        [FromQuery] bool sortDesc = false,
+        CancellationToken cancellationToken = default)
+    {
+        var customerId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(customerId))
+        {
+            return Unauthorized();
+        }
+
+        // Bind from/to as DateTimeOffset (unambiguous UTC parsing of a "Z"/offset-suffixed ISO 8601
+        // string) and convert to UTC before filtering — binding these directly as DateTime silently
+        // reinterpreted a UTC "Z" query value as local server time (Kind=Local), which is wrong
+        // wherever the process's local time zone isn't UTC.
+        // The frontend sends pageNumber/pageSize (matching every other paginated endpoint in this
+        // app) — PaginationRequest's page/size FromQuery names don't match that convention, so it's
+        // constructed explicitly here instead of bound as a complex [FromQuery] object.
+        var query = new GetCustomerBookingsQuery(
+            CustomerId: Guid.Parse(customerId),
+            Status: status,
+            FromDate: from?.UtcDateTime,
+            ToDate: to?.UtcDateTime)
+        {
+            Pagination = new PaginationRequest
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                Sort = sort ?? "StartTime",
+                SortDescending = sortDesc,
+            }
+        };
+
+        var result = await _mediator.Send(query, cancellationToken);
+
+        _logger.LogInformation(
+            "Retrieved {Count} bookings for customer {CustomerId} (Page {Page} of {TotalPages})",
+            result.TotalCount, customerId, result.PageNumber, result.TotalPages);
+
+        // Return paginated result with proper HTTP headers
+        return this.PaginatedOk(result);
+    }
+
+    /// <summary>
+    /// Gets bookings for a specific provider
+    /// </summary>
+    /// <param name="providerId">Provider ID</param>
+    /// <param name="status">Optional status filter</param>
+    /// <param name="from">Optional start date filter</param>
+    /// <param name="to">Optional end date filter</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of provider bookings</returns>
+    /// <response code="200">Bookings retrieved successfully</response>
+    /// <response code="403">Not authorized to view provider bookings</response>
+    [HttpGet("provider/{providerId:guid}")]
+    [Authorize(Policy = "ProviderOrAdmin")]
+    [ProducesResponseType(typeof(IReadOnlyList<BookingResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetProviderBookings(
+        [FromRoute] Guid providerId,
+        [FromQuery] string? status = null,
+        [FromQuery] DateTime? from = null,
+        [FromQuery] DateTime? to = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageProvider(providerId))
+        {
+            _logger.LogWarning("User {UserId} attempted to view bookings for provider {ProviderId} without permission",
+                GetCurrentUserId(), providerId);
+            return Forbid();
+        }
+
+        var bookings = await _bookingReadRepository.GetByProviderIdAsync(providerId, cancellationToken);
+
+        // Apply filters
+        if (!string.IsNullOrEmpty(status))
+        {
+            bookings = bookings.Where(b => b.Status.ToString() == status).ToList();
+        }
+        if (from.HasValue)
+        {
+            bookings = bookings.Where(b => b.TimeSlot.StartTime >= from.Value).ToList();
+        }
+        if (to.HasValue)
+        {
+            bookings = bookings.Where(b => b.TimeSlot.StartTime <= to.Value).ToList();
+        }
+
+        var response = bookings.Select(MapToBookingResponse).ToList();
+
+        // Who each booking is for — the salon confirms requests by name (QA 2026-09-24).
+        var names = await _customerNames.ForAsync(providerId, bookings.ToList(), cancellationToken);
+        foreach (var (booking, row) in bookings.Zip(response))
+            row.CustomerName = names.GetValueOrDefault(booking.Id.Value);
+
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Confirms a booking with payment
+    /// </summary>
+    /// <param name="id">Booking ID</param>
+    /// <param name="request">Confirmation details with payment information</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Success message</returns>
+    /// <response code="200">Booking confirmed successfully</response>
+    /// <response code="400">Invalid request or booking cannot be confirmed</response>
+    /// <response code="404">Booking not found</response>
+    /// <response code="403">Not authorized to confirm this booking</response>
+    [HttpPost("{id:guid}/confirm")]
+    [Authorize(Policy = "ProviderOrAdmin")]
+    [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> ConfirmBooking(
+        [FromRoute] Guid id,
+        [FromBody] ConfirmBookingRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageBookingAsync(id, cancellationToken))
+            return Forbid();
+
+        var command = new ConfirmBookingCommand(
+            BookingId: id,
+            PaymentIntentId: request.PaymentMethodId);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Booking {BookingId} confirmed by user {UserId}", id, GetCurrentUserId());
+
+        return Ok(new MessageResponse($"Booking confirmed successfully. Transaction ID: {result.BookingId}"));
+    }
+
+    /// <summary>
+    /// Cancels a booking
+    /// </summary>
+    /// <param name="id">Booking ID</param>
+    /// <param name="request">Cancellation details</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Success message with refund information</returns>
+    /// <response code="200">Booking cancelled successfully</response>
+    /// <response code="400">Invalid request or booking cannot be cancelled</response>
+    /// <response code="404">Booking not found</response>
+    /// <response code="403">Not authorized to cancel this booking</response>
+    [HttpPost("{id:guid}/cancel")]
+    [Authorize]
+    [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> CancelBooking(
+        [FromRoute] Guid id,
+        [FromBody] CancelBookingRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new CancelBookingCommand(
+            BookingId: id,
+            Reason: request.Reason,
+            ActingUserId: Guid.Parse(GetCurrentUserId()!));
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Booking {BookingId} cancelled by user {UserId}. Refund amount: {RefundAmount}",
+            id, request.CancelledBy, result.RefundAmount);
+
+        var message = result.RefundAmount > 0
+            ? $"Booking cancelled successfully. Refund of {result.RefundAmount} processed."
+            : "Booking cancelled successfully.";
+
+        return Ok(new MessageResponse(message));
+    }
+
+    /// <summary>
+    /// Reschedules a booking to a new time
+    /// </summary>
+    /// <param name="id">Booking ID</param>
+    /// <param name="request">Reschedule details</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Success message</returns>
+    /// <response code="200">Booking rescheduled successfully</response>
+    /// <response code="400">Invalid request or new time slot unavailable</response>
+    /// <response code="404">Booking not found</response>
+    /// <response code="403">Not authorized to reschedule this booking</response>
+    [HttpPost("{id:guid}/reschedule")]
+    [Authorize]
+    [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> RescheduleBooking(
+        [FromRoute] Guid id,
+        [FromBody] RescheduleBookingRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new RescheduleBookingCommand(
+            BookingId: id,
+            NewStartTime: request.NewStartTime,
+            NewStaffId: request.NewStaffId,
+            Reason: request.Reason,
+            ActingUserId: Guid.Parse(GetCurrentUserId()!));
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation(
+            "Booking {OldBookingId} rescheduled successfully. New booking: {NewBookingId}",
+            id, result.NewBookingId);
+
+        return Ok(new MessageResponse(
+            $"Booking rescheduled successfully. New booking ID: {result.NewBookingId}"));
+    }
+
+    /// <summary>
+    /// Marks a booking as completed
+    /// </summary>
+    /// <param name="id">Booking ID</param>
+    /// <param name="request">Completion details</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Success message</returns>
+    /// <response code="200">Booking completed successfully</response>
+    /// <response code="400">Invalid request or booking cannot be completed</response>
+    /// <response code="404">Booking not found</response>
+    /// <response code="403">Not authorized to complete this booking</response>
+    [HttpPost("{id:guid}/complete")]
+    [Authorize(Policy = "ProviderOrAdmin")]
+    [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> CompleteBooking(
+        [FromRoute] Guid id,
+        [FromBody] CompleteBookingRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageBookingAsync(id, cancellationToken))
+            return Forbid();
+
+        var command = new CompleteBookingCommand(
+            BookingId: id,
+            StaffNotes: request.CompletionNotes);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Booking {BookingId} completed by user {UserId}", id, GetCurrentUserId());
+
+        return Ok(new MessageResponse("Booking completed successfully"));
+    }
+
+    /// <summary>
+    /// Marks a booking as no-show
+    /// </summary>
+    /// <param name="id">Booking ID</param>
+    /// <param name="request">No-show details</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Success message</returns>
+    /// <response code="200">Booking marked as no-show successfully</response>
+    /// <response code="400">Invalid request or booking cannot be marked as no-show</response>
+    /// <response code="404">Booking not found</response>
+    /// <response code="403">Not authorized to mark this booking as no-show</response>
+    [HttpPost("{id:guid}/no-show")]
+    [Authorize(Policy = "ProviderOrAdmin")]
+    [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> MarkAsNoShow(
+        [FromRoute] Guid id,
+        [FromBody] MarkNoShowRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageBookingAsync(id, cancellationToken))
+            return Forbid();
+
+        var command = new MarkNoShowCommand(
+            BookingId: id,
+            Notes: request.Notes);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Booking {BookingId} marked as no-show by user {UserId}", id, GetCurrentUserId());
+
+        return Ok(new MessageResponse("Booking marked as no-show successfully"));
+    }
+
+    /// <summary>
+    /// Assigns or reassigns staff to a booking
+    /// </summary>
+    /// <param name="id">Booking ID</param>
+    /// <param name="staffId">Staff member ID to assign</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Success message</returns>
+    /// <response code="200">Staff assigned successfully</response>
+    /// <response code="400">Invalid request or booking cannot be modified</response>
+    /// <response code="404">Booking not found</response>
+    /// <response code="403">Not authorized to modify this booking</response>
+    [HttpPut("{id:guid}/assign-staff/{staffId:guid}")]
+    [Authorize(Policy = "ProviderOrAdmin")]
+    [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> AssignStaff(
+        [FromRoute] Guid id,
+        [FromRoute] Guid staffId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageBookingAsync(id, cancellationToken))
+            return Forbid();
+
+        var command = new AssignStaffToBookingCommand(
+            BookingId: id,
+            StaffId: staffId);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Staff {StaffId} assigned to booking {BookingId} by user {UserId}",
+            staffId, id, GetCurrentUserId());
+
+        return Ok(new MessageResponse($"Staff assigned successfully"));
+    }
+
+    /// <summary>
+    /// Adds notes to a booking
+    /// </summary>
+    /// <param name="id">Booking ID</param>
+    /// <param name="request">Notes details</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Success message</returns>
+    /// <response code="200">Notes added successfully</response>
+    /// <response code="404">Booking not found</response>
+    /// <response code="403">Not authorized to add notes to this booking</response>
+    [HttpPost("{id:guid}/notes")]
+    [Authorize]
+    [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> AddNotes(
+        [FromRoute] Guid id,
+        [FromBody] AddNotesRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized();
+
+        var command = new AddBookingNotesCommand(
+            BookingId: id,
+            Notes: request.Notes,
+            IsStaffNote: request.IsStaffNote,
+            AddedBy: userId);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("{NoteType} notes added to booking {BookingId} by user {UserId}",
+            request.IsStaffNote ? "Staff" : "Customer", id, userId);
+
+        return Ok(new MessageResponse("Notes added successfully"));
+    }
+
+    /// <summary>
+    /// Searches bookings with multiple filter criteria
+    /// </summary>
+    /// <param name="providerId">Filter by provider ID</param>
+    /// <param name="customerId">Filter by customer ID</param>
+    /// <param name="serviceId">Filter by service ID</param>
+    /// <param name="staffId">Filter by staff ID</param>
+    /// <param name="status">Filter by booking status</param>
+    /// <param name="startDate">Filter by start date (inclusive)</param>
+    /// <param name="endDate">Filter by end date (exclusive)</param>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Page size (default: 20, max: 100)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Paginated list of bookings matching the search criteria</returns>
+    /// <response code="200">Search results returned successfully</response>
+    /// <response code="403">Not authorized to search bookings</response>
+    [HttpGet("search")]
+    [Authorize]
+    [ProducesResponseType(typeof(SearchBookingsResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> SearchBookings(
+        [FromQuery] Guid? providerId = null,
+        [FromQuery] Guid? customerId = null,
+        [FromQuery] Guid? serviceId = null,
+        [FromQuery] Guid? staffId = null,
+        [FromQuery] string? status = null,
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        // Validate page size
+        if (pageSize > 100) pageSize = 100;
+        if (pageSize < 1) pageSize = 20;
+
+        // Parse status if provided
+        AsanRezerve.ServiceCatalog.Domain.Enums.BookingStatus? bookingStatus = null;
+        if (!string.IsNullOrEmpty(status))
+        {
+            if (Enum.TryParse<AsanRezerve.ServiceCatalog.Domain.Enums.BookingStatus>(status, true, out var parsedStatus))
+            {
+                bookingStatus = parsedStatus;
+            }
+        }
+
+        var query = new SearchBookingsQuery(
+            ProviderId: providerId,
+            CustomerId: customerId,
+            ServiceId: serviceId,
+            StaffId: staffId,
+            Status: bookingStatus,
+            StartDate: startDate,
+            EndDate: endDate,
+            PageNumber: pageNumber,
+            PageSize: pageSize);
+
+        var result = await _mediator.Send(query, cancellationToken);
+
+        _logger.LogInformation("Booking search executed by user {UserId}. Found {Count} results",
+            GetCurrentUserId(), result.TotalCount);
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Gets available time slots for booking
+    /// </summary>
+    /// <param name="providerId">Provider ID</param>
+    /// <param name="serviceId">Service ID</param>
+    /// <param name="date">Date to check availability</param>
+    /// <param name="staffId">Optional staff ID filter</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of available time slots</returns>
+    /// <response code="200">Available slots returned successfully</response>
+    /// <response code="404">Provider or service not found</response>
+    [HttpGet("available-slots")]
+    [Authorize]
+    [ProducesResponseType(typeof(GetAvailableSlotsResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetAvailableSlots(
+        [FromQuery] Guid providerId,
+        [FromQuery] Guid serviceId,
+        [FromQuery] DateTime date,
+        [FromQuery] Guid? staffId = null,
+        [FromQuery] List<Guid>? serviceIds = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetAvailableSlotsQuery(
+            ProviderId: providerId,
+            ServiceId: serviceId,
+            Date: date,
+            StaffId: staffId,
+            ServiceIds: serviceIds is { Count: > 0 } ? serviceIds : null);
+
+        var result = await _mediator.Send(query, cancellationToken);
+
+        _logger.LogInformation("Available slots query for provider {ProviderId}, service {ServiceId} on {Date}. Found {Count} slots",
+            providerId, serviceId, date.Date, result.AvailableSlots.Count);
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Gets booking statistics for a provider
+    /// </summary>
+    /// <param name="providerId">Provider ID</param>
+    /// <param name="startDate">Optional start date filter</param>
+    /// <param name="endDate">Optional end date filter</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Booking statistics including counts, revenue, and rates</returns>
+    /// <response code="200">Statistics returned successfully</response>
+    /// <response code="403">Not authorized to view this provider's statistics</response>
+    /// <response code="404">Provider not found</response>
+    [HttpGet("statistics")]
+    [Authorize(Policy = "ProviderOrAdmin")]
+    [ProducesResponseType(typeof(BookingStatisticsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetStatistics(
+        [FromQuery] Guid providerId,
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null,
+        CancellationToken cancellationToken = default)
+    {
+        // Check authorization
+        if (!await CanManageProvider(providerId))
+        {
+            _logger.LogWarning("User {UserId} attempted to view statistics for provider {ProviderId} without permission",
+                GetCurrentUserId(), providerId);
+            return Forbid();
+        }
+
+        var query = new GetBookingStatisticsQuery(
+            ProviderId: providerId,
+            StartDate: startDate,
+            EndDate: endDate);
+
+        var result = await _mediator.Send(query, cancellationToken);
+
+        _logger.LogInformation("Statistics retrieved for provider {ProviderId} by user {UserId}",
+            providerId, GetCurrentUserId());
+
+        return Ok(result);
+    }
+
+    #region Private Helper Methods
+
+    private string? GetCurrentUserId()
+    {
+        return User.FindFirstValue(ClaimTypes.NameIdentifier);
+    }
+
+    private string? GetCurrentUserProviderId()
+    {
+        return User.FindFirst("providerId")?.Value;
+    }
+
+    /// <summary>
+    /// Whether the caller may act on this salon's appointments.
+    /// </summary>
+    /// <remarks>
+    /// This used to ask "does the caller OWN this provider?". An employed stylist,
+    /// receptionist or manager owns nothing, so every provider-scoped booking route
+    /// returned 403 for them and the provider app's day view was empty for anyone but a
+    /// salon owner. Access now comes from an active membership of the salon, which is
+    /// what the membership model made the source of truth.
+    /// </remarks>
+    /// <summary>
+    /// Confirming, completing, marking a no-show or assigning staff is the salon's call on its OWN bookings. The
+    /// endpoints only required a provider token, so any salon's owner could act on another salon's booking (found
+    /// 2026-09-23 while wiring the customer's «تأیید شد» notice). Same rule as the salon's booking list:
+    /// <see cref="CanManageProvider"/> on the booking's salon. An unknown booking answers 403, not 404, so the
+    /// endpoint does not confirm which booking ids exist.
+    /// </summary>
+    private async Task<bool> CanManageBookingAsync(Guid bookingId, CancellationToken cancellationToken)
+    {
+        var booking = await _mediator.Send(new GetBookingDetailsQuery(BookingId: bookingId), cancellationToken);
+        if (booking is null)
+            return false;
+
+        if (await CanManageProvider(booking.ProviderId))
+            return true;
+
+        _logger.LogWarning("User {UserId} attempted to act on booking {BookingId} of provider {ProviderId} without permission",
+            GetCurrentUserId(), bookingId, booking.ProviderId);
+        return false;
+    }
+
+    private async Task<bool> CanManageProvider(Guid providerId)
+    {
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId))
+            return false;
+
+        // Admins can manage any provider
+        if (User.IsInRole("Admin") || User.IsInRole("SysAdmin"))
+            return true;
+
+        // Fast path: the providerId claim an owner carries after a post-registration
+        // token refresh, which saves a round trip for by far the commonest caller.
+        var currentProviderId = GetCurrentUserProviderId();
+        if (!string.IsNullOrEmpty(currentProviderId) && currentProviderId == providerId.ToString())
+            return true;
+
+        return await _mediator.Send(new CanManageOrganizationQuery(
+            providerId, OrganizationPermission.ManageBookings));
+    }
+
+    private bool CanViewBooking(BookingDetailsViewModel booking, string? userId)
+    {
+        if (string.IsNullOrEmpty(userId))
+            return false;
+
+        // Admin can view all
+        if (User.IsInRole("Admin") || User.IsInRole("SysAdmin"))
+            return true;
+
+        // Customer can view their own bookings
+        if (booking.CustomerId.ToString() == userId)
+            return true;
+
+        // Provider can view their bookings
+        var currentProviderId = GetCurrentUserProviderId();
+        if (!string.IsNullOrEmpty(currentProviderId) && booking.ProviderId.ToString() == currentProviderId)
+            return true;
+
+        return false;
+    }
+
+    private BookingResponse MapToBookingResponse(dynamic booking)
+    {
+        return new BookingResponse
+        {
+            Id = booking.Id.Value,
+            CustomerId = booking.CustomerId.Value,
+            ProviderId = booking.ProviderId.Value,
+            ServiceId = booking.ServiceId.Value,
+            StaffProviderId = booking.StaffId,
+            Status = booking.Status.ToString(),
+            StartTime = booking.TimeSlot.StartTime,
+            EndTime = booking.TimeSlot.EndTime,
+            DurationMinutes = (int)booking.TimeSlot.Duration.Value,
+            TotalPrice = booking.PaymentInfo.TotalAmount.Amount,
+            Currency = booking.PaymentInfo.TotalAmount.Currency,
+            PaymentStatus = booking.PaymentInfo.Status.ToString(),
+            CreatedAt = booking.CreatedAt,
+            ServiceNames = MapServiceNames(booking)
+        };
+    }
+
+    private static List<string> MapServiceNames(dynamic booking)
+    {
+        var names = new List<string>();
+        foreach (var item in booking.Services)
+        {
+            string name = item.Name;
+            if (!string.IsNullOrWhiteSpace(name))
+                names.Add(name);
+        }
+        return names;
+    }
+
+    // TODO: Fix this mapping - BookingDetailsViewModel structure doesn't match expected properties
+    private BookingDetailsResponse MapToBookingDetailsResponse(BookingDetailsViewModel result)
+    {
+        return new BookingDetailsResponse
+        {
+            Id = result.BookingId,
+            CustomerId = result.CustomerId,
+            ProviderId = result.ProviderId,
+            ServiceId = result.ServiceId,
+            StaffProviderId = result.StaffId,
+            StaffName = result.StaffName,
+            RescheduleBlockedReason = result.RescheduleBlockedReason,
+            ServiceName = result.ServiceName,
+            ProviderBusinessName = result.ProviderName,
+            StartTime = result.StartTime,
+            EndTime = result.EndTime,
+            DurationMinutes = result.DurationMinutes,
+            Status = result.Status,
+            PaymentStatus = result.PaymentInfo.Status,
+            PaymentInfo = new PaymentInfoResponse
+            {
+                TotalAmount = result.PaymentInfo.TotalAmount,
+                Currency = result.Currency,
+                DepositAmount = result.PaymentInfo.DepositAmount,
+                PaidAmount = result.PaymentInfo.PaidAmount,
+                RefundedAmount = result.PaymentInfo.RefundedAmount,
+                RemainingAmount = result.PaymentInfo.RemainingAmount,
+                PaymentStatus = result.PaymentInfo.Status
+            },
+            CustomerNotes = result.CustomerNotes,
+            StaffNotes = result.StaffNotes,
+            // Policy = new BookingPolicyResponse // TODO: Add policy properties to BookingDetailsViewModel
+            // {
+            //     MinAdvanceBookingHours = result.PolicyMinAdvanceBookingHours,
+            //     MaxAdvanceBookingDays = result.PolicyMaxAdvanceBookingDays,
+            //     CancellationWindowHours = result.PolicyCancellationWindowHours,
+            //     CancellationFeePercentage = result.PolicyCancellationFeePercentage,
+            //     AllowRescheduling = result.PolicyAllowRescheduling,
+            //     RescheduleWindowHours = result.PolicyRescheduleWindowHours,
+            //     RequireDeposit = result.PolicyRequireDeposit,
+            //     DepositPercentage = result.PolicyDepositPercentage
+            // },
+            // CreatedAt = result.CreatedAt, // Use RequestedAt instead
+            CreatedAt = result.RequestedAt,
+            // LastModifiedAt = result.LastModifiedAt, // Property doesn't exist
+            ConfirmedAt = result.ConfirmedAt,
+            CompletedAt = result.CompletedAt,
+            CancelledAt = result.CancelledAt
+        };
+    }
+
+    #endregion
+}
+
+/// <summary>
+/// Simple message response wrapper
+/// </summary>
+public class MessageResponse
+{
+    public string Message { get; set; }
+
+    public MessageResponse(string message)
+    {
+        Message = message;
+    }
+}

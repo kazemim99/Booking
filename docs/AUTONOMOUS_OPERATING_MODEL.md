@@ -23,7 +23,7 @@ nothing makes "done" checkable**. Six concrete causes, all visible in the reposi
 | # | Cause | Evidence |
 |---|---|---|
 | 1 | Stopping is free. No hook, script, or check runs when the assistant ends its turn. | `~/.claude/settings.json` has only `PreToolUse(Grep\|Glob)` and `SessionStart` hooks; `.claude/settings.local.json` has none. |
-| 2 | "Done" is not a command. The gates (build, unit, architecture, composition, integration, `flutter analyze`, ESLint) are listed in prose; there is no single script that runs them and records the result. | `scripts/` holds SQL and one observability script; `Booksy.sln` has 13 test projects with no runner. |
+| 2 | "Done" is not a command. The gates (build, unit, architecture, composition, integration, `flutter analyze`, ESLint) are listed in prose; there is no single script that runs them and records the result. | `scripts/` holds SQL and one observability script; `AsanRezerve.sln` has 13 test projects with no runner. |
 | 3 | `tasks.md` has become a journal, not loop state. Single checkboxes carry 10-line paragraphs; `[~]` means "partly"; lines are found stale months later. | `openspec/changes/refactor-identity-and-membership/tasks.md` lines 4, 9, 10, 35; `.hermes/skills/openspec-change-lifecycle` §1 exists *because* task lists lag reality. |
 | 4 | The decision policy defaults to asking. "Ambiguous business decisions are confirmed before coding" is right for product rules, but there is no tier for reversible engineering choices, so asking is always the safe move. | `AGENTS.md` stop condition 2 and *Investigation Before Implementation*. |
 | 5 | Policy is duplicated in three places (global `~/.claude/CLAUDE.md`, `c:\Repos\CLAUDE.md`, `AGENTS.md`), and the Booking `CLAUDE.md` is ~300 lines of ops runbook. Long, repeated instructions dilute the ones that matter. | Compare *Test-First Development* in `~/.claude/CLAUDE.md` and `AGENTS.md` §Test-First. |
@@ -234,7 +234,7 @@ scripts/verify.ps1 -Tier fast|full [-Filter <dotnet test filter>] [-All] [-SkipB
 scripts/verify.sh  fast|full [--filter ..] [--all] [--skip-build]
 ```
 
-- FAST: `dotnet build Booksy.sln`, then `dotnet test` on the seven unit/architecture projects.
+- FAST: `dotnet build AsanRezerve.sln`, then `dotnet test` on the seven unit/architecture projects.
   No Docker. (As built: Host composition tests boot Testcontainers Postgres, so they are FULL.)
 - FULL: FAST, then Host composition + both integration projects (Testcontainers starts its own
   Postgres; no compose file needed), `type-check`/`lint:check` in each touched Vue app,

@@ -1,9 +1,9 @@
 services:
   # Backend — modular monolith (UserManagement + ServiceCatalog in one host).
   # Replaces the former usermanagement-api + servicecatalog-api + gateway services.
-  booksy-api:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/booksy-api:latest
-    container_name: booksy-api
+  asan-rezerve-api:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/asan-rezerve-api:latest
+    container_name: asan-rezerve-api
     env_file:
       - .env
     environment:
@@ -20,7 +20,7 @@ services:
       # ever sees http:// requests; image URLs built from those were blocked by HTTPS pages.
       - App__PublicBaseUrl=${PUBLIC_BASE_URL:-https://back.nahalkmi.ir}
     ports:
-      # Localhost only: the frontend container reaches this over booksy-network by
+      # Localhost only: the frontend container reaches this over asan-rezerve-network by
       # container name, and the host nginx vhost never needs to — it proxies to the
       # frontend container, whose own nginx forwards /api/ internally. This binding
       # exists only for operator debugging (curl/Swagger from the box itself).
@@ -32,14 +32,14 @@ services:
         condition: service_healthy
       # No hard dependency on seq: it's off by default on this box (lean profile,
       # shared with other services on limited RAM — see the observability profile
-      # below). A hard `service_started` dependency would block booksy-api from
+      # below). A hard `service_started` dependency would block asan-rezerve-api from
       # starting at all whenever seq isn't deployed.
     volumes:
       # Provider gallery/profile images. Without a volume they lived in the container's
       # writable layer and every deploy (a new container) deleted them.
       - uploads_data:/app/wwwroot/uploads
     networks:
-      - booksy-network
+      - asan-rezerve-network
     restart: unless-stopped
     deploy:
       resources:
@@ -59,21 +59,21 @@ services:
       start_period: 60s
 
   frontend:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/booksy-frontend:latest
-    container_name: booksy-frontend
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/asan-rezerve-frontend:latest
+    container_name: asan-rezerve-frontend
     env_file:
       - .env
     ports:
       # Localhost only, no 443: TLS terminates at the HOST's nginx (shared with
       # other sites on this box), which reverse-proxies to this port. The
       # container never binds 80/443 directly — those already belong to the
-      # host nginx serving other domains. See deployment/nginx/booksy.conf.
+      # host nginx serving other domains. See deployment/nginx/asan-rezerve.conf.
       - "127.0.0.1:8081:80"
     depends_on:
-      booksy-api:
+      asan-rezerve-api:
         condition: service_started
     networks:
-      - booksy-network
+      - asan-rezerve-network
     restart: unless-stopped
     deploy:
       resources:
@@ -93,7 +93,7 @@ services:
   # Infrastructure Services
   postgres:
     image: postgres:16-alpine
-    container_name: booksy-postgres
+    container_name: asan-rezerve-postgres
     env_file:
       - .env
     environment:
@@ -106,7 +106,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - booksy-network
+      - asan-rezerve-network
     restart: unless-stopped
     deploy:
       resources:
@@ -125,7 +125,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: booksy-redis
+    container_name: asan-rezerve-redis
     env_file:
       - .env
     command: redis-server --requirepass ${REDIS_PASSWORD} --maxmemory 192mb --maxmemory-policy allkeys-lru
@@ -134,7 +134,7 @@ services:
     volumes:
       - redis_data:/data
     networks:
-      - booksy-network
+      - asan-rezerve-network
     restart: unless-stopped
     deploy:
       resources:
@@ -160,7 +160,7 @@ services:
   # `docker compose --profile observability up -d` if there's headroom later.
   seq:
     image: datalust/seq:latest
-    container_name: booksy-seq
+    container_name: asan-rezerve-seq
     profiles: ["observability"]
     env_file:
       - .env
@@ -170,11 +170,11 @@ services:
       - SEQ_FIRSTRUN_ADMINPASSWORD=${SEQ_ADMIN_PASSWORD}
     ports:
       - "127.0.0.1:5341:80"       # Seq UI — reach it via an SSH tunnel, never public
-      - "127.0.0.1:5342:5341"     # Seq ingestion (booksy-api reaches it over booksy-network directly; this port is for external shippers only)
+      - "127.0.0.1:5342:5341"     # Seq ingestion (asan-rezerve-api reaches it over asan-rezerve-network directly; this port is for external shippers only)
     volumes:
       - seq_data:/data
     networks:
-      - booksy-network
+      - asan-rezerve-network
     restart: unless-stopped
     deploy:
       resources:
@@ -195,12 +195,12 @@ services:
   # pgAdmin for database management — see the observability-profile note above seq.
   pgadmin:
     image: dpage/pgadmin4
-    container_name: booksy-pgadmin
+    container_name: asan-rezerve-pgadmin
     profiles: ["observability"]
     env_file:
       - .env
     environment:
-      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL:-admin@booksy.local}
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL:-admin@asan-rezerve.local}
       - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
       - PGADMIN_CONFIG_SERVER_MODE=False
       - PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=False
@@ -212,7 +212,7 @@ services:
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     networks:
-      - booksy-network
+      - asan-rezerve-network
     restart: unless-stopped
     deploy:
       resources:
@@ -236,7 +236,7 @@ volumes:
     driver: local
 
 networks:
-  booksy-network:
+  asan-rezerve-network:
     driver: bridge
     ipam:
       config:

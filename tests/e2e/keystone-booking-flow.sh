@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# keystone-booking-flow.sh — end-to-end smoke test of the core Booksy flow:
+# keystone-booking-flow.sh — end-to-end smoke test of the core AsanRezerve flow:
 #
 #   provider signs up (OTP) → register-full (auto-approved Active) →
 #   adds a staff member (Active sub-provider, services qualified+activated,
@@ -14,7 +14,7 @@
 # PREREQUISITES (the host must be running with sandbox auth enabled so OTP is
 # deterministic):
 #   OTP_SANDBOX_CODE=123456 ASPNETCORE_ENVIRONMENT=Development \
-#     dotnet run --project src/Host/Booksy.Host
+#     dotnet run --project src/Host/AsanRezerve.Host
 #   (and Postgres + Redis up; Rahyab:SandboxMode=true; Kavenegar disabled)
 #
 # USAGE:  BASE=http://localhost:5050 bash tests/e2e/keystone-booking-flow.sh

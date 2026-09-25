@@ -42,17 +42,17 @@ galleryImage.Property<byte[]>("RowVersion")
 
 2. **Open terminal and navigate:**
    ```bash
-   cd c:\Repos\Booking\src\BoundedContexts\ServiceCatalog\Booksy.ServiceCatalog.Api
+   cd c:\Repos\Booking\src\BoundedContexts\ServiceCatalog\AsanRezerve.ServiceCatalog.Api
    ```
 
 3. **Create migration:**
    ```bash
-   dotnet ef migrations add RemoveGalleryImageRowVersion --context ServiceCatalogDbContext --project "../Booksy.ServiceCatalog.Infrastructure/Booksy.ServiceCatalog.Infrastructure.csproj" --output-dir "Persistence/Migrations"
+   dotnet ef migrations add RemoveGalleryImageRowVersion --context ServiceCatalogDbContext --project "../AsanRezerve.ServiceCatalog.Infrastructure/AsanRezerve.ServiceCatalog.Infrastructure.csproj" --output-dir "Persistence/Migrations"
    ```
 
 4. **Apply migration:**
    ```bash
-   dotnet ef database update --context ServiceCatalogDbContext --project "../Booksy.ServiceCatalog.Infrastructure/Booksy.ServiceCatalog.Infrastructure.csproj"
+   dotnet ef database update --context ServiceCatalogDbContext --project "../AsanRezerve.ServiceCatalog.Infrastructure/AsanRezerve.ServiceCatalog.Infrastructure.csproj"
    ```
 
 5. **Restart your API**
@@ -130,7 +130,7 @@ dotnet ef migrations list
 dotnet ef migrations remove
 
 # Restore ProviderConfiguration.cs from git
-git restore src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Persistence/Configurations/ProviderConfiguration.cs
+git restore src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Infrastructure/Persistence/Configurations/ProviderConfiguration.cs
 ```
 
 ## Summary

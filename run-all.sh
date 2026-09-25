@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Booksy - Run All Services (Development)
+# AsanRezerve - Run All Services (Development)
 # This script starts all backend APIs and the frontend application
 
 echo "========================================"
-echo "  Booksy - Starting All Services"
+echo "  AsanRezerve - Starting All Services"
 echo "========================================"
 echo ""
 
@@ -57,9 +57,9 @@ mkdir -p "$SCRIPT_DIR/logs"
 echo "" > "$SCRIPT_DIR/.pids"
 
 # Start backend services
-start_service "UserManagement API" "src/UserManagement/Booksy.UserManagement.API" "5001"
-start_service "ServiceCatalog API" "src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api" "5002"
-start_service "API Gateway" "src/APIGateway/Booksy.Gateway" "5000"
+start_service "UserManagement API" "src/UserManagement/AsanRezerve.UserManagement.API" "5001"
+start_service "ServiceCatalog API" "src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api" "5002"
+start_service "API Gateway" "src/APIGateway/AsanRezerve.Gateway" "5000"
 
 # Wait for backend services to initialize
 echo ""
@@ -67,7 +67,7 @@ echo -e "${YELLOW}Waiting for backend services to initialize (15 seconds)...${NC
 sleep 15
 
 # Check if npm install is needed for frontend
-FRONTEND_PATH="$SCRIPT_DIR/booksy-frontend"
+FRONTEND_PATH="$SCRIPT_DIR/asanrezerve-frontend"
 if [ ! -d "$FRONTEND_PATH/node_modules" ]; then
     echo ""
     echo -e "${YELLOW}Installing frontend dependencies...${NC}"

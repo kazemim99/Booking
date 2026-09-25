@@ -1,6 +1,6 @@
 # Architectural Decisions
 
-A running log of significant architectural decisions for the Booksy backend, focused on the production-readiness
+A running log of significant architectural decisions for the AsanRezerve backend, focused on the production-readiness
 hardening of the Customer Booking + financial domains. Each entry records the decision, why, and — where it
 **replaced an earlier design** — the rationale for the change. Newest first.
 

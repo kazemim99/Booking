@@ -1,0 +1,118 @@
+// ========================================
+// AsanRezerve.ServiceCatalog.Infrastructure/Persistence/Repositories/NotificationWriteRepository.cs
+// ========================================
+using AsanRezerve.Core.Application.Abstractions.Persistence;
+using AsanRezerve.Infrastructure.Core.Persistence.Base;
+using AsanRezerve.ServiceCatalog.Domain.Aggregates.NotificationAggregate;
+using AsanRezerve.ServiceCatalog.Domain.Enums;
+using AsanRezerve.ServiceCatalog.Domain.Repositories;
+using AsanRezerve.ServiceCatalog.Domain.ValueObjects;
+using AsanRezerve.ServiceCatalog.Infrastructure.Persistence;
+using AsanRezerve.ServiceCatalog.Infrastructure.Persistence.Context;
+using Microsoft.EntityFrameworkCore;
+
+namespace AsanRezerve.ServiceCatalog.Infrastructure.Persistence.Repositories
+{
+    /// <summary>
+    /// Implementation of Notification write repository
+    /// </summary>
+    public sealed class NotificationWriteRepository : EfWriteRepositoryBase<Notification, NotificationId, ServiceCatalogDbContext>, INotificationWriteRepository
+    {
+        private readonly ServiceCatalogDbContext _context;
+
+        public NotificationWriteRepository(ServiceCatalogDbContext context):base(context)
+        {
+            _context = context;
+        }
+
+        public async Task<Notification?> GetByIdAsync(NotificationId id, CancellationToken cancellationToken = default)
+        {
+            return await _context.Set<Notification>()
+                .Include(n => n.DeliveryAttempts)
+                .FirstOrDefaultAsync(n => n.Id == id, cancellationToken);
+        }
+
+        public async Task SaveNotificationAsync(Notification notification, CancellationToken cancellationToken = default)
+        {
+            await _context.Set<Notification>().AddAsync(notification, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task UpdateNotificationAsync(Notification notification, CancellationToken cancellationToken = default)
+        {
+            // Only attach-and-mark when the aggregate is genuinely detached. For the normal load-then-mutate
+            // flow EF change tracking has already captured the changes — including the DeliveryAttempt the send
+            // just appended, which is Added. Calling Update() there re-stamps the whole graph as Modified, so
+            // that brand-new child is issued as an UPDATE, affects 0 rows, and throws
+            // DbUpdateConcurrencyException. Every send appends an attempt, so this fires on the happy path.
+            if (_context.Entry(notification).State == EntityState.Detached)
+            {
+                _context.Set<Notification>().Update(notification);
+            }
+
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task<List<Notification>> GetPendingNotificationsAsync(int batchSize = 100, CancellationToken cancellationToken = default)
+        {
+            // Failed notifications belong here too: without them nothing ever retries a transient gateway error,
+            // and nothing ever moves an exhausted notification to the dead-letter queue. The dispatcher decides
+            // per notification whether the backoff has elapsed (ShouldRetry) or the budget is spent.
+            return await _context.Set<Notification>()
+                .Where(n => n.Status == NotificationStatus.Pending
+                         || n.Status == NotificationStatus.Queued
+                         || n.Status == NotificationStatus.Failed)
+                .OrderBy(n => n.Priority)
+                .ThenBy(n => n.CreatedAt)
+                .Take(batchSize)
+                .ToListAsync(cancellationToken);
+        }
+
+        public async Task<List<Notification>> GetScheduledNotificationsToSendAsync(DateTime currentTime, int batchSize = 100, CancellationToken cancellationToken = default)
+        {
+            return await _context.Set<Notification>()
+                .Where(n =>
+                    n.Status == NotificationStatus.Queued &&
+                    n.ScheduledFor.HasValue &&
+                    n.ScheduledFor.Value <= currentTime)
+                .OrderBy(n => n.ScheduledFor)
+                .ThenBy(n => n.Priority)
+                .Take(batchSize)
+                .ToListAsync(cancellationToken);
+        }
+
+        public async Task<List<Notification>> GetExpiredNotificationsAsync(DateTime currentTime, int batchSize = 100, CancellationToken cancellationToken = default)
+        {
+            return await _context.Set<Notification>()
+                .Where(n =>
+                    n.Status != NotificationStatus.Delivered &&
+                    n.Status != NotificationStatus.Cancelled &&
+                    n.Status != NotificationStatus.Expired &&
+                    n.ExpiresAt.HasValue &&
+                    n.ExpiresAt.Value <= currentTime)
+                .Take(batchSize)
+                .ToListAsync(cancellationToken);
+        }
+
+        public Task AddAsync(Notification entity, CancellationToken cancellationToken = default)
+        {
+            return SaveNotificationAsync(entity, cancellationToken);
+        }
+
+        public Task UpdateAsync(Notification entity, CancellationToken cancellationToken = default)
+        {
+            return UpdateNotificationAsync(entity, cancellationToken);
+        }
+
+        public async Task DeleteAsync(Notification entity, CancellationToken cancellationToken = default)
+        {
+            _context.Set<Notification>().Remove(entity);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            return await _context.SaveChangesAsync(cancellationToken);
+        }
+    }
+}

@@ -1,0 +1,803 @@
+{
+  "app": {
+    "name": "AsanRezerve"
+  },
+  "auth": {
+    "welcomeBack": "Welcome Back",
+    "signInToAccount": "Sign in to your account",
+    "createAccount": "Create Account",
+    "joinToday": "Join AsanRezerve today",
+    "emailAddress": "Email Address",
+    "emailPlaceholder": "you{'@'}example.com",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "createPasswordPlaceholder": "Create a strong password",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordPlaceholder": "Confirm your password",
+    "firstName": "First Name",
+    "firstNamePlaceholder": "John",
+    "lastName": "Last Name",
+    "lastNamePlaceholder": "Doe",
+    "phoneNumber": "Phone Number",
+    "phonePlaceholder": "+1 (555) 123-4567",
+    "optional": "(Optional)",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot password?",
+    "resetPassword": "Reset Password",
+    "resetPasswordInstructions": "Enter your email address and we'll send you a link to reset your password.",
+    "backToLogin": "Back to login",
+    "checkEmail": "Check your email",
+    "checkEmailInstructions": "We've sent a password reset link to your email address.",
+    "resetPasswordSuccess": "Password has been reset successfully",
+    "resetPasswordSuccessInstructions": "Your password has been reset. You can now login with your new password.",
+    "signIn": "Sign In",
+    "signUp": "Sign up",
+    "signingIn": "Signing in...",
+    "creatingAccount": "Creating account...",
+    "noAccount": "Don't have an account?",
+    "alreadyHaveAccount": "Already have an account?",
+    "userType": "I am a",
+    "customer": "Customer",
+    "provider": "Provider",
+    "iAccept": "I accept the",
+    "termsConditions": "Terms and Conditions",
+    "orContinueWith": "or continue with",
+    "continue": "Continue",
+    "verifying": "Verifying...",
+    "enterYourPhone": "Enter your phone number to continue",
+    "phoneLoginDescription": "We'll send a verification code to your phone",
+    "preferEmail": "Prefer to use email?",
+    "emailLogin": "Sign in with email",
+    "phoneLogin": "Sign in with phone",
+    "unifiedLoginTitle": "Welcome to AsanRezerve",
+    "unifiedLoginSubtitle": "Sign in or create an account to continue",
+    "socialLogin": {
+      "google": "Continue with Google",
+      "facebook": "Continue with Facebook",
+      "apple": "Continue with Apple"
+    },
+    "errors": {
+      "loginFailed": "Login failed. Please check your credentials and try again.",
+      "registrationFailed": "Registration failed. Please check your information and try again.",
+      "passwordMismatch": "Passwords do not match",
+      "invalidEmail": "Please enter a valid email address",
+      "invalidPassword": "Password must be at least 6 characters",
+      "accountLocked": "Your account has been locked. Please contact support.",
+      "tooManyAttempts": "Too many failed attempts. Please try again later.",
+      "requiredField": "This field is required"
+    },
+    "success": {
+      "loginSuccess": "Login successful! Welcome back.",
+      "registrationSuccess": "Registration successful! Welcome to AsanRezerve.",
+      "passwordResetSuccess": "Your password has been reset successfully."
+    },
+    "validation": {
+      "requiredField": "This field is required",
+      "invalidEmail": "Please enter a valid email address",
+      "passwordTooShort": "Password must be at least 8 characters",
+      "passwordRequirements": "Password must contain at least one uppercase letter, one lowercase letter, and one number",
+      "passwordsDoNotMatch": "Passwords do not match",
+      "invalidPhoneNumber": "Please enter a valid phone number",
+      "acceptTerms": "You must accept the terms and conditions"
+    },
+    "phoneVerification": {
+      "welcome": "Start your journey with AsanRezerve",
+      "enterPhone": "Enter your phone number",
+      "enterPhoneDescription": "We'll send you a verification code to confirm your number",
+      "phoneNumberLabel": "Phone Number",
+      "phoneNumberPlaceholder": "Enter your phone number",
+      "sendCode": "Send Code",
+      "verifyCode": "Verify your phone",
+      "verifyCodeDescription": "Enter the 6-digit code we sent to {phone}",
+      "enterCodeLabel": "Verification Code",
+      "resendCode": "Resend Code",
+      "resendIn": "Resend code in {seconds}s",
+      "changePhoneNumber": "Change phone number",
+      "attemptsRemaining": "{count} attempts remaining | {count} attempt remaining",
+      "verificationSuccess": "Verification Successful!",
+      "verificationSuccessDescription": "Your phone has been verified. Let's continue setting up your account.",
+      "continue": "Continue",
+      "haveAccount": "Already have an account?",
+      "needHelp": "Need help?",
+      "successToast": "Phone verified successfully!"
+    }
+  },
+  "validation": {
+    "checkFollowing": "Please check the following:"
+  },
+  "provider": {
+    "businessHours": {
+      "title": "Business Hours",
+      "subtitle": "Set your regular business hours and availability for bookings",
+      "backButton": "Back",
+      "backToOnboarding": "← Back to Onboarding",
+      "timePicker": {
+        "selectTime": "Select Time",
+        "hour": "Hour",
+        "minute": "Minute"
+      },
+      "viewModes": {
+        "calendar": "📅 Calendar",
+        "list": "📋 List"
+      },
+      "weekView": "Week",
+      "monthView": "Month",
+      "today": "Today",
+      "weekDays": {
+        "sunday": "Sunday",
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday"
+      },
+      "weekDaysShort": {
+        "sun": "Sun",
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat"
+      },
+      "dayStatus": {
+        "open": "Open",
+        "closed": "Closed",
+        "holiday": "Holiday",
+        "exception": "Exception"
+      },
+      "listView": {
+        "title": "Weekly Schedule",
+        "quickActions": {
+          "copyMonday": "Copy Monday",
+          "copyMondayHint": "Copy Monday to All Days",
+          "setStandard": "Standard Hours",
+          "setStandardHint": "Set Standard Business Hours",
+          "clearAll": "Clear All",
+          "clearAllHint": "Clear All Hours"
+        },
+        "openingLabel": "Opening",
+        "closingLabel": "Closing",
+        "breaksLabel": "Breaks",
+        "addBreak": "+ Add Break",
+        "noBreaks": "No breaks scheduled",
+        "breakCount": "{count} break | {count} breaks"
+      },
+      "modal": {
+        "title": "Edit {day}",
+        "workingHours": "Working Hours",
+        "close": "Close",
+        "cancel": "Cancel",
+        "save": "Save"
+      },
+      "breaks": {
+        "title": "Breaks",
+        "from": "From",
+        "to": "To",
+        "label": "Label",
+        "addBreak": "Add Break",
+        "remove": "Remove break",
+        "removeBreak": "Remove Break",
+        "maxBreaks": "Maximum 3 breaks per day"
+      },
+      "messages": {
+        "loading": "Loading business hours...",
+        "saving": "Saving...",
+        "success": "Business hours saved successfully!",
+        "error": "Failed to save business hours",
+        "noProvider": "Provider profile not found. Please register as a provider first.",
+        "validationError": "Please fix the validation errors"
+      },
+      "validation": {
+        "invalidTimeRange": "Close time must be after open time",
+        "invalidBreakTime": "Break times must be within business hours",
+        "breakOverlap": "Breaks cannot overlap"
+      },
+      "saveButton": "Save Business Hours"
+    },
+    "hours": {
+      "iranianHoliday": "Public Holiday",
+      "iranianHolidayTooltip": "Iranian public holiday",
+      "holidays": {
+        "title": "Holidays & Closures",
+        "addHoliday": "Add Holiday",
+        "addFirstHoliday": "Add your first holiday",
+        "editHoliday": "Edit Holiday",
+        "date": "Date",
+        "reason": "Reason",
+        "reasonPlaceholder": "e.g., Christmas Day, Annual Maintenance",
+        "recurring": "Recurring",
+        "makeRecurring": "Make this holiday recurring",
+        "recurringHelp": "The holiday will repeat automatically every year",
+        "recurrencePattern": "Recurrence Pattern",
+        "selectPattern": "Select a pattern",
+        "infoText": "Mark this date as a holiday to prevent all bookings",
+        "patterns": {
+          "daily": "Daily",
+          "weekly": "Weekly",
+          "monthly": "Monthly",
+          "yearly": "Yearly (same date every year)"
+        },
+        "previewDates": "Upcoming Occurrences",
+        "filterByYear": "Filter by Year",
+        "showPast": "Show past holidays",
+        "searchPlaceholder": "Search holidays...",
+        "emptyTitle": "No holidays scheduled",
+        "emptyMessage": "Add holidays and special closure dates to prevent bookings",
+        "deleteConfirmTitle": "Delete Holiday",
+        "deleteConfirmMessage": "Are you sure you want to delete '{reason}'?",
+        "affectedBookings": "⚠ This will affect {count} existing booking(s)",
+        "errors": {
+          "dateRequired": "Please select a date",
+          "pastDate": "Cannot add holidays in the past",
+          "reasonRequired": "Please provide a reason",
+          "reasonTooLong": "Reason must be 200 characters or less",
+          "patternRequired": "Please select a recurrence pattern",
+          "saveFailed": "Failed to save holiday"
+        }
+      },
+      "exceptions": {
+        "title": "Schedule Exceptions",
+        "addException": "Add Exception",
+        "addFirstException": "Add your first exception",
+        "editException": "Edit Exception",
+        "infoText": "Exceptions allow you to override your regular hours for specific dates (e.g., special events, shortened hours)",
+        "date": "Date",
+        "openTime": "Opening Time",
+        "closeTime": "Closing Time",
+        "reason": "Reason",
+        "reasonPlaceholder": "e.g., Staff Meeting, Early Closure",
+        "markAsClosed": "Mark as closed for the entire day",
+        "closedHelp": "Check this if you'll be closed all day instead of just changing hours",
+        "closed": "Closed",
+        "modified": "Modified Hours",
+        "closedAllDay": "Closed all day",
+        "hours": "Hours",
+        "duration": "Duration",
+        "preview": "Preview",
+        "showPast": "Show past exceptions",
+        "searchPlaceholder": "Search exceptions...",
+        "emptyTitle": "No exceptions scheduled",
+        "emptyMessage": "Add schedule exceptions for days with different hours or closures",
+        "deleteConfirmTitle": "Delete Exception",
+        "deleteConfirmMessage": "Are you sure you want to delete '{reason}'?",
+        "revertToRegular": "Revert to Regular Hours",
+        "affectedBookings": "⚠ This will affect {count} existing booking(s)",
+        "conflictWarning": "⚠ Note: There is already a holiday or exception scheduled for this date",
+        "errors": {
+          "dateRequired": "Please select a date",
+          "pastDate": "Cannot add exceptions in the past",
+          "openTimeRequired": "Please select an opening time",
+          "closeTimeRequired": "Please select a closing time",
+          "invalidTimeRange": "Closing time must be after opening time",
+          "reasonRequired": "Please provide a reason",
+          "reasonTooLong": "Reason must be 200 characters or less",
+          "saveFailed": "Failed to save exception"
+        }
+      }
+    },
+    "navigation": {
+      "toggleSidebar": "Toggle sidebar",
+      "ariaLabel": "Provider navigation"
+    },
+    "menu": {
+      "businessProfile": "Business Profile",
+      "bookings": "Bookings"
+    },
+    "sidebar": {
+      "mainSection": "Main",
+      "dashboard": "Dashboard",
+      "bookings": "Bookings",
+      "services": "Services",
+      "staff": "Staff",
+      "businessSection": "Business",
+      "profile": "Profile",
+      "businessHours": "Business Hours",
+      "gallery": "Gallery",
+      "insightsSection": "Insights",
+      "analytics": "Analytics",
+      "reviews": "Reviews",
+      "settingsSection": "Settings",
+      "settings": "Settings",
+      "toggleLabel": "Toggle sidebar"
+    },
+    "filters": {
+      "title": "Filters",
+      "clearAll": "Clear All",
+      "search": "Search",
+      "businessNamePlaceholder": "Business name...",
+      "location": "Location",
+      "cityPlaceholder": "City",
+      "statePlaceholder": "State/Province",
+      "countryPlaceholder": "Country",
+      "providerType": "Provider Type",
+      "allTypes": "All Types",
+      "type": {
+        "individual": "Individual",
+        "business": "Business",
+        "corporate": "Corporate",
+        "franchise": "Franchise",
+        "popup": "Pop-up",
+        "mobile": "Mobile"
+      },
+      "status": "Status",
+      "allStatuses": "All Statuses",
+      "statusOptions": {
+        "active": "Active",
+        "inactive": "Inactive",
+        "suspended": "Suspended",
+        "pending": "Pending"
+      },
+      "features": "Features",
+      "featuresOptions": {
+        "onlineBooking": "Online Booking",
+        "mobileServices": "Mobile Services"
+      },
+      "specializations": "Specializations",
+      "specializationPlaceholder": "Add specialization...",
+      "addSpecializationHint": "Press Enter or comma to add",
+      "distance": "Distance",
+      "distanceKm": "Distance: {value} km",
+      "minimumRating": "Minimum Rating",
+      "applyButton": "Apply Filters"
+    },
+    "registration": {
+      "welcome": "Welcome to AsanRezerve!",
+      "saveDraft": "Save Draft",
+      "progress": {
+        "step": "Step {current} of {total}"
+      },
+      "category": {
+        "title": "What type of business do you have?",
+        "subtitle": "Select the category that best describes your business",
+        "other": "Other Categories"
+      },
+      "businessInfo": {
+        "title": "Business Information",
+        "subtitle": "Tell us about your business",
+        "businessName": "Business Name",
+        "businessNamePlaceholder": "Enter your business name",
+        "ownerFirstName": "Owner First Name",
+        "firstNamePlaceholder": "Enter your first name",
+        "ownerLastName": "Owner Last Name",
+        "lastNamePlaceholder": "Enter your last name",
+        "phoneNumber": "Phone Number",
+        "phoneHint": "This will be your primary contact number"
+      },
+      "location": {
+        "title": "Business Location",
+        "confirmTitle": "Confirm Your Location",
+        "subtitle": "Where is your business located?",
+        "searchPlaceholder": "Search for your address...",
+        "mapIntegrationNote": "Click on the map to select your location",
+        "enterAddressHelp": "Enter your business address or click on the map",
+        "coordinates": "Coordinates",
+        "addressLine1": "Address Line 1",
+        "addressLine2": "Address Line 2 (Optional)",
+        "optional": "Optional",
+        "city": "City",
+        "zipCode": "ZIP / Postal Code",
+        "sharedLocation": "Share precise location with clients",
+        "sharedLocationHint": "Clients will see your exact location on the map"
+      },
+      "hours": {
+        "title": "Business Hours",
+        "subtitle": "Set your working hours",
+        "note": "You can customize hours for specific services later"
+      },
+      "services": {
+        "title": "Your Services",
+        "subtitle": "Add the services you offer",
+        "yourServices": "Your Services",
+        "addService": "Add Service",
+        "minRequired": "Add at least one service to continue",
+        "serviceName": "Service Name",
+        "serviceNamePlaceholder": "e.g., Haircut, Manicure",
+        "duration": "Duration (minutes)",
+        "price": "Price",
+        "description": "Description (Optional)"
+      },
+      "assistance": {
+        "title": "How Can We Help?",
+        "subtitle": "Select areas where you'd like assistance (select up to 5)",
+        "selected": "{count} of {max} selected"
+      },
+      "team": {
+        "title": "Team Members",
+        "subtitle": "Add your team members (optional)",
+        "owner": "Owner",
+        "addStaff": "Add Staff Member",
+        "addStaffMember": "Add Staff Member",
+        "staffName": "Staff Name",
+        "staffRole": "Role",
+        "staffEmail": "Email (Optional)"
+      },
+      "complete": {
+        "title": "You're All Set!",
+        "subtitle": "Your provider profile is complete",
+        "description": "You can now start accepting bookings from clients. Your profile will be visible to customers once approved.",
+        "pendingApproval": "Your profile is pending approval and will be reviewed shortly.",
+        "goToDashboard": "Go to Dashboard"
+      }
+    },
+    "categories": {
+      "nail_salon": "Nail Salon",
+      "hair_salon": "Hair Salon",
+      "brows_lashes": "Brows & Lashes",
+      "braids_locs": "Braids & Locs",
+      "massage": "Massage",
+      "barbershop": "Barbershop",
+      "aesthetic_medicine": "Aesthetic Medicine",
+      "dental_orthodontics": "Dental & Orthodontics",
+      "hair_removal": "Hair Removal",
+      "health_fitness": "Health & Fitness",
+      "home_services": "Home Services"
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "filter": "Filter",
+    "clear": "Clear",
+    "apply": "Apply",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "continue": "Continue",
+    "reset": "Reset",
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "profile": "Profile",
+    "settings": "Settings",
+    "logout": "Logout",
+    "language": "Language",
+    "yes": "Yes",
+    "no": "No",
+    "retry": "Retry",
+    "viewAll": "View All",
+    "all": "All",
+    "update": "Update",
+    "add": "Add",
+    "characters": "characters",
+    "hours": "hours",
+    "minutes": "minutes"
+  },
+  "dashboard": {
+    "welcome": {
+      "welcomeBack": "Welcome back,",
+      "goodMorning": "Good morning! Ready to make today great?",
+      "goodAfternoon": "Good afternoon! Keep up the great work!",
+      "goodEvening": "Good evening! Time to review your day.",
+      "completeProfile": "Complete Your Profile",
+      "completeProfileMessage": "Finish setting up your profile to start accepting bookings",
+      "completeNow": "Complete Now"
+    },
+    "actions": {
+      "addService": "Add Service",
+      "addServiceDescription": "Add new services to your offerings",
+      "viewCalendar": "View Calendar",
+      "viewCalendarDescription": "Manage your schedule and appointments",
+      "editHours": "Edit Hours",
+      "editHoursDescription": "Update your working hours",
+      "viewProfile": "View Profile",
+      "viewProfileDescription": "See how clients view your profile"
+    },
+    "bookings": {
+      "noBookings": "No Bookings Yet",
+      "noBookingsMessage": "You don't have any bookings at the moment"
+    },
+    "charts": {
+      "barChart": "Bar Chart",
+      "lineChart": "Line Chart",
+      "totalBookings": "Total Bookings",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "completionRate": "Completion Rate",
+      "total": "Total",
+      "average": "Average",
+      "trend": "Trend"
+    }
+  },
+  "footer": {
+    "help": "Help",
+    "support": "Support",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy"
+  },
+  "profile": {
+    "personalInfo": {
+      "title": "Personal Information",
+      "description": "Update your personal details and contact information",
+      "basicInfo": "Basic Information",
+      "firstName": "First Name",
+      "firstNamePlaceholder": "Enter your first name",
+      "lastName": "Last Name",
+      "lastNamePlaceholder": "Enter your last name",
+      "phoneNumber": "Phone Number",
+      "phoneNumberPlaceholder": "+1 (555) 123-4567",
+      "phoneNumberHelp": "Include country code for international numbers",
+      "dateOfBirth": "Date of Birth",
+      "ageRequirement": "Your age must be at least 13 years",
+      "bio": "Bio",
+      "bioPlaceholder": "Tell us a little about yourself...",
+      "addressInfo": "Address Information",
+      "street": "Street Address",
+      "streetPlaceholder": "123 Main Street, Apt 4B",
+      "city": "City",
+      "cityPlaceholder": "New York",
+      "state": "State / Province",
+      "statePlaceholder": "NY",
+      "postalCode": "Postal Code",
+      "postalCodePlaceholder": "10001",
+      "country": "Country",
+      "selectCountry": "Select a country"
+    },
+    "preferences": {
+      "title": "Preferences",
+      "description": "Customize your experience and notification settings",
+      "localization": "Localization",
+      "language": "Language",
+      "timezone": "Timezone",
+      "timezoneRegions": {
+        "northAmerica": "North America",
+        "europe": "Europe",
+        "asia": "Asia"
+      },
+      "currency": "Currency",
+      "dateFormat": "Date Format",
+      "dateFormatOptions": {
+        "mmddyyyy": "MM/DD/YYYY",
+        "ddmmyyyy": "DD/MM/YYYY",
+        "yyyymmdd": "YYYY-MM-DD"
+      },
+      "timeFormat": "Time Format",
+      "timeFormatOptions": {
+        "12h": "12-hour (2:30 PM)",
+        "24h": "24-hour (14:30)"
+      },
+      "theme": "Theme",
+      "themeOptions": {
+        "light": "Light",
+        "dark": "Dark",
+        "auto": "Auto (System)"
+      },
+      "notificationPreferences": "Notification Preferences",
+      "notifications": {
+        "email": {
+          "label": "Email Notifications",
+          "description": "Receive notifications via email"
+        },
+        "sms": {
+          "label": "SMS Notifications",
+          "description": "Receive text message alerts"
+        },
+        "push": {
+          "label": "Push Notifications",
+          "description": "Browser push notifications"
+        },
+        "bookingReminders": {
+          "label": "Booking Reminders",
+          "description": "Get reminded about upcoming appointments"
+        },
+        "promotions": {
+          "label": "Promotions & Offers",
+          "description": "Special deals from your favorite providers"
+        },
+        "marketing": {
+          "label": "Marketing Communications",
+          "description": "Product updates and news from AsanRezerve"
+        },
+        "newsletter": {
+          "label": "Newsletter",
+          "description": "Monthly newsletter with tips and trends"
+        }
+      },
+      "enableAll": "Enable All",
+      "disableAll": "Disable All"
+    },
+    "security": {
+      "title": "Security Settings",
+      "description": "Manage your password and account security",
+      "changePassword": "Change Password",
+      "changePasswordDescription": "Choose a strong password to keep your account secure",
+      "currentPassword": "Current Password",
+      "currentPasswordPlaceholder": "Enter your current password",
+      "newPassword": "New Password",
+      "newPasswordPlaceholder": "Enter new password",
+      "confirmPassword": "Confirm New Password",
+      "confirmPasswordPlaceholder": "Confirm new password",
+      "requirements": {
+        "minLength": "At least 8 characters",
+        "uppercase": "At least one uppercase letter",
+        "lowercase": "At least one lowercase letter",
+        "number": "At least one number",
+        "special": "At least one special character"
+      }
+    },
+    "privacy": {
+      "title": "Privacy Settings",
+      "description": "Control who can see your information and how it's used",
+      "profileVisibility": "Profile Visibility",
+      "informationVisibility": "Information Visibility",
+      "informationVisibilityDescription": "Choose what information is visible on your public profile",
+      "showEmail": {
+        "label": "Show email address",
+        "description": "Let others see your email address"
+      },
+      "showPhone": {
+        "label": "Show phone number",
+        "description": "Let others see your phone number"
+      },
+      "showAddress": {
+        "label": "Show address",
+        "description": "Display your full address on your profile"
+      },
+      "showBirthdate": {
+        "label": "Show date of birth",
+        "description": "Let others see your birthdate"
+      },
+      "searchEngineVisibility": "Search Engine Visibility",
+      "allowIndexing": {
+        "label": "Allow search engine indexing",
+        "description": "Let search engines like Google find your public profile"
+      },
+      "tips": {
+        "title": "Privacy Tips",
+        "item1": "Only share information you're comfortable making public",
+        "item2": "Review your privacy settings regularly",
+        "item3": "Be cautious about sharing personal contact information",
+        "item4": "Consider disabling search engine indexing for better privacy",
+        "item5": "You can always change these settings later"
+      }
+    }
+  },
+  "buttons": {
+    "reset": "Reset",
+    "saving": "Saving...",
+    "saveChanges": "Save Changes"
+  },
+  "languages": {
+    "english": "English",
+    "spanish": "Spanish",
+    "french": "French",
+    "german": "German",
+    "arabic": "Arabic",
+    "chinese": "Chinese",
+    "persian": "Persian (فارسی)"
+  },
+  "countries": {
+    "unitedStates": "United States",
+    "canada": "Canada",
+    "mexico": "Mexico",
+    "unitedKingdom": "United Kingdom",
+    "germany": "Germany",
+    "france": "France",
+    "spain": "Spain",
+    "italy": "Italy",
+    "china": "China",
+    "japan": "Japan",
+    "india": "India"
+  },
+  "services": {
+    "title": "Services",
+    "serviceManagement": "Service Management",
+    "manageYourServices": "Manage your services",
+    "addService": "Add Service",
+    "addFirstService": "Add First Service",
+    "createService": "Create Service",
+    "editService": "Edit Service",
+    "serviceName": "Service Name",
+    "serviceNamePlaceholder": "e.g., Women's Haircut",
+    "duration": "Duration",
+    "durationMinutes": "Duration (minutes)",
+    "durationPlaceholder": "60",
+    "price": "Price",
+    "basePrice": "Base Price",
+    "pricePlaceholder": "0.00",
+    "backToServices": "Back to Services",
+    "loadingServices": "Loading services...",
+    "noServicesYet": "No Services Yet",
+    "noServicesMessage": "Get started by adding your first service to your catalog.",
+    "noServicesFound": "No Services Found",
+    "noServicesFoundMessage": "No services match your current filters. Try adjusting your search criteria.",
+    "serviceCreatedSuccess": "Service created successfully!",
+    "serviceUpdatedSuccess": "Service updated successfully!",
+    "serviceDeletedSuccess": "Service deleted successfully!",
+    "confirmDelete": "Are you sure you want to delete this service?",
+    "deleteService": "Delete Service",
+    "totalServices": "Total Services",
+    "activeServices": "Active",
+    "draftServices": "Drafts",
+    "min": "min",
+    "searchPlaceholder": "Search services...",
+    "allCategories": "All Categories",
+    "allStatus": "All Status",
+    "clearFilters": "Clear Filters",
+    "filters": "Filters",
+    "saving": "Saving...",
+    "createNew": "Create Service",
+    "update": "Update Service",
+    "errors": {
+      "fixValidation": "Please fix the validation errors below",
+      "nameRequired": "Service name is required",
+      "nameMinLength": "Service name must be at least 3 characters",
+      "durationMin": "Duration must be at least 5 minutes",
+      "durationRequired": "Duration is required",
+      "priceNegative": "Price cannot be negative",
+      "priceRequired": "Price is required",
+      "noProvider": "Provider information not available",
+      "createFailed": "Failed to create service",
+      "updateFailed": "Failed to update service",
+      "deleteFailed": "Failed to delete service"
+    }
+  },
+  "staff": {
+    "title": "Staff",
+    "staffManagement": "Staff Management",
+    "manageYourTeam": "Manage your team members and their schedules",
+    "addStaff": "Add Staff Member",
+    "addFirstStaff": "Add First Staff Member",
+    "createStaff": "Create Staff",
+    "editStaff": "Edit Staff",
+    "firstName": "First Name",
+    "firstNamePlaceholder": "John",
+    "lastName": "Last Name",
+    "lastNamePlaceholder": "Doe",
+    "fullName": "Full Name",
+    "email": "Email",
+    "emailPlaceholder": "john.doe@example.com",
+    "phone": "Phone",
+    "phonePlaceholder": "+1 (555) 123-4567",
+    "role": "Role",
+    "hiredAt": "Hire Date",
+    "backToStaff": "Back to Staff",
+    "loadingStaff": "Loading staff...",
+    "noStaffYet": "No Staff Members Yet",
+    "noStaffMessage": "Get started by adding your first staff member to your team.",
+    "noStaffFound": "No Staff Found",
+    "noStaffFoundMessage": "No staff members match your current filters. Try adjusting your search criteria.",
+    "staffCreatedSuccess": "Staff member created successfully!",
+    "staffUpdatedSuccess": "Staff member updated successfully!",
+    "staffDeletedSuccess": "Staff member deleted successfully!",
+    "confirmDelete": "Are you sure you want to remove {name}? This action cannot be undone.",
+    "confirmDeactivate": "Are you sure you want to deactivate {name}?",
+    "removeStaff": "Remove Staff Member",
+    "deactivateStaff": "Deactivate Staff Member",
+    "deactivateReason": "Reason (optional)",
+    "deactivateReasonPlaceholder": "Enter reason for deactivation...",
+    "totalStaff": "Total Staff",
+    "activeStaff": "Active",
+    "inactiveStaff": "Inactive",
+    "avgTenure": "Avg. Tenure",
+    "tenure": "Tenure",
+    "hired": "Hired",
+    "services": "services",
+    "service": "service",
+    "searchPlaceholder": "Search by name, email, or phone...",
+    "allRoles": "All Roles",
+    "active": "Active",
+    "inactive": "Inactive",
+    "deactivate": "Deactivate",
+    "reactivate": "Reactivate",
+    "remove": "Remove",
+    "schedule": "Schedule",
+    "roles": {
+      "owner": "Owner",
+      "manager": "Manager",
+      "receptionist": "Receptionist",
+      "serviceProvider": "Service Provider",
+      "specialist": "Specialist",
+      "assistant": "Assistant",
+      "cleaner": "Cleaner",
+      "security": "Security",
+      "maintenance": "Maintenance"
+    }
+  }
+}

@@ -1,0 +1,420 @@
+// ========================================
+// AsanRezerve.ServiceCatalog.Infrastructure/Persistence/Configurations/BookingConfiguration.cs
+// ========================================
+using AsanRezerve.Core.Domain.ValueObjects;
+using AsanRezerve.ServiceCatalog.Domain.Aggregates.BookingAggregate;
+using AsanRezerve.Infrastructure.Core.Persistence.Converters;
+using AsanRezerve.ServiceCatalog.Domain.ValueObjects;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace AsanRezerve.ServiceCatalog.Infrastructure.Persistence.Configurations
+{
+    public sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
+    {
+        public void Configure(EntityTypeBuilder<Booking> builder)
+        {
+            builder.ToTable("Bookings", "ServiceCatalog");
+
+            // Primary Key
+            builder.HasKey(b => b.Id);
+
+            // Concurrency Token
+            builder.Property(b => b.Version)
+                .IsConcurrencyToken()
+                .HasColumnName("Version")
+                .HasDefaultValue(0);
+
+            // Booking ID (Value Object) — client-generated (BookingId.New()); ValueGeneratedNever so EF treats the
+            // key (and the owned value objects that share it) as stable and never marks it modified on update.
+            builder.Property(b => b.Id)
+                .HasConversion(
+                    id => id.Value,
+                    value => BookingId.From(value))
+                .ValueGeneratedNever()
+                .IsRequired()
+                .HasColumnName("BookingId");
+
+            // Customer ID (Value Object)
+            builder.Property(b => b.CustomerId)
+                .HasConversion(
+                    id => id.Value,
+                    value => UserId.From(value))
+                .IsRequired()
+                .HasColumnName("CustomerId");
+
+            // Provider ID (Value Object)
+            builder.Property(b => b.ProviderId)
+                .HasConversion(
+                    id => id.Value,
+                    value => ProviderId.From(value))
+                .IsRequired()
+                .HasColumnName("ProviderId");
+
+            // Service ID (Value Object)
+            builder.Property(b => b.ServiceId)
+                .HasConversion(
+                    id => id.Value,
+                    value => ServiceId.From(value))
+                .IsRequired()
+                .HasColumnName("ServiceId");
+
+            // Staff ID
+            builder.Property(b => b.StaffId)
+                .IsRequired()
+                .HasColumnName("StaffId");
+
+            // Individual Provider ID (for hierarchy - tracks which individual provider performs the service)
+            builder.Property(b => b.IndividualProviderId)
+                .HasConversion(
+                    id => id != null ? id.Value : (Guid?)null,
+                    value => value.HasValue ? ProviderId.From(value.Value) : null)
+                .HasColumnName("IndividualProviderId");
+
+            // The salon's customer-book entry (ProviderCustomer) this booking was made for; no FK, so
+            // removing a customer from the book never touches their past bookings.
+            builder.Property(b => b.ProviderCustomerId)
+                .HasColumnName("ProviderCustomerId");
+
+            // Whether that customer is told by SMS; true for every booking made before the salon
+            // could choose, which is what those bookings meant.
+            builder.Property(b => b.NotifyCustomer)
+                .HasColumnName("NotifyCustomer")
+                .HasDefaultValue(true);
+
+            // TimeSlot (Owned Value Object)
+            builder.OwnsOne(b => b.TimeSlot, timeSlot =>
+            {
+                // The salon's wall clock, not an instant: stored like every other DateTime, read back with no zone
+                // so no client moves it to its own (see WallClockDateTimeConverter; QA 2026-09-23).
+                timeSlot.Property(ts => ts.StartTime)
+                    .HasColumnName("StartTime")
+                    .IsRequired()
+                    .HasColumnType("timestamp with time zone")
+                    .HasConversion<WallClockDateTimeConverter>();
+
+                timeSlot.Property(ts => ts.EndTime)
+                    .HasColumnName("EndTime")
+                    .IsRequired()
+                    .HasColumnType("timestamp with time zone")
+                    .HasConversion<WallClockDateTimeConverter>();
+            });
+
+            // Duration (Value Object)
+            builder.Property(b => b.Duration)
+                .HasConversion(
+                    d => d.Value,
+                    value => Duration.FromMinutes(value))
+                .IsRequired()
+                .HasColumnName("DurationMinutes");
+
+            // Status (Enum)
+            builder.Property(b => b.Status)
+                .IsRequired()
+                .HasColumnName("Status")
+                .HasConversion<string>()
+                .HasMaxLength(50);
+
+            // Price (Owned Value Object). Explicitly pin the shared FK to the owner key and mark it ValueGeneratedNever
+            // so EF never treats it as a modifiable key on update — the fix for the
+            // "Booking.TotalPrice#Price.BookingId is part of a key and so cannot be modified" defect that broke every
+            // booking update (cancel / reschedule / confirm). Mirrors ServiceConfiguration's owned-Price mapping.
+            builder.OwnsOne(b => b.TotalPrice, price =>
+            {
+                price.WithOwner().HasForeignKey("BookingId");
+                price.Property<Guid>("BookingId").ValueGeneratedNever();
+
+                price.Property(p => p.Amount)
+                    .HasColumnName("TotalPriceAmount")
+                    .HasColumnType("decimal(18,2)")
+                    .IsRequired();
+
+                price.Property(p => p.Currency)
+                    .HasColumnName("TotalPriceCurrency")
+                    .HasMaxLength(3)
+                    .IsRequired();
+            });
+
+            // PaymentInfo (Owned Value Object - Complex)
+            builder.OwnsOne(b => b.PaymentInfo, payment =>
+            {
+                payment.OwnsOne(p => p.TotalAmount, total =>
+                {
+                    total.Property(m => m.Amount)
+                        .HasColumnName("PaymentTotalAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .IsRequired();
+
+                    total.Property(m => m.Currency)
+                        .HasColumnName("PaymentCurrency")
+                        .HasMaxLength(3)
+                        .IsRequired();
+                });
+
+                payment.OwnsOne(p => p.DepositAmount, deposit =>
+                {
+                    deposit.Property(m => m.Amount)
+                        .HasColumnName("DepositAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .IsRequired();
+
+                    deposit.Property(m => m.Currency)
+                        .HasColumnName("DepositCurrency")
+                        .HasMaxLength(3)
+                        .IsRequired();
+                });
+
+                payment.OwnsOne(p => p.PaidAmount, paid =>
+                {
+                    paid.Property(m => m.Amount)
+                        .HasColumnName("PaidAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .IsRequired();
+
+                    paid.Property(m => m.Currency)
+                        .HasColumnName("PaidCurrency")
+                        .HasMaxLength(3)
+                        .IsRequired();
+                });
+
+                payment.OwnsOne(p => p.RefundedAmount, refunded =>
+                {
+                    refunded.Property(m => m.Amount)
+                        .HasColumnName("RefundedAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .IsRequired();
+
+                    refunded.Property(m => m.Currency)
+                        .HasColumnName("RefundedCurrency")
+                        .HasMaxLength(3)
+                        .IsRequired();
+                });
+
+                payment.Property(p => p.Status)
+                    .HasColumnName("PaymentStatus")
+                    .HasConversion<string>()
+                    .HasMaxLength(50)
+                    .IsRequired();
+
+                payment.Property(p => p.PaymentIntentId)
+                    .HasColumnName("PaymentIntentId")
+                    .HasMaxLength(200);
+
+                payment.Property(p => p.DepositPaymentIntentId)
+                    .HasColumnName("DepositPaymentIntentId")
+                    .HasMaxLength(200);
+
+                payment.Property(p => p.RefundId)
+                    .HasColumnName("RefundId")
+                    .HasMaxLength(200);
+
+                payment.Property(p => p.PaidAt)
+                    .HasColumnName("PaidAt");
+
+                payment.Property(p => p.RefundedAt)
+                    .HasColumnName("RefundedAt");
+            });
+
+            //// BookingPolicy (Owned Value Object)
+            builder.OwnsOne(b => b.Policy, policy =>
+            {
+                policy.Property(p => p.MinAdvanceBookingHours)
+                    .HasColumnName("PolicyMinAdvanceBookingHours")
+                    .IsRequired();
+
+                policy.Property(p => p.MaxAdvanceBookingDays)
+                    .HasColumnName("PolicyMaxAdvanceBookingDays")
+                    .IsRequired();
+
+                policy.Property(p => p.CancellationWindowHours)
+                    .HasColumnName("PolicyCancellationWindowHours")
+                    .IsRequired();
+
+                policy.Property(p => p.CancellationFeePercentage)
+                    .HasColumnName("PolicyCancellationFeePercentage")
+                    .HasColumnType("decimal(5,2)")
+                    .IsRequired();
+
+                policy.Property(p => p.AllowRescheduling)
+                    .HasColumnName("PolicyAllowRescheduling")
+                    .IsRequired();
+
+                policy.Property(p => p.RescheduleWindowHours)
+                    .HasColumnName("PolicyRescheduleWindowHours")
+                    .IsRequired();
+
+                policy.Property(p => p.RequireDeposit)
+                    .HasColumnName("PolicyRequireDeposit")
+                    .IsRequired();
+
+                policy.Property(p => p.DepositPercentage)
+                    .HasColumnName("PolicyDepositPercentage")
+                    .HasColumnType("decimal(5,2)")
+                    .IsRequired();
+
+                // Snapshotted with the rest of the policy so the booking always retains the exact deposit terms the
+                // customer agreed to, even if the provider later changes them.
+                policy.Property(p => p.DepositType)
+                    .HasColumnName("PolicyDepositType")
+                    .HasConversion<string>()
+                    .HasMaxLength(20)
+                    .HasDefaultValue(Domain.Enums.DepositType.Percentage)
+                    .IsRequired();
+
+                policy.Property(p => p.DepositFixedAmount)
+                    .HasColumnName("PolicyDepositFixedAmount")
+                    .HasColumnType("decimal(18,2)")
+                    .HasDefaultValue(0m)
+                    .IsRequired();
+            });
+
+            //// String Properties
+            //builder.Property(b => b.CustomerNotes)
+            //    .HasColumnName("CustomerNotes")
+            //    .HasMaxLength(2000);
+
+            //builder.Property(b => b.StaffNotes)
+            //    .HasColumnName("StaffNotes")
+            //    .HasMaxLength(2000);
+
+            //builder.Property(b => b.CancellationReason)
+            //    .HasColumnName("CancellationReason")
+            //    .HasMaxLength(1000);
+
+            //// Timestamps
+            //builder.Property(b => b.RequestedAt)
+            //    .HasColumnName("RequestedAt")
+            //    .HasColumnType("timestamp with time zone")
+            //    .IsRequired();
+
+            //builder.Property(b => b.ConfirmedAt)
+            //    .HasColumnName("ConfirmedAt")
+            //    .HasColumnType("timestamp with time zone");
+
+            //builder.Property(b => b.CancelledAt)
+            //    .HasColumnName("CancelledAt")
+            //    .HasColumnType("timestamp with time zone");
+
+            //builder.Property(b => b.CompletedAt)
+            //    .HasColumnName("CompletedAt")
+            //    .HasColumnType("timestamp with time zone");
+
+            //builder.Property(b => b.RescheduledAt)
+            //    .HasColumnName("RescheduledAt")
+            //    .HasColumnType("timestamp with time zone");
+
+            //// Rescheduling References
+            builder.Property(b => b.PreviousBookingId)
+                .HasConversion(
+                    id => id != null ? id.Value : (Guid?)null,
+                    value => value.HasValue ? BookingId.From(value.Value) : null)
+                .HasColumnName("PreviousBookingId");
+
+            builder.Property(b => b.RescheduledToBookingId)
+                .HasConversion(
+                    id => id != null ? id.Value : (Guid?)null,
+                    value => value.HasValue ? BookingId.From(value.Value) : null)
+                .HasColumnName("RescheduledToBookingId");
+
+            //// Audit Properties
+            //builder.Property(b => b.CreatedAt)
+            //    .HasColumnName("CreatedAt")
+            //    .HasColumnType("timestamp with time zone")
+            //    .IsRequired();
+
+            // Service line items (multi-service visits): a jsonb document on
+            // the booking row. Lines are only ever read through the aggregate
+            // (display + pricing), never queried relationally, so a document
+            // beats a join table here.
+            builder.OwnsMany(b => b.Services, item =>
+            {
+                item.ToJson("Services");
+            });
+            builder.Navigation(b => b.Services)
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+            //builder.Property(b => b.CreatedBy)
+            //    .HasColumnName("CreatedBy")
+            //    .HasMaxLength(200);
+
+            //builder.Property(b => b.LastModifiedAt)
+            //    .HasColumnName("LastModifiedAt")
+            //    .HasColumnType("timestamp with time zone");
+
+            //builder.Property(b => b.LastModifiedBy)
+            //    .HasColumnName("LastModifiedBy")
+            //    .HasMaxLength(200);
+
+            //// Owned Collection: History
+            //builder.OwnsMany(b => b.History, history =>
+            //{
+            //    history.ToTable("BookingHistory", "ServiceCatalog");
+
+            //    history.WithOwner().HasForeignKey("BookingId");
+
+            //    history.HasKey("Id");
+
+            //    history.Property<Guid>("BookingId")
+            //        .HasColumnName("BookingId")
+            //        .IsRequired();
+
+            //    history.Property(h => h.Description)
+            //        .HasColumnName("Description")
+            //        .HasMaxLength(1000)
+            //        .IsRequired();
+
+            //    history.Property(h => h.Status)
+            //        .HasColumnName("Status")
+            //        .HasConversion<string>()
+            //        .HasMaxLength(50)
+            //        .IsRequired();
+
+            //    history.Property(h => h.OccurredAt)
+            //        .HasColumnName("OccurredAt")
+            //        .HasColumnType("timestamp with time zone")
+            //        .IsRequired();
+            //});
+
+            // Indexes for performance.
+            //
+            // Restored 2026-08-24 (booking-data-and-migration-hygiene §1). These had been commented
+            // out with no live index behind CustomerId/ProviderId/StaffId/Status, so `my-bookings`,
+            // provider-dashboard, and history queries full-scanned the table.
+            builder.HasIndex(b => b.CustomerId)
+                .HasDatabaseName("IX_Bookings_CustomerId");
+
+            builder.HasIndex(b => b.ProviderId)
+                .HasDatabaseName("IX_Bookings_ProviderId");
+
+            builder.HasIndex(b => b.ProviderCustomerId)
+                .HasDatabaseName("IX_Bookings_ProviderCustomerId");
+
+            builder.HasIndex(b => b.ServiceId)
+                .HasDatabaseName("IX_Bookings_ServiceId");
+
+            // Index for querying bookings by individual provider in hierarchy
+            builder.HasIndex(b => b.IndividualProviderId)
+                .HasDatabaseName("IX_Bookings_IndividualProviderId");
+
+            builder.HasIndex(b => b.StaffId)
+                .HasDatabaseName("IX_Bookings_StaffId");
+
+            builder.HasIndex(b => b.Status)
+                .HasDatabaseName("IX_Bookings_Status");
+
+            // NOT restored: a (StaffId, Status) composite, and a further composite filtered to
+            // WHERE Status IN ('Requested', 'Confirmed') for availability/conflict checks (the
+            // original text used SQL Server bracket syntax — [Status] — which is invalid on
+            // PostgreSQL and would have failed to apply at host startup if uncommented as-is).
+            //
+            // Both are unnecessary now: ADR-004 (see migration 20260728064537_AddBookingSlotOverlap-
+            // Constraint) added a GiST exclusion constraint over
+            // (StaffId WITH =, tstzrange(StartTime, EndTime) WITH &&) WHERE Status IN
+            // ('Requested', 'Confirmed') — the *exact* predicate BookingReadRepository.Get-
+            // ConflictingBookingsAsync filters on. That GiST index already serves this query, and
+            // serves it better than a B-tree composite could (it also covers the time-range
+            // comparison, which StaffId+Status alone cannot). A parallel composite here would be
+            // pure write overhead on every booking mutation with no query it uniquely serves.
+        }
+    }
+}

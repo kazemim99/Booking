@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the Booksy project will be documented in this file.
+All notable changes to the AsanRezerve project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added - MVP Supply-Side & Observability
 
 - **Provider self-onboarding keystone**: a provider can register (auto-approved), add a staff member (an Active individual sub-provider, qualified for the org's services, with availability auto-generated), and be booked end-to-end with **no DB seeding**. Covered by `tests/e2e/keystone-booking-flow.sh` (6 assertions) which now runs in CI and gates both the staging and production deploys.
-- **Booking-funnel metrics**: counters `booksy.bookings.{created,confirmed,completed,cancelled,noshow}` emitted on the `Booksy.ServiceCatalog.Bookings` meter and collected by OpenTelemetry (`AddMeter("Booksy.*")`).
+- **Booking-funnel metrics**: counters `asanrezerve.bookings.{created,confirmed,completed,cancelled,noshow}` emitted on the `AsanRezerve.ServiceCatalog.Bookings` meter and collected by OpenTelemetry (`AddMeter("AsanRezerve.*")`).
 - **Single global SMS sandbox switch** (`Sms:SandboxMode`): forces every SMS provider (Rahyab + Kavenegar) into sandbox/disabled mode; additive (no effect when unset).
 
 ### Fixed - MVP Hardening (correctness)
@@ -36,11 +36,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed - Backend Migrated from Microservices to Modular Monolith
 
-- **Single Host**: Consolidated the per-service hosts into one ASP.NET Core host, `Booksy.Host` (image/container `booksy-api`), listening on `:5000` (internal port 80, mapped `5000:80`). It composes the UserManagement and ServiceCatalog bounded contexts in-process and serves all of their controllers under `/api/v1/...` (PascalCase paths unchanged).
+- **Single Host**: Consolidated the per-service hosts into one ASP.NET Core host, `AsanRezerve.Host` (image/container `asanrezerve-api`), listening on `:5000` (internal port 80, mapped `5000:80`). It composes the UserManagement and ServiceCatalog bounded contexts in-process and serves all of their controllers under `/api/v1/...` (PascalCase paths unchanged).
 - **Ocelot API Gateway Retired**: The Ocelot gateway project was deleted. The old ports — Gateway `:5000`, UserManagement API `:5001`, ServiceCatalog API `:5002` — are gone; everything is one origin on `:5000`. The previous Ocelot case-sensitivity 404 caveat no longer applies.
 - **RabbitMQ Removed**: Cross-context integration events now run in-process via CAP (DotNetCore.CAP) on the in-memory transport (`EventBus:Provider=InMemory`). No broker container remains.
-- **Single Database**: One PostgreSQL database (`booksy`) with schema-per-context (`user_management`, `ServiceCatalog`, `cap`) and a single connection string (`DefaultConnection`). Migrations run at host startup.
-- **Frontend Routing**: The frontend talks to the backend via relative `/api` — dev uses the Vite proxy to `:5000`, prod uses nginx (`booksy-frontend/nginx.conf`) proxying `/api` → `booksy-api:80`.
+- **Single Database**: One PostgreSQL database (`asanrezerve`) with schema-per-context (`user_management`, `ServiceCatalog`, `cap`) and a single connection string (`DefaultConnection`). Migrations run at host startup.
+- **Frontend Routing**: The frontend talks to the backend via relative `/api` — dev uses the Vite proxy to `:5000`, prod uses nginx (`asanrezerve-frontend/nginx.conf`) proxying `/api` → `asanrezerve-api:80`.
 - **Test Entry Points**: The two `*.Api` projects remain only as integration-test entry points and are no longer deployed.
 - **Reference**: See `MONOLITH_MIGRATION_PLAN.md` for full details.
 
@@ -74,10 +74,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Resolves 504 errors on first deployment
 
 - **Files Modified**:
-  - [src/UserManagement/Booksy.UserManagement.API/Dockerfile](src/UserManagement/Booksy.UserManagement.API/Dockerfile)
-  - [src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Dockerfile](src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Dockerfile)
-  - [src/APIGateway/Booksy.Gateway/Dockerfile](src/APIGateway/Booksy.Gateway/Dockerfile)
-  - [booksy-frontend/Dockerfile](booksy-frontend/Dockerfile)
+  - [src/UserManagement/AsanRezerve.UserManagement.API/Dockerfile](src/UserManagement/AsanRezerve.UserManagement.API/Dockerfile)
+  - [src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api/Dockerfile](src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api/Dockerfile)
+  - [src/APIGateway/AsanRezerve.Gateway/Dockerfile](src/APIGateway/AsanRezerve.Gateway/Dockerfile)
+  - [asanrezerve-frontend/Dockerfile](asanrezerve-frontend/Dockerfile)
   - [docker-compose.prod.yml](docker-compose.prod.yml)
 
 - **Documentation**:
@@ -107,10 +107,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Existing individual providers remain unaffected
 - **Documentation**: Added `REGISTRATION_FLOW_UPDATE.md` with detailed migration guide
 - **Files**:
-  - `booksy-frontend/src/core/router/routes/provider.routes.ts`
-  - `booksy-frontend/src/core/router/guards/auth.guard.ts`
-  - `booksy-frontend/src/core/stores/modules/auth.store.ts`
-  - `booksy-frontend/src/modules/provider/views/registration/ProviderRegistrationView.vue`
+  - `asanrezerve-frontend/src/core/router/routes/provider.routes.ts`
+  - `asanrezerve-frontend/src/core/router/guards/auth.guard.ts`
+  - `asanrezerve-frontend/src/core/stores/modules/auth.store.ts`
+  - `asanrezerve-frontend/src/modules/provider/views/registration/ProviderRegistrationView.vue`
   - `REGISTRATION_FLOW_UPDATE.md` (new)
   - `README.md` (updated)
 
@@ -124,11 +124,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Improved**: User type handling with explicit route query params instead of sessionStorage
 - **Removed**: 35+ lines of complex redirect-path detection logic
 - **Files**:
-  - `booksy-frontend/src/modules/auth/views/ProviderLoginView.vue` (new)
-  - `booksy-frontend/src/modules/auth/views/LoginView.vue`
-  - `booksy-frontend/src/modules/auth/views/VerificationView.vue`
-  - `booksy-frontend/src/core/router/routes/auth.routes.ts`
-  - `booksy-frontend/src/shared/components/layout/Footer/AppFooter.vue`
+  - `asanrezerve-frontend/src/modules/auth/views/ProviderLoginView.vue` (new)
+  - `asanrezerve-frontend/src/modules/auth/views/LoginView.vue`
+  - `asanrezerve-frontend/src/modules/auth/views/VerificationView.vue`
+  - `asanrezerve-frontend/src/core/router/routes/auth.routes.ts`
+  - `asanrezerve-frontend/src/shared/components/layout/Footer/AppFooter.vue`
 
 #### Multiple Service Selection in Booking Flow
 - **Added**: Multi-select functionality for booking multiple services in one appointment
@@ -139,8 +139,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Updated**: BookingWizard to handle service arrays instead of single service
 - **Added**: `confirmationData` computed property to transform multi-service data
 - **Files**:
-  - `booksy-frontend/src/modules/booking/components/ServiceSelection.vue`
-  - `booksy-frontend/src/modules/booking/components/BookingWizard.vue`
+  - `asanrezerve-frontend/src/modules/booking/components/ServiceSelection.vue`
+  - `asanrezerve-frontend/src/modules/booking/components/BookingWizard.vue`
 
 #### Persian Calendar Integration
 - **Added**: Jalali (Persian/Solar Hijri) calendar support using `vue3-persian-datetime-picker`
@@ -151,7 +151,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Improved**: Date display format showing "یکشنبه، ۲۵ دی ۱۴۰۲" in time slots section
 - **Added**: Null check for date string to prevent runtime errors
 - **Files**:
-  - `booksy-frontend/src/modules/booking/components/SlotSelection.vue`
+  - `asanrezerve-frontend/src/modules/booking/components/SlotSelection.vue`
 
 ### Fixed - 2025-11-17
 
@@ -162,7 +162,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Combines multiple service names with comma separator
   - Aggregates total price and duration
 - **Files**:
-  - `booksy-frontend/src/modules/booking/components/BookingWizard.vue`
+  - `asanrezerve-frontend/src/modules/booking/components/BookingWizard.vue`
 
 #### Booking API Request Format
 - **Fixed**: Frontend-backend interface mismatch in CreateBookingRequest
@@ -174,8 +174,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Now correctly uses `services[0]` for first service data
   - Added TODO for backend multi-service support
 - **Files**:
-  - `booksy-frontend/src/modules/booking/api/booking.service.ts`
-  - `booksy-frontend/src/modules/booking/components/BookingWizard.vue`
+  - `asanrezerve-frontend/src/modules/booking/api/booking.service.ts`
+  - `asanrezerve-frontend/src/modules/booking/components/BookingWizard.vue`
 
 #### Timezone Handling in Booking Validation
 - **Fixed**: "Cannot book appointments in the past" error for valid future bookings
@@ -188,7 +188,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Applied same logic in `GenerateTimeSlotsForStaffAsync` for slot filtering
 - **Impact**: All DateTime comparisons now use consistent UTC timezone
 - **Files**:
-  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Services/AvailabilityService.cs`
+  - `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Services/AvailabilityService.cs`
 
 ### Documentation - 2025-11-17
 - **Added**: `openspec/changes/split-login-pages/IMPLEMENTATION_SUMMARY.md` - Complete implementation summary
@@ -214,8 +214,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Features: Provider responses, helpful voting, verified review tracking
 - **Updated**: Payments table column types for PostgreSQL compatibility
 - **Files**:
-  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Migrations/20251115202010_InitialCreate.cs`
-  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Migrations/ServiceCatalogDbContextModelSnapshot.cs`
+  - `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Infrastructure/Migrations/20251115202010_InitialCreate.cs`
+  - `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Infrastructure/Migrations/ServiceCatalogDbContextModelSnapshot.cs`
 
 ##### Provider Availability System
 - **Added**: Complete domain model for provider availability management
@@ -229,9 +229,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Conflict detection between overlapping slots
 - **Query Support**: Get availability by date range, status, and provider
 - **Files**:
-  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Domain/Aggregates/ProviderAvailabilityAggregate/ProviderAvailability.cs`
-  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Domain/Repositories/IProviderAvailabilityReadRepository.cs`
-  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Persistence/Configurations/ProviderAvailabilityConfiguration.cs`
+  - `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Domain/Aggregates/ProviderAvailabilityAggregate/ProviderAvailability.cs`
+  - `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Domain/Repositories/IProviderAvailabilityReadRepository.cs`
+  - `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Infrastructure/Persistence/Configurations/ProviderAvailabilityConfiguration.cs`
 
 ##### Review & Rating System
 - **Added**: Complete domain model for customer reviews
@@ -243,8 +243,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Helpful/Not Helpful voting
   - Review statistics and aggregation
 - **Files**:
-  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Domain/Aggregates/Review.cs`
-  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Persistence/Configurations/ReviewConfiguration.cs`
+  - `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Domain/Aggregates/Review.cs`
+  - `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Infrastructure/Persistence/Configurations/ReviewConfiguration.cs`
 
 #### API Enhancements
 
@@ -263,8 +263,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Anonymous access for public availability viewing
   - Validation of date format and days parameter
 - **Files**:
-  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Controllers/V1/ProviderAvailabilityController.cs`
-  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Queries/Provider/GetProviderAvailabilityCalendar/`
+  - `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api/Controllers/V1/ProviderAvailabilityController.cs`
+  - `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Queries/Provider/GetProviderAvailabilityCalendar/`
 
 ##### API Error Response Standardization
 - **Fixed**: ApiErrorResponse implementation in ServiceCatalog API
@@ -274,7 +274,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Error list with code, message, and optional field reference
   - Optional trace ID for debugging
 - **Files**:
-  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Models/Responses/ApiErrorResponse.cs`
+  - `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api/Models/Responses/ApiErrorResponse.cs`
 
 ### Fixed - 2025-11-16
 
@@ -285,11 +285,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Added**: `Specification<T>` abstract base class implementing `ISpecification<T>`
 - **Features**: Expression-based query composition, And/Or/Not combinators, Include support
 - **Impact**: Enables clean query abstraction for complex filtering scenarios
-- **Files**: `src/Core/Booksy.Core.Domain/Abstractions/Entities/Specifications/Specification.cs`
+- **Files**: `src/Core/AsanRezerve.Core.Domain/Abstractions/Entities/Specifications/Specification.cs`
 
 ##### Namespace Conflict Resolution
 - **Fixed**: Booking class namespace conflicts using type aliases
-- **Pattern**: `using BookingAggregate = Booksy.Booking.Domain.Aggregates.Booking;`
+- **Pattern**: `using BookingAggregate = AsanRezerve.Booking.Domain.Aggregates.Booking;`
 - **Impact**: Resolves ambiguity between Booking namespace and Booking class
 - **Files**: Multiple files across Booking.Domain, Booking.Application, Booking.Infrastructure
 
@@ -315,14 +315,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Pattern**: Type alias `using SystemDayOfWeek = System.DayOfWeek;` + mapper methods
 - **Impact**: Resolves compilation errors in seeders and query handlers
 - **Files**:
-  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Queries/Provider/GetProviderAvailabilityCalendar/GetProviderAvailabilityCalendarQueryHandler.cs`
-  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Persistence/Seeders/AvailabilitySeeder.cs`
+  - `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Queries/Provider/GetProviderAvailabilityCalendar/GetProviderAvailabilityCalendarQueryHandler.cs`
+  - `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Infrastructure/Persistence/Seeders/AvailabilitySeeder.cs`
 
 ##### Database Context Improvements
 - **Fixed**: Removed invalid audit field setter logic from DbContext.SaveChangesAsync
 - **Issue**: IAuditableEntity setters are inaccessible (private/protected)
 - **Impact**: DbContext no longer attempts to set audit fields directly
-- **Files**: `src/BoundedContexts/Booking/Booksy.Booking.Infrastructure/Persistence/Context/BookingDbContext.cs`
+- **Files**: `src/BoundedContexts/Booking/AsanRezerve.Booking.Infrastructure/Persistence/Context/BookingDbContext.cs`
 
 ##### Pagination Request Fixes
 - **Fixed**: Wrong pagination class usage in API controllers
@@ -334,7 +334,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Removed**: Broken migration `20251109070253_AddBookingSystem2`
 - **Issue**: Migration tried to add column to non-existent table
 - **Impact**: Database migration process now works cleanly
-- **Files**: Removed from `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Migrations/`
+- **Files**: Removed from `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Infrastructure/Migrations/`
 
 #### Build Status
 - **Result**: ✅ Entire solution builds successfully with 0 compilation errors
@@ -349,7 +349,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Fixed**: Gallery images now properly submit to backend during Step 7 of registration flow
 - **Issue**: `saveGallery()` function was a no-op that didn't call the registration API endpoint
 - **Impact**: Images uploaded during registration were not being saved
-- **Files**: `booksy-frontend/src/modules/provider/composables/useProviderRegistration.ts`
+- **Files**: `asanrezerve-frontend/src/modules/provider/composables/useProviderRegistration.ts`
 - **Commit**: `e6273aa`
 
 ##### CompletionStep UI Distortion
@@ -357,7 +357,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Issue**: Broken Tailwind CSS escape sequences (`from-primary\/5`, `to-accent\/20`) caused distorted UI
 - **Impact**: Unprofessional appearance on the success screen after completing registration
 - **Solution**: Rewrote component with semantic scoped CSS, proper gradient backgrounds, and RTL support
-- **Files**: `booksy-frontend/src/modules/provider/components/registration/steps/CompletionStep.vue`
+- **Files**: `asanrezerve-frontend/src/modules/provider/components/registration/steps/CompletionStep.vue`
 - **Commit**: `2cead84`
 
 ##### Registration Progress Query After Completion
@@ -368,8 +368,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Backend: Added fallback to check for completed providers, not just drafted ones
   - Frontend: Added handler for completed registration state
 - **Files**:
-  - `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Queries/Provider/GetRegistrationProgress/GetRegistrationProgressQueryHandler.cs`
-  - `booksy-frontend/src/modules/provider/composables/useProviderRegistration.ts`
+  - `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Queries/Provider/GetRegistrationProgress/GetRegistrationProgressQueryHandler.cs`
+  - `asanrezerve-frontend/src/modules/provider/composables/useProviderRegistration.ts`
 - **Commit**: `f4be06d`
 
 ##### OptionalFeedbackStep UI Distortion
@@ -377,7 +377,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Issue**: Similar to CompletionStep - broken Tailwind CSS escape sequences
 - **Impact**: Distorted UI on the feedback collection step
 - **Solution**: Rewrote with proper scoped CSS and RTL support
-- **Files**: `booksy-frontend/src/modules/provider/components/registration/steps/OptionalFeedbackStep.vue`
+- **Files**: `asanrezerve-frontend/src/modules/provider/components/registration/steps/OptionalFeedbackStep.vue`
 - **Commit**: `d7b8a79`
 
 ## Previous Changes

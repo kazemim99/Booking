@@ -1,4 +1,4 @@
-# Booksy - Service Booking Platform
+# AsanRezerve - Service Booking Platform
 
 A modern, scalable service booking platform built with Domain-Driven Design (DDD) principles, enabling service providers to manage their business profiles, services, staff, and customer bookings.
 
@@ -8,10 +8,10 @@ A modern, scalable service booking platform built with Domain-Driven Design (DDD
 
 ### Backend Architecture - Migrated to Modular Monolith
 
-✅ **Single Host** - The backend is now a single ASP.NET Core host (`Booksy.Host`, image/container `booksy-api`, port 5000) that composes the UserManagement and ServiceCatalog bounded contexts in-process
+✅ **Single Host** - The backend is now a single ASP.NET Core host (`AsanRezerve.Host`, image/container `asanrezerve-api`, port 5000) that composes the UserManagement and ServiceCatalog bounded contexts in-process
 ✅ **Ocelot Gateway Retired** - No separate per-service hosts or API gateway; everything is one origin on `:5000` under `/api/v1/...`
 ✅ **RabbitMQ Removed** - Cross-context integration events now run in-process via CAP (DotNetCore.CAP) on the in-memory transport
-✅ **Single Database** - One PostgreSQL database (`booksy`) with schema-per-context; migrations run at host startup
+✅ **Single Database** - One PostgreSQL database (`asanrezerve`) with schema-per-context; migrations run at host startup
 
 See [MONOLITH_MIGRATION_PLAN.md](MONOLITH_MIGRATION_PLAN.md) for migration details.
 
@@ -71,9 +71,9 @@ See [CHANGELOG.md](CHANGELOG.md) for detailed information about all changes.
 
 ## Business Overview
 
-### What is Booksy?
+### What is AsanRezerve?
 
-Booksy is a comprehensive service booking platform designed for service-based businesses such as:
+AsanRezerve is a comprehensive service booking platform designed for service-based businesses such as:
 - Beauty salons and barbershops
 - Healthcare providers
 - Fitness trainers and gyms
@@ -103,7 +103,7 @@ Booksy is a comprehensive service booking platform designed for service-based bu
 
 ### Design Principles
 
-Booksy follows **Domain-Driven Design (DDD)** and **Clean Architecture** principles:
+AsanRezerve follows **Domain-Driven Design (DDD)** and **Clean Architecture** principles:
 
 1. **Bounded Contexts**: Separate business domains with clear boundaries
 2. **Aggregate Roots**: Consistent transaction boundaries for business entities
@@ -185,7 +185,7 @@ Handles payment processing and transactions.
 ### Cross-Context Integration
 
 **Current Implementation:**
-- Both bounded contexts run in-process within a single host (`Booksy.Host`)
+- Both bounded contexts run in-process within a single host (`AsanRezerve.Host`)
 - JWT tokens include provider claims (providerId, provider_status)
 - Cross-context integration events are dispatched **in-process** via CAP (DotNetCore.CAP) on its in-memory transport (no external message broker)
 - Eventual consistency through domain/integration events
@@ -288,37 +288,37 @@ Handles payment processing and transactions.
 ## Project Structure
 
 ```
-Booksy/
+AsanRezerve/
 ├── src/
 │   ├── Host/
-│   │   └── Booksy.Host/                 # Single ASP.NET Core host (composes all contexts)
+│   │   └── AsanRezerve.Host/                 # Single ASP.NET Core host (composes all contexts)
 │   │
 │   ├── BoundedContexts/
 │   │   ├── ServiceCatalog/
-│   │   │   ├── Booksy.ServiceCatalog.Api/           # REST API
-│   │   │   ├── Booksy.ServiceCatalog.Application/   # Use cases (CQRS)
-│   │   │   ├── Booksy.ServiceCatalog.Domain/        # Domain model
-│   │   │   └── Booksy.ServiceCatalog.Infrastructure/# Data access
+│   │   │   ├── AsanRezerve.ServiceCatalog.Api/           # REST API
+│   │   │   ├── AsanRezerve.ServiceCatalog.Application/   # Use cases (CQRS)
+│   │   │   ├── AsanRezerve.ServiceCatalog.Domain/        # Domain model
+│   │   │   └── AsanRezerve.ServiceCatalog.Infrastructure/# Data access
 │   │   │
 │   │   ├── Booking/                     # (Planned)
 │   │   └── Payment/                     # (Planned)
 │   │
 │   ├── UserManagement/
-│   │   ├── Booksy.UserManagement.API/               # REST API
-│   │   ├── Booksy.UserManagement.Application/       # Use cases
-│   │   ├── Booksy.UserManagement.Domain/            # Domain model
-│   │   └── Booksy.UserManagement.Infrastructure/    # Data access
+│   │   ├── AsanRezerve.UserManagement.API/               # REST API
+│   │   ├── AsanRezerve.UserManagement.Application/       # Use cases
+│   │   ├── AsanRezerve.UserManagement.Domain/            # Domain model
+│   │   └── AsanRezerve.UserManagement.Infrastructure/    # Data access
 │   │
 │   ├── Core/
-│   │   ├── Booksy.Core.Application/     # Shared application logic
-│   │   └── Booksy.Core.Domain/          # Shared domain primitives
+│   │   ├── AsanRezerve.Core.Application/     # Shared application logic
+│   │   └── AsanRezerve.Core.Domain/          # Shared domain primitives
 │   │
 │   └── Infrastructure/
-│       ├── Booksy.Infrastructure.Core/  # Shared infrastructure
-│       ├── Booksy.Infrastructure.External/# External service integrations
-│       └── Booksy.API/                  # Shared API utilities
+│       ├── AsanRezerve.Infrastructure.Core/  # Shared infrastructure
+│       ├── AsanRezerve.Infrastructure.External/# External service integrations
+│       └── AsanRezerve.API/                  # Shared API utilities
 │
-├── booksy-frontend/
+├── asanrezerve-frontend/
 │   ├── src/
 │   │   ├── core/                        # Core functionality
 │   │   │   ├── api/                     # API clients
@@ -346,9 +346,9 @@ Booksy/
 │   └── public/                          # Static assets
 │
 ├── tests/
-│   ├── Booksy.ServiceCatalog.IntegrationTests/
-│   ├── Booksy.UserManagement.Tests/
-│   └── Booksy.Tests.Common/             # Shared test utilities
+│   ├── AsanRezerve.ServiceCatalog.IntegrationTests/
+│   ├── AsanRezerve.UserManagement.Tests/
+│   └── AsanRezerve.Tests.Common/             # Shared test utilities
 │
 └── openspec/                            # OpenSpec specifications
     ├── specs/                           # System specifications
@@ -374,8 +374,8 @@ Booksy/
 
 #### 1. Clone the Repository
 ```bash
-git clone https://github.com/your-org/booksy.git
-cd booksy
+git clone https://github.com/your-org/asanrezerve.git
+cd asanrezerve
 ```
 
 #### 2. Backend Setup
@@ -383,50 +383,50 @@ cd booksy
 **Update Connection Strings:**
 ```bash
 # ServiceCatalog API
-cd src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api
+cd src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api
 # Edit appsettings.Development.json with your database connection
 
 # UserManagement API
-cd src/UserManagement/Booksy.UserManagement.API
+cd src/UserManagement/AsanRezerve.UserManagement.API
 # Edit appsettings.Development.json with your database connection
 ```
 
 **Run Migrations:**
 ```bash
 # ServiceCatalog (with startup project specified)
-cd src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure
-dotnet ef database update --startup-project ../Booksy.ServiceCatalog.Api --context ServiceCatalogDbContext
+cd src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Infrastructure
+dotnet ef database update --startup-project ../AsanRezerve.ServiceCatalog.Api --context ServiceCatalogDbContext
 
 # UserManagement
-cd src/UserManagement/Booksy.UserManagement.Infrastructure
+cd src/UserManagement/AsanRezerve.UserManagement.Infrastructure
 dotnet ef database update
 ```
 
 **Create New Migrations (if needed):**
 ```bash
 # ServiceCatalog - Create new migration
-cd src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api
-dotnet ef migrations add MigrationName --project ../Booksy.ServiceCatalog.Infrastructure --context ServiceCatalogDbContext
+cd src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api
+dotnet ef migrations add MigrationName --project ../AsanRezerve.ServiceCatalog.Infrastructure --context ServiceCatalogDbContext
 
 # List migrations
-dotnet ef migrations list --project ../Booksy.ServiceCatalog.Infrastructure --context ServiceCatalogDbContext
+dotnet ef migrations list --project ../AsanRezerve.ServiceCatalog.Infrastructure --context ServiceCatalogDbContext
 ```
 
 **Run APIs:**
 ```bash
 # ServiceCatalog API (Port 7002)
-cd src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api
+cd src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api
 dotnet run
 
 # UserManagement API (Port 7001)
-cd src/UserManagement/Booksy.UserManagement.API
+cd src/UserManagement/AsanRezerve.UserManagement.API
 dotnet run
 ```
 
 #### 3. Frontend Setup
 
 ```bash
-cd booksy-frontend
+cd asanrezerve-frontend
 npm install
 npm run dev
 ```
@@ -651,7 +651,7 @@ Once the APIs are running:
 dotnet test
 
 # Run specific test project
-dotnet test tests/Booksy.ServiceCatalog.IntegrationTests/
+dotnet test tests/AsanRezerve.ServiceCatalog.IntegrationTests/
 
 # Run with coverage
 dotnet test /p:CollectCoverage=true
@@ -660,7 +660,7 @@ dotnet test /p:CollectCoverage=true
 ### Frontend Tests
 
 ```bash
-cd booksy-frontend
+cd asanrezerve-frontend
 
 # Unit tests
 npm run test:unit
@@ -718,6 +718,6 @@ This project is proprietary and confidential.
 
 For questions, issues, or contributions, please contact the development team.
 
-**Project Repository:** [GitHub](https://github.com/your-org/booksy)
-**Documentation:** [Docs](https://docs.booksy.com)
-**Issue Tracker:** [GitHub Issues](https://github.com/your-org/booksy/issues)
+**Project Repository:** [GitHub](https://github.com/your-org/asanrezerve)
+**Documentation:** [Docs](https://docs.asanrezerve.com)
+**Issue Tracker:** [GitHub Issues](https://github.com/your-org/asanrezerve/issues)

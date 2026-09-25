@@ -1,0 +1,150 @@
+// ========================================
+// AsanRezerve.ServiceCatalog.Application/Queries/Booking/GetCustomerBookings/GetCustomerBookingsQueryHandler.cs
+// ========================================
+using AsanRezerve.Core.Application.Abstractions.CQRS;
+using AsanRezerve.Core.Application.DTOs;
+using AsanRezerve.Core.Domain.ValueObjects;
+using AsanRezerve.Core.Domain.ValueObjects;
+using AsanRezerve.ServiceCatalog.Application.Abstractions.Identity;
+using AsanRezerve.ServiceCatalog.Application.Services;
+using AsanRezerve.ServiceCatalog.Domain.Enums;
+using AsanRezerve.ServiceCatalog.Domain.Repositories;
+using Microsoft.Extensions.Logging;
+
+namespace AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetCustomerBookings
+{
+    /// <summary>
+    /// Handler for getting paginated customer bookings with enriched data
+    /// Follows the established pattern of using repository pagination methods
+    /// </summary>
+    public sealed class GetCustomerBookingsQueryHandler : IQueryHandler<GetCustomerBookingsQuery, PagedResult<CustomerBookingDto>>
+    {
+        private readonly IBookingReadRepository _bookingRepository;
+        private readonly IProviderReadRepository _providerRepository;
+        private readonly IServiceReadRepository _serviceRepository;
+        private readonly IProviderCustomerRepository _providerCustomers;
+        private readonly IPersonDirectory _people;
+        private readonly IBookingStaffNames _staffNames;
+        private readonly ILogger<GetCustomerBookingsQueryHandler> _logger;
+
+        public GetCustomerBookingsQueryHandler(
+            IBookingReadRepository bookingRepository,
+            IProviderReadRepository providerRepository,
+            IServiceReadRepository serviceRepository,
+            IProviderCustomerRepository providerCustomers,
+            IPersonDirectory people,
+            IBookingStaffNames staffNames,
+            ILogger<GetCustomerBookingsQueryHandler> logger)
+        {
+            _bookingRepository = bookingRepository;
+            _providerRepository = providerRepository;
+            _serviceRepository = serviceRepository;
+            _providerCustomers = providerCustomers;
+            _people = people;
+            _staffNames = staffNames;
+            _logger = logger;
+        }
+
+        /// <summary>
+        /// The customer-book entries that are this same person: a salon books someone by mobile
+        /// number, before or after they ever open the app, and sign-in proves that number is
+        /// theirs. Empty when we cannot read their number.
+        /// </summary>
+        private async Task<IReadOnlyCollection<Guid>> TheirCustomerBookEntriesAsync(
+            Guid personId, CancellationToken cancellationToken)
+        {
+            var people = await _people.FindByIdsAsync(new[] { personId }, cancellationToken);
+            if (!people.TryGetValue(personId, out var person) || string.IsNullOrWhiteSpace(person.PhoneNumber))
+                return Array.Empty<Guid>();
+
+            try
+            {
+                return await _providerCustomers.IdsByPhoneAsync(
+                    PhoneNumber.From(person.PhoneNumber!), cancellationToken);
+            }
+            catch (ArgumentException)
+            {
+                return Array.Empty<Guid>();
+            }
+        }
+
+        public async Task<PagedResult<CustomerBookingDto>> Handle(GetCustomerBookingsQuery request, CancellationToken cancellationToken)
+        {
+            _logger.LogInformation(
+                "Getting bookings for customer {CustomerId} with filters: Status={Status}, From={From}, To={To}, Page={Page}, PageSize={PageSize}",
+                request.CustomerId, request.Status, request.FromDate, request.ToDate, request.Pagination.PageNumber, request.Pagination.PageSize);
+
+            // Parse status if provided
+            BookingStatus? status = null;
+            if (!string.IsNullOrEmpty(request.Status))
+            {
+                if (Enum.TryParse<BookingStatus>(request.Status, true, out var parsedStatus))
+                {
+                    status = parsedStatus;
+                }
+                else
+                {
+                    _logger.LogWarning("Invalid booking status provided: {Status}", request.Status);
+                }
+            }
+
+            // Get bookings from repository with pagination and filters — theirs, and the ones a
+            // salon entered for their number.
+            var theirEntries = await TheirCustomerBookEntriesAsync(request.CustomerId, cancellationToken);
+            var pagedResult = await _bookingRepository.GetCustomerBookingHistoryAsync(
+                UserId.From(request.CustomerId.ToString()),
+                request.Pagination,
+                status,
+                request.FromDate,
+                request.ToDate,
+                theirEntries,
+                cancellationToken);
+
+            // Map to enriched DTOs with provider, service, and staff details
+            // NOTE: This creates N+1 queries. For better performance, consider:
+            // 1. Adding a specification-based method that includes related entities
+            // 2. Using a database view or stored procedure
+            // 3. Batching the queries for providers and services
+            var enrichedDtos = new List<CustomerBookingDto>();
+
+            foreach (var booking in pagedResult.Items)
+            {
+                // Load provider and service for additional details
+                var provider = await _providerRepository.GetByIdAsync(booking.ProviderId, cancellationToken);
+                var service = await _serviceRepository.GetByIdAsync(booking.ServiceId, cancellationToken);
+
+                enrichedDtos.Add(new CustomerBookingDto(
+                    BookingId: booking.Id.Value,
+                    CustomerId: booking.CustomerId.Value,
+                    ProviderId: booking.ProviderId.Value,
+                    ServiceId: booking.ServiceId.Value,
+                    StaffId: booking.StaffId,
+                    ServiceName: service?.Name ?? "Unknown Service",
+                    ProviderName: provider?.Profile.BusinessName ?? "Unknown Provider",
+                    StartTime: booking.TimeSlot.StartTime,
+                    EndTime: booking.TimeSlot.EndTime,
+                    DurationMinutes: booking.Duration.Value,
+                    Status: booking.Status.ToString(),
+                    TotalPrice: booking.TotalPrice.Amount,
+                    Currency: booking.TotalPrice.Currency,
+                    PaymentStatus: booking.PaymentInfo.Status.ToString(),
+                    RequestedAt: booking.RequestedAt,
+                    ConfirmedAt: booking.ConfirmedAt,
+                    CustomerNotes: booking.CustomerNotes,
+                    StaffName: await _staffNames.ForAsync(provider, booking.StaffId, cancellationToken),
+                    RescheduleBlockedReason: booking.RescheduleBlockedReason()));
+            }
+
+            _logger.LogInformation(
+                "Found {Count} bookings for customer {CustomerId} (Page {Page} of {TotalPages})",
+                pagedResult.TotalCount, request.CustomerId, pagedResult.PageNumber, pagedResult.TotalPages);
+
+            // Return a new PagedResult with the enriched DTOs
+            return new PagedResult<CustomerBookingDto>(
+                enrichedDtos,
+                pagedResult.TotalCount,
+                pagedResult.PageNumber,
+                pagedResult.PageSize);
+        }
+    }
+}

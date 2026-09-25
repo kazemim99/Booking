@@ -1,0 +1,324 @@
+﻿// 📁 AsanRezerve.Core.Infrastructure/Persistence/Base/EfReadEfRepositoryBase.cs - NEW
+using AsanRezerve.Core.Application.Abstractions.Persistence;
+using AsanRezerve.Core.Application.DTOs;
+using AsanRezerve.Core.Domain.Abstractions.Entities;
+using AsanRezerve.Core.Domain.Abstractions.Entities.Specifications;
+using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
+
+namespace AsanRezerve.Infrastructure.Core.Persistence.Base;
+
+/// <summary>
+/// Combined read/write repository base for domain repositories
+/// </summary>
+public abstract class EfRepositoryBase<TEntity, TId, TContext> : IReadRepository<TEntity, TId>, IWriteRepository<TEntity, TId>
+    where TEntity : class, IEntity<TId>
+    where TId : notnull
+    where TContext : DbContext
+{
+    protected readonly TContext Context;
+    protected readonly DbSet<TEntity> DbSet;
+
+    protected EfRepositoryBase(TContext context)
+    {
+        Context = context ?? throw new ArgumentNullException(nameof(context));
+        DbSet = context.Set<TEntity>();
+    }
+
+    // ✅ Read methods
+    public virtual async Task<TEntity?> GetByIdAsync(TId id, CancellationToken cancellationToken = default)
+    {
+        return await DbSet.FindAsync(new object[] { id! }, cancellationToken);
+    }
+
+    public virtual async Task<TEntity?> GetSingleAsync(
+        ISpecification<TEntity> specification,
+        CancellationToken cancellationToken = default)
+    {
+        return await ApplySpecification(specification).FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public virtual async Task<IReadOnlyList<TEntity>> GetAsync(
+        ISpecification<TEntity> specification,
+        CancellationToken cancellationToken = default)
+    {
+        return await ApplySpecification(specification).ToListAsync(cancellationToken);
+    }
+
+    public virtual async Task<bool> ExistsAsync(
+        ISpecification<TEntity> specification,
+        CancellationToken cancellationToken = default)
+    {
+        var query = DbSet.AsQueryable();
+        if (specification.Criteria != null)
+            query = query.Where(specification.Criteria);
+
+        return await query.AnyAsync(cancellationToken);
+    }
+
+    public virtual async Task<int> CountAsync(
+        ISpecification<TEntity> specification,
+        CancellationToken cancellationToken = default)
+    {
+        var query = DbSet.AsQueryable();
+        if (specification.Criteria != null)
+            query = query.Where(specification.Criteria);
+
+        return await query.CountAsync(cancellationToken);
+    }
+
+    // ✅ Write methods
+    public virtual async Task SaveAsync(TEntity entity, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+
+        var entry = Context.Entry(entity);
+
+        if (entry.State == EntityState.Detached)
+        {
+            await DbSet.AddAsync(entity, cancellationToken);
+        }
+        else if (entry.State == EntityState.Modified)
+        {
+            DbSet.Update(entity);
+        }
+    }
+
+    public virtual Task RemoveAsync(TEntity entity, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+        DbSet.Remove(entity);
+        return Task.CompletedTask;
+    }
+
+    public virtual async Task RemoveByIdAsync(TId id, CancellationToken cancellationToken = default)
+    {
+        var entity = await GetByIdAsync(id, cancellationToken);
+        if (entity != null)
+        {
+            await RemoveAsync(entity, cancellationToken);
+        }
+    }
+
+    protected virtual IQueryable<TEntity> ApplySpecification(ISpecification<TEntity> specification)
+    {
+        var query = DbSet.AsQueryable(); 
+
+        if (specification.Criteria != null)
+            query = query.Where(specification.Criteria);
+
+        query = specification.Includes.Aggregate(query, (current, include) => current.Include(include));
+        query = specification.IncludeStrings.Aggregate(query, (current, include) => current.Include(include));
+
+        return query;
+    }
+
+    public async Task UpdateAsync(TEntity entity, CancellationToken cancellationToken)
+    {
+        // If the entity is already tracked (the normal load-then-mutate flow), EF change tracking has already
+        // captured the modifications — including newly-added owned children as Added. Calling DbSet.Update here
+        // would re-stamp the entire graph as Modified, turning new children into phantom UPDATEs that affect
+        // 0 rows and throw DbUpdateConcurrencyException. Only attach-and-mark when the entity is genuinely detached.
+        if (Context.Entry(entity).State == EntityState.Detached)
+            DbSet.Update(entity);
+
+        await Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Get paginated results using specification and pagination request
+    /// </summary>
+    public virtual async Task<PagedResult<TEntity>> GetPaginatedAsync(
+        ISpecification<TEntity> specification,
+        PaginationRequest pagination,
+        CancellationToken cancellationToken = default)
+    {
+        // Get total count without pagination
+        var totalCount = await CountAsync(specification, cancellationToken);
+
+        // Build query with specification
+        var query = ApplySpecification(specification);
+
+        // Apply pagination-specific sorting if no ordering in specification
+        query = ApplyPaginationSorting(query, specification, pagination);
+
+        // Apply pagination
+        var items = await query
+            .Skip(pagination.Skip)
+            .Take(pagination.Take)
+            .ToListAsync(cancellationToken);
+
+        return new PagedResult<TEntity>(items, totalCount, pagination.PageNumber, pagination.PageSize);
+    }
+
+    /// <summary>
+    /// Get paginated results with projection using specification and pagination request
+    /// </summary>
+    public virtual async Task<PagedResult<TProjection>> GetPaginatedAsync<TProjection>(
+        ISpecification<TEntity> specification,
+        PaginationRequest pagination,
+        Expression<Func<TEntity, TProjection>> projection,
+        CancellationToken cancellationToken = default)
+    {
+        // Get total count without pagination and projection
+        var totalCount = await CountAsync(specification, cancellationToken);
+
+        // Build query with specification
+        var query = ApplySpecification(specification);
+
+        // Apply pagination-specific sorting if no ordering in specification
+        query = ApplyPaginationSorting(query, specification, pagination);
+
+        // Apply projection and pagination
+        var items = await query.AsNoTracking()
+            .Skip(pagination.Skip)
+            .Take(pagination.Take)
+            .Select(projection)
+            .ToListAsync(cancellationToken);
+
+        return new PagedResult<TProjection>(items, totalCount, pagination.PageNumber, pagination.PageSize);
+    }
+
+
+    /// <summary>
+    /// Apply sorting from pagination request if specification doesn't have ordering
+    /// </summary>
+    protected virtual IQueryable<TEntity> ApplyPaginationSorting(
+        IQueryable<TEntity> query,
+        ISpecification<TEntity> specification,
+        PaginationRequest pagination)
+    {
+        // A specification that asked for an order gets it.
+        //
+        // This check was commented out AND the ordering was never applied anywhere else: ApplySpecification
+        // above copies only Criteria and Includes, so every ordering a specification declared was dropped on
+        // the floor. Provider search returned an identical sequence for SortBy=name, SortBy=rating and
+        // SortBy=distance — the request succeeded and quietly ignored the order it was given, which is why
+        // "nearest first" listed the farthest provider first.
+        //
+        // Restoring the guard alone would not have been enough; the ordering has to actually be applied, which
+        // is what ApplySpecificationOrdering below does.
+        if (specification is IOrderableSpecification<TEntity> orderableSpec && orderableSpec.OrderBy.Count > 0)
+        {
+            return ApplySpecificationOrdering(query, orderableSpec);
+        }
+
+        // Apply pagination sorting
+        return ApplySortingDescriptors(query, pagination.SortBy);
+    }
+
+    /// <summary>
+    /// Applies the ordering a specification declared: the first expression establishes the order, and any
+    /// subsequent ones extend it as ThenBy. Must run before Skip/Take, or paging would slice an unordered
+    /// sequence and pages could repeat or drop rows.
+    /// </summary>
+    protected virtual IQueryable<TEntity> ApplySpecificationOrdering(
+        IQueryable<TEntity> query,
+        IOrderableSpecification<TEntity> specification)
+    {
+        IOrderedQueryable<TEntity>? ordered = null;
+
+        foreach (var order in specification.OrderBy)
+        {
+            // A ThenBy arriving with no primary is treated as the primary, so a mis-built specification
+            // degrades to a sensible order rather than throwing at runtime.
+            if (ordered is null)
+            {
+                ordered = order.Direction == OrderDirection.Descending
+                    ? query.OrderByDescending(order.KeySelector)
+                    : query.OrderBy(order.KeySelector);
+            }
+            else
+            {
+                ordered = order.Direction == OrderDirection.Descending
+                    ? ordered.ThenByDescending(order.KeySelector)
+                    : ordered.ThenBy(order.KeySelector);
+            }
+        }
+
+        return ordered ?? query;
+    }
+
+    /// <summary>
+    /// Apply sorting descriptors to query
+    /// </summary>
+    protected virtual IQueryable<TEntity> ApplySortingDescriptors(
+        IQueryable<TEntity> query,
+        List<SortingDescriptor> sortingDescriptors)
+    {
+        if (!sortingDescriptors.Any())
+        {
+            return ApplyDefaultSorting(query);
+        }
+
+        IOrderedQueryable<TEntity>? orderedQuery = null;
+
+        foreach (var (descriptor, index) in sortingDescriptors.Select((d, i) => (d, i)))
+        {
+            var sortExpression = GetSortExpression(descriptor.FieldName);
+            if (sortExpression == null) continue;
+
+            if (index == 0)
+            {
+                orderedQuery = descriptor.Direction == SortDirection.Ascending
+                    ? query.OrderBy(sortExpression)
+                    : query.OrderByDescending(sortExpression);
+            }
+            else
+            {
+                orderedQuery = descriptor.Direction == SortDirection.Ascending
+                    ? orderedQuery!.ThenBy(sortExpression)
+                    : orderedQuery!.ThenByDescending(sortExpression);
+            }
+        }
+
+        return orderedQuery ?? ApplyDefaultSorting(query);
+    }
+
+    /// <summary>
+    /// Get sort expression for a field name - Override in derived classes for entity-specific sorting
+    /// </summary>
+    protected virtual Expression<Func<TEntity, object>>? GetSortExpression(string fieldName)
+    {
+        // Default implementation - tries to find property by name
+        var parameter = Expression.Parameter(typeof(TEntity), "x");
+
+        try
+        {
+            var property = typeof(TEntity).GetProperty(fieldName);
+            if (property != null)
+            {
+                var propertyAccess = Expression.Property(parameter, property);
+                var objectConversion = Expression.Convert(propertyAccess, typeof(object));
+                return Expression.Lambda<Func<TEntity, object>>(objectConversion, parameter);
+            }
+        }
+        catch
+        {
+            // Property not found or not accessible
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Apply default sorting when no sort is specified - Override in derived classes
+    /// </summary>
+    protected virtual IQueryable<TEntity> ApplyDefaultSorting(IQueryable<TEntity> query)
+    {
+        // Default: try to sort by Id if it exists
+        try
+        {
+            var parameter = Expression.Parameter(typeof(TEntity), "x");
+            var idProperty = Expression.Property(parameter, "Id");
+            var lambda = Expression.Lambda<Func<TEntity, object>>(
+                Expression.Convert(idProperty, typeof(object)), parameter);
+            return query.OrderBy(lambda);
+        }
+        catch
+        {
+            // If Id property doesn't exist, return unsorted
+            return query;
+        }
+    }
+}
