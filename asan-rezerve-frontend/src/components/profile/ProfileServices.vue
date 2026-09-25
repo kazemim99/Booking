@@ -7,6 +7,15 @@
       </p>
     </div>
 
+    <!-- The salon's automatic offers (openspec/changes/add-discounts-and-campaigns). Codes are never listed. -->
+    <div v-if="offers.length" class="offers-banner" data-testid="offers-banner">
+      <div v-for="offer in offers" :key="offer.id" class="offer-pill">
+        <span class="offer-pill__badge">{{ offerBadge(offer) }}</span>
+        <span class="offer-pill__title">{{ offer.title }}</span>
+        <span v-if="offerCondition(offer)" class="offer-pill__condition">{{ offerCondition(offer) }}</span>
+      </div>
+    </div>
+
     <!-- Services List -->
     <div v-if="services && services.length > 0" class="services-grid">
       <div
@@ -57,8 +66,17 @@
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span class="price-value">{{ formatPrice(service.basePrice) }} تومان</span>
+                <template v-if="offerOf(service)?.discountedPrice != null">
+                  <span class="price-value price-value--was" data-testid="price-was">{{ formatPrice(service.basePrice) }}</span>
+                  <span class="price-value price-value--now" data-testid="price-now">{{ formatPrice(offerOf(service)!.discountedPrice!) }} تومان</span>
+                </template>
+                <span v-else class="price-value">{{ formatPrice(service.basePrice) }} تومان</span>
               </div>
+            </div>
+
+            <div v-if="offerOf(service)" class="service-offer" data-testid="service-offer">
+              <span class="service-offer__badge">{{ offerOf(service)!.badge }}</span>
+              <span v-if="offerOf(service)!.condition" class="service-offer__condition">{{ offerOf(service)!.condition }}</span>
             </div>
 
             <div v-if="service.tags && service.tags.length > 0" class="service-tags">
@@ -96,9 +114,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Provider, ServiceSummary } from '@/modules/provider/types/provider.types'
+import { promotionService, type PublicOffer } from '@/modules/booking/api/promotion.service'
+import { offerBadge, offerCondition, offerForService, type ServiceOffer } from '@/modules/booking/utils/offers'
 
 interface Props {
   provider: Provider
@@ -109,6 +129,22 @@ const router = useRouter()
 
 // Computed
 const services = computed(() => props.provider.services || [])
+
+// Offers are a nicety on this page: a failure to read them leaves the list priced as usual, never broken.
+const offers = ref<PublicOffer[]>([])
+async function loadOffers() {
+  if (!props.provider?.id) return
+  try {
+    offers.value = await promotionService.getOffers(props.provider.id)
+  } catch {
+    offers.value = []
+  }
+}
+onMounted(loadOffers)
+watch(() => props.provider?.id, loadOffers)
+
+const offerOf = (service: ServiceSummary): ServiceOffer | null =>
+  offerForService(service.id, Number(service.basePrice) || 0, offers.value)
 
 // Methods
 const getCategoryLabel = (category: string): string => {
@@ -198,6 +234,63 @@ const handleBookService = (service: ServiceSummary) => {
 <style scoped>
 .profile-services {
   padding: 2rem 0;
+}
+
+.offers-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.offer-pill {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 14px;
+  background: var(--color-success-50, #ecfdf5);
+  border: 1px solid var(--color-success-200, #a7f3d0);
+}
+
+.offer-pill__badge,
+.service-offer__badge {
+  font-weight: 800;
+  color: var(--color-success-700, #047857);
+}
+
+.offer-pill__title {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.offer-pill__condition,
+.service-offer__condition {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.service-offer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 10px;
+  background: var(--color-success-50, #ecfdf5);
+}
+
+.price-value--was {
+  text-decoration: line-through;
+  color: #94a3b8;
+  font-weight: 500;
+  margin-inline-end: 0.35rem;
+}
+
+.price-value--now {
+  color: var(--color-success-700, #047857);
 }
 
 .services-header {

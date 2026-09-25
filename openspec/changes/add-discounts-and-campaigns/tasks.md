@@ -66,10 +66,10 @@ implementation task. `scripts/verify.sh fast` after each task, `full` to finish.
 - [x] 6.4 More hub row, route, DI, AppStrings; flutter analyze + test green.
 
 ## 7. Customer web (asan-rezerve-frontend)
-- [ ] 7.1 promotion.service.ts (offers, quote) + unit tests.
-- [ ] 7.2 Salon page: offer banner, per-service discount badge and struck-through price.
-- [ ] 7.3 Booking confirmation: code field, server quote breakdown (drop fake 9% tax), send code on create; tests.
-- [ ] 7.4 type-check + lint + unit tests green.
+- [x] 7.1 promotion.service.ts (offers, quote) + unit tests.
+- [x] 7.2 Salon page: offer banner, per-service discount badge and struck-through price.
+- [x] 7.3 Booking confirmation: code field, server quote breakdown (drop fake 9% tax), send code on create; tests.
+- [x] 7.4 type-check + lint + unit tests green.
 
 ## 8. Customer app (asan-rezerve-customer-app)
 - [ ] 8.1 Offers + quote datasource/repository, entities; tests.
@@ -99,6 +99,11 @@ implementation task. `scripts/verify.sh fast` after each task, `full` to finish.
   400 — retried, the visit is priced without it (spec: "fails with a conflict and, when retried, is priced without it").
 - Tier 2 (fix): CreateBookingResult now fills DurationMinutes/Currency/PaymentStatus/CreatedAt; they were never set, so
   the 201 body carried an empty currency.
+- Tier 2 (fix): the web wizard booked only the first selected service while showing (and now quoting) the sum of all;
+  it now sends serviceIds so the booked visit is the one priced. It also dropped a hard-coded 9% tax row the server
+  never charged — the card shows the server's quote.
+- Tier 1: the web salon page shows a struck-through price only for an offer with no day/time/new-customer condition;
+  conditional offers show the badge and the condition, never a price that may not apply to the customer's slot.
 - Tier 2 (test infra): PostgresTestContainerFixture honours ASANREZERVE_TEST_POSTGRES (an existing server instead of a
   container) and scripts/verify treats it as the db source, so FULL can run where no Docker daemon exists. Opt-in;
   unset changes nothing.
