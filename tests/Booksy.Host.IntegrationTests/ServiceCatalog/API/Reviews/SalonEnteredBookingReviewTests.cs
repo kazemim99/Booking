@@ -60,6 +60,18 @@ public class SalonEnteredBookingReviewTests : ReviewTestBase
     }
 
     [Fact]
+    public async Task The_owners_own_booking_list_never_offers_to_review_their_salon()
+    {
+        var visit = await SalonEnteredCompletedVisitAsync(NewPhone());
+
+        // The owner's «my bookings» lists the walk-ins they entered (stored under their id); it must not then offer
+        // them «ثبت نظر» and refuse it.
+        var row = await MyBookingRowAsync(visit.CustomerId, visit.BookingId);
+
+        row["canReview"]!.Value<bool>().Should().BeFalse();
+    }
+
+    [Fact]
     public async Task Somebody_with_another_number_cannot_review_or_open_it()
     {
         var visit = await SalonEnteredCompletedVisitAsync(NewPhone());

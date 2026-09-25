@@ -84,14 +84,17 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetCustomerBookings
             // 3. Batching the queries for providers and services
             var enrichedDtos = new List<CustomerBookingDto>();
 
-            // Every booking listed here is for the caller (theirs, or the salon's for their number), so each carries
-            // where its review stands. One query for the page.
+            // Where each booking's review stands, for the person it is for. The list also holds the walk-ins a salon
+            // owner entered for their clients (stored under the owner's id): those are not the owner's to review, so
+            // they say nothing. One query for the page.
             var reviews = await _reviews.GetStatesByBookingIdsAsync(
                 pagedResult.Items.Select(b => b.Id.Value).ToList(), cancellationToken);
 
             foreach (var booking in pagedResult.Items)
             {
-                var review = BookingReviewStanding.Of(booking, reviews.GetValueOrDefault(booking.Id.Value));
+                var review = BookingCustomer.IsFor(booking, request.CustomerId, theirEntries)
+                    ? BookingReviewStanding.Of(booking, reviews.GetValueOrDefault(booking.Id.Value))
+                    : BookingReviewStanding.None;
 
                 // Load provider and service for additional details
                 var provider = await _providerRepository.GetByIdAsync(booking.ProviderId, cancellationToken);

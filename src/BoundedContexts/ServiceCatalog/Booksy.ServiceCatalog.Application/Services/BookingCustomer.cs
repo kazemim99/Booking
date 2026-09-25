@@ -56,13 +56,19 @@ namespace Booksy.ServiceCatalog.Application.Services
             }
         }
 
-        public async Task<bool> IsForAsync(Booking booking, Guid personId, CancellationToken cancellationToken = default)
-        {
-            if (booking.ProviderCustomerId is not { } entryId)
-                return booking.CustomerId.Value == personId;
+        public async Task<bool> IsForAsync(Booking booking, Guid personId, CancellationToken cancellationToken = default) =>
+            booking.ProviderCustomerId is null
+                ? IsFor(booking, personId, Array.Empty<Guid>())
+                : IsFor(booking, personId, await TheirBookEntriesAsync(personId, cancellationToken));
 
-            return (await TheirBookEntriesAsync(personId, cancellationToken)).Contains(entryId);
-        }
+        /// <summary>
+        /// The rule, given the person's own client-book entries: a booking the salon entered is for the entry's
+        /// person — never for the owner stored as its customer, whose «نوبت‌های من» lists it all the same.
+        /// </summary>
+        public static bool IsFor(Booking booking, Guid personId, IReadOnlyCollection<Guid> theirBookEntries) =>
+            booking.ProviderCustomerId is { } entryId
+                ? theirBookEntries.Contains(entryId)
+                : booking.CustomerId.Value == personId;
     }
 
     /// <summary>

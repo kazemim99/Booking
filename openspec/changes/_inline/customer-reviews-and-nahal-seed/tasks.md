@@ -85,6 +85,14 @@ User request (2026-09-25): «الان من چرا نمیتونم بعنوان م
 
 ## Log
 
+- 2026-09-25 Self-review found, and a test proved (red first): the salon owner's own «نوبت‌های من» lists the walk-ins they
+  entered for clients (stored under the owner's id — pre-existing since customer-sees-salon-bookings), so task 1 made
+  those say `canReview` and task 2 then refused them. The list now applies the same `BookingCustomer.IsFor` rule.
+  FOLLOW-UP (not changed, flagged): whether those walk-ins belong in the owner's personal list at all.
+- 2026-09-25 Tasks 6–10: customer app 829 tests + analyze clean; web type-check + lint (0 errors) + vitest (the same
+  36 pre-existing failures in 5 files, none touched: LoginForm, auth.api, three live-backend integration specs);
+  provider app 730 tests + analyze clean.
+
 - 2026-09-25 Investigation: backend (reviews, bookings, seeding), customer app, provider app, web + admin traced.
   Toolchain in this container: .NET 10 SDK from Ubuntu's feed (Microsoft's is blocked by the network policy), tests
   run on it with DOTNET_ROLL_FORWARD=Major; Flutter 3.44.2 (CI's version); Docker daemon started for Testcontainers.
