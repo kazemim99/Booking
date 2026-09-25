@@ -45,6 +45,11 @@ So the renamed app can reach the server before the migration, `deploy.yml`'s dep
 When the migration below runs, change those five values in `deploy.yml` back to the asan-rezerve names
 in the same commit.
 
+Run #110 (4bec8d0) hit a transient GitHub Actions cache-export failure in the API image build
+(`error writing layer blob: not_found` while exporting to the Actions cache, after the image itself
+built and pushed successfully) — infra flake, unrelated to this change. Deploy job never ran since it
+depends on that build. Retried with this commit.
+
 ### The one risk that matters: Compose auto-names volumes after the directory
 
 `docker-compose.prod.yml` declares `postgres_data`, `redis_data`, `uploads_data`, etc. with no
