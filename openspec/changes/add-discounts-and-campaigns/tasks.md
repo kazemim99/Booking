@@ -72,9 +72,9 @@ implementation task. `scripts/verify.sh fast` after each task, `full` to finish.
 - [x] 7.4 type-check + lint + unit tests green.
 
 ## 8. Customer app (asan-rezerve-customer-app)
-- [ ] 8.1 Offers + quote datasource/repository, entities; tests.
-- [ ] 8.2 Salon page badges/discounted price; confirm step code field + breakdown via BookingBloc; bloc + widget tests.
-- [ ] 8.3 Booking detail shows the discount; flutter analyze + test green.
+- [x] 8.1 Offers + quote datasource/repository, entities; tests.
+- [x] 8.2 Salon page badges/discounted price; confirm step code field + breakdown via BookingBloc; bloc + widget tests.
+- [x] 8.3 Booking detail shows the discount; flutter analyze + test green.
 
 ## 9. Finish
 - [ ] 9.1 openspec validate --strict; project.md / KNOWLEDGE_MAP touch-ups; FOLLOW-UPS rows for out-of-scope items.
@@ -104,6 +104,10 @@ implementation task. `scripts/verify.sh fast` after each task, `full` to finish.
   never charged — the card shows the server's quote.
 - Tier 1: the web salon page shows a struck-through price only for an offer with no day/time/new-customer condition;
   conditional offers show the badge and the condition, never a price that may not apply to the customer's slot.
+- Tier 1: a promotion lost between quote and booking is 409 `PROMOTION_UNAVAILABLE` (PromotionUnavailableException), so the
+  customer app keeps the customer on the confirm step with the new price instead of treating it as a taken slot.
+- Tier 1: the customer app's confirm step keeps ONE summary card (pinned by an existing layout test); the promotion's name
+  sits on its own line because the summary's label column does not wrap (found at 360x640, 1.3x text).
 - Tier 2 (test infra): PostgresTestContainerFixture honours ASANREZERVE_TEST_POSTGRES (an existing server instead of a
   container) and scripts/verify treats it as the db source, so FULL can run where no Docker daemon exists. Opt-in;
   unset changes nothing.

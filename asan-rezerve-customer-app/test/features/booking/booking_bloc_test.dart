@@ -7,6 +7,7 @@ import 'package:asan_rezerve_customer_app/core/errors/failures.dart';
 import 'package:asan_rezerve_customer_app/features/booking/domain/entities/booking_entities.dart';
 import 'package:asan_rezerve_customer_app/features/booking/domain/repositories/booking_repository.dart';
 import 'package:asan_rezerve_customer_app/features/booking/presentation/bloc/booking_bloc.dart';
+import 'package:asan_rezerve_customer_app/features/booking/domain/entities/promotion_entities.dart';
 
 const _service = ServiceItem(
   id: 's1',
@@ -128,12 +129,25 @@ class FakeBookingRepository implements BookingRepository {
   }
 
   @override
+  Future<List<PublicOffer>> getOffers(String providerId) async => const [];
+
+  @override
+  Future<Either<Failure, PriceQuote>> quote({
+    required String providerId,
+    required List<String> serviceIds,
+    required DateTime startTime,
+    String? promotionCode,
+  }) async =>
+      const Left(ServerFailure('no quote in this test'));
+
+  @override
   Future<Either<Failure, String>> createBooking({
     required String providerId,
     required String serviceId,
     required String staffProviderId,
     required DateTime startTime,
     List<String>? serviceIds,
+      String? promotionCode,
   }) async {
     lastStaffProviderId = staffProviderId;
     lastCreateServiceId = serviceId;

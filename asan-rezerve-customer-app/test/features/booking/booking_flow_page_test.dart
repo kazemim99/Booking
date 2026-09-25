@@ -12,6 +12,7 @@ import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
 import 'package:asan_rezerve_customer_app/core/errors/failures.dart';
 import 'package:asan_rezerve_customer_app/core/storage/secure_storage_service.dart';
 import 'package:asan_rezerve_customer_app/core/utils/jalali_formatter.dart';
+import 'package:asan_rezerve_customer_app/core/utils/price_formatter.dart';
 import 'package:asan_rezerve_customer_app/core/widgets/widgets.dart';
 import 'package:asan_rezerve_customer_app/features/auth/domain/entities/user.dart';
 import 'package:asan_rezerve_customer_app/features/auth/presentation/bloc/auth_bloc.dart';
@@ -29,6 +30,7 @@ import '../../helpers/fake_auth_bloc.dart';
 import 'package:asan_rezerve_customer_app/core/di/injection.dart';
 import 'package:asan_rezerve_customer_app/core/push/push_registration.dart';
 import 'package:asan_rezerve_customer_app/features/notifications/presentation/push_permission_cubit.dart';
+import 'package:asan_rezerve_customer_app/features/booking/domain/entities/promotion_entities.dart';
 
 class _NeverAskedPush implements PushSettings {
   @override
@@ -118,14 +120,35 @@ class _Repo implements BookingRepository {
       Right(slotsByDay[date.day] ?? const DaySlots());
 
   @override
+  Future<List<PublicOffer>> getOffers(String providerId) async => const [];
+
+  /// The server's quote per entered code; unset, pricing fails and the list price stands.
+  Either<Failure, PriceQuote> Function(String? code)? quoteFor;
+  final quotedCodes = <String?>[];
+  String? bookedWithCode;
+
+  @override
+  Future<Either<Failure, PriceQuote>> quote({
+    required String providerId,
+    required List<String> serviceIds,
+    required DateTime startTime,
+    String? promotionCode,
+  }) async {
+    quotedCodes.add(promotionCode);
+    return quoteFor?.call(promotionCode) ?? const Left(ServerFailure('no quote in this test'));
+  }
+
+  @override
   Future<Either<Failure, String>> createBooking({
     required String providerId,
     required String serviceId,
     required String staffProviderId,
     required DateTime startTime,
     List<String>? serviceIds,
+    String? promotionCode,
   }) async {
     createCalls++;
+    bookedWithCode = promotionCode;
     return const Right('b1');
   }
 }
@@ -785,6 +808,105 @@ void main() {
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
 
       await submitted(tester, size: const Size(360, 640));
+
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  // add-discounts-and-campaigns: the confirm step prices the visit through the server and carries an accepted code.
+  group('the confirm step price', () {
+    const auto = PriceQuote(subtotal: 250000, discount: 50000, total: 200000, discountTitle: 'تخفیف پاییزه');
+
+    Future<({BookingBloc bloc, _Repo repo})> atConfirmPriced(
+      WidgetTester tester,
+      Either<Failure, PriceQuote> Function(String? code) quoteFor, {
+      Size size = const Size(390, 844),
+    }) async {
+      final repo = _Repo(slotsByDay: {23: DaySlots(slots: [_at(23, 16)])})..quoteFor = quoteFor;
+      final auth = FakeAuthBloc()..signIn(sessionNamed('سارا', 'احمدی'));
+      addTearDown(auth.close);
+      final bloc = await pumpFlow(tester, serviceId: 's1', repo: repo, auth: auth, size: size);
+      bloc.add(BookingSlotSelected(_at(23, 16)));
+      await _settle(tester);
+      return (bloc: bloc, repo: repo);
+    }
+
+    String toman(num v) => JalaliFormatter.toPersianDigits(PriceFormatter.format(v.round()));
+
+    testWidgets('shows the discount the server applied, the payable total and the saving', (tester) async {
+      await atConfirmPriced(tester, (_) => const Right(auto));
+
+      expect(find.text(AppStrings.bookingDiscount), findsOneWidget);
+      expect(find.text('تخفیف پاییزه'), findsOneWidget);
+      expect(find.text('− ${toman(50000)}'), findsOneWidget);
+      expect(find.text(AppStrings.bookingPayable), findsOneWidget);
+      expect(find.text(toman(200000)), findsOneWidget);
+      expect(find.byKey(const Key('booking-price-saving')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('without a quote the list price stands, with a note', (tester) async {
+      await atConfirmPriced(tester, (_) => const Left(ServerFailure('down')));
+
+      expect(find.text(AppStrings.bookingPrice), findsOneWidget);
+      expect(find.text(toman(250000)), findsOneWidget);
+      expect(find.text(AppStrings.bookingQuoteFailed), findsOneWidget);
+    });
+
+    testWidgets('an accepted code is announced and rides on the booking', (tester) async {
+      final flow = await atConfirmPriced(
+        tester,
+        (code) => Right(code == 'LOYAL'
+            ? const PriceQuote(
+                subtotal: 250000, discount: 75000, total: 175000, discountTitle: 'وفاداری', discountCode: 'LOYAL',
+                codeOutcome: CodeOutcome.applied, codeMessage: 'کد تخفیف اعمال شد.')
+            : auto),
+      );
+
+      await tester.tap(find.byKey(const Key('promo-toggle')));
+      await _settle(tester);
+      await tester.enterText(find.byKey(const Key('promo-input')), 'LOYAL');
+      await tester.tap(find.byKey(const Key('promo-apply')));
+      await _settle(tester);
+
+      expect(find.text('کد تخفیف اعمال شد.'), findsOneWidget);
+      expect(find.text(toman(175000)), findsOneWidget);
+
+      await tester.tap(find.text(AppStrings.bookingConfirmCta));
+      await _settle(tester);
+      expect(flow.repo.bookedWithCode, 'LOYAL');
+    });
+
+    testWidgets('a refused code says why and is not sent with the booking', (tester) async {
+      final flow = await atConfirmPriced(
+        tester,
+        (code) => Right(code == null
+            ? auto
+            : const PriceQuote(
+                subtotal: 250000, discount: 50000, total: 200000, discountTitle: 'تخفیف پاییزه',
+                codeOutcome: CodeOutcome.notEligible, codeMessage: 'این تخفیف فقط برای اولین نوبت در این سالن است.')),
+      );
+
+      await tester.tap(find.byKey(const Key('promo-toggle')));
+      await _settle(tester);
+      await tester.enterText(find.byKey(const Key('promo-input')), 'FIRST');
+      await tester.tap(find.byKey(const Key('promo-apply')));
+      await _settle(tester);
+
+      expect(find.textContaining('اولین نوبت'), findsOneWidget);
+      await tester.tap(find.text(AppStrings.bookingConfirmCta));
+      await _settle(tester);
+      expect(flow.repo.createCalls, 1);
+      expect(flow.repo.bookedWithCode, isNull);
+    });
+
+    testWidgets('fits a 360x640 screen at 1.3x text with a code open', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await atConfirmPriced(tester, (_) => const Right(auto), size: const Size(360, 640));
+
+      await tester.tap(find.byKey(const Key('promo-toggle')));
+      await _settle(tester);
 
       expect(tester.takeException(), isNull);
     });

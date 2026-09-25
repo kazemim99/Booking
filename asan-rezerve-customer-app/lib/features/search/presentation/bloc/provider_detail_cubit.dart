@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../booking/domain/entities/booking_entities.dart';
+import '../../../booking/domain/entities/promotion_entities.dart';
 import '../../../booking/domain/repositories/booking_repository.dart';
 import '../../../reviews/domain/entities/review.dart';
 import '../../../reviews/domain/repositories/review_repository.dart';
@@ -25,6 +26,10 @@ class ProviderDetailState extends Equatable {
   /// The next page of reviews is on its way.
   final bool reviewsLoadingMore;
 
+  /// The salon's automatic offers (add-discounts-and-campaigns). Empty when there are none or they could not be
+  /// read — the services are then priced as usual.
+  final List<PublicOffer> offers;
+
   const ProviderDetailState({
     this.status = ProviderDetailStatus.loading,
     this.provider,
@@ -33,7 +38,19 @@ class ProviderDetailState extends Equatable {
     this.reviewsLoading = false,
     this.reviewsFailed = false,
     this.reviewsLoadingMore = false,
+    this.offers = const [],
   });
+
+  ProviderDetailState withOffers(List<PublicOffer> offers) => ProviderDetailState(
+        status: status,
+        provider: provider,
+        errorMessage: errorMessage,
+        reviews: reviews,
+        reviewsLoading: reviewsLoading,
+        reviewsFailed: reviewsFailed,
+        reviewsLoadingMore: reviewsLoadingMore,
+        offers: offers,
+      );
 
   ProviderDetailState withReviews({
     ProviderReviews? reviews,
@@ -49,11 +66,12 @@ class ProviderDetailState extends Equatable {
         reviewsLoading: loading ?? reviewsLoading,
         reviewsFailed: failed ?? reviewsFailed,
         reviewsLoadingMore: loadingMore ?? reviewsLoadingMore,
+        offers: offers,
       );
 
   @override
   List<Object?> get props =>
-      [status, provider, errorMessage, reviews, reviewsLoading, reviewsFailed, reviewsLoadingMore];
+      [status, provider, errorMessage, reviews, reviewsLoading, reviewsFailed, reviewsLoadingMore, offers];
 }
 
 class ProviderDetailCubit extends Cubit<ProviderDetailState> {
@@ -69,6 +87,7 @@ class ProviderDetailCubit extends Cubit<ProviderDetailState> {
     // filled a whole round-trip after the page did — on a slow connection that is the wait the salon's own
     // reviewer complained about (QA walkthrough 2026-09-22).
     final reviewsInFlight = reviewRepository?.getProviderReviews(providerId);
+    final offersInFlight = _offersOf(providerId);
     final result = await repository.getProviderDetail(providerId);
     result.fold(
       (failure) => emit(ProviderDetailState(
@@ -88,6 +107,19 @@ class ProviderDetailCubit extends Cubit<ProviderDetailState> {
         (_) => state.withReviews(loading: false, failed: true),
         (r) => state.withReviews(reviews: r, loading: false, failed: false),
       ));
+    }
+    // Never fails: without offers the services are simply priced as usual.
+    final offers = await offersInFlight;
+    if (isClosed || state.status != ProviderDetailStatus.loaded || offers.isEmpty) return;
+    emit(state.withOffers(offers));
+  }
+
+  /// Offers decorate the page; whatever goes wrong reading them, the salon is shown priced as usual.
+  Future<List<PublicOffer>> _offersOf(String providerId) async {
+    try {
+      return await repository.getOffers(providerId);
+    } catch (_) {
+      return const [];
     }
   }
 

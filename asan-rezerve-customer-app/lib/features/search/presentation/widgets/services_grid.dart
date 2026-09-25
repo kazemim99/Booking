@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/theme/app_colors.dart';
 import '../../../../config/theme/app_text_styles.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/widgets/forward_chevron.dart';
 import '../../../../core/utils/jalali_formatter.dart';
 import '../../../booking/domain/entities/booking_entities.dart';
+import '../../../booking/domain/entities/promotion_entities.dart';
 import '../../../../core/utils/price_formatter.dart';
 
 /// "خدمات": the provider's services laid out in a compact two-column grid of
@@ -25,7 +27,10 @@ class ServicesGrid extends StatelessWidget {
   /// Called with the tapped service; the cells are inert without it.
   final ValueChanged<ServiceItem>? onServiceTap;
 
-  const ServicesGrid({super.key, required this.services, this.onServiceTap});
+  /// The salon's automatic offers; a service they reach shows a badge, and its discounted price when certain.
+  final List<PublicOffer> offers;
+
+  const ServicesGrid({super.key, required this.services, this.onServiceTap, this.offers = const []});
 
   /// Below this content width, two columns stop fitting a service name.
   static const double _twoColumnMinWidth = 320;
@@ -60,6 +65,7 @@ class ServicesGrid extends StatelessWidget {
                 width: cellWidth,
                 child: _ServiceCell(
                   service: service,
+                  offer: offers.isEmpty ? null : offerForService(service.id, service.price, offers),
                   onTap: onServiceTap == null
                       ? null
                       : () => onServiceTap!(service),
@@ -74,9 +80,10 @@ class ServicesGrid extends StatelessWidget {
 
 class _ServiceCell extends StatelessWidget {
   final ServiceItem service;
+  final ServiceOffer? offer;
   final VoidCallback? onTap;
 
-  const _ServiceCell({required this.service, this.onTap});
+  const _ServiceCell({required this.service, this.offer, this.onTap});
 
   /// The smallest comfortable touch target.
   static const double _minTouchTarget = 48;
@@ -94,9 +101,14 @@ class _ServiceCell extends StatelessWidget {
     );
     final radius = BorderRadius.circular(AppRadius.md);
 
+    final discounted = offer?.discountedPrice;
     final label = [
       service.name,
-      if (hasPrice) price,
+      if (offer != null) offer!.offer.badge,
+      if (hasPrice && discounted != null)
+        JalaliFormatter.toPersianDigits(PriceFormatter.format(discounted))
+      else if (hasPrice)
+        price,
       if (hasDuration) duration,
       if (onTap != null) AppStrings.serviceBookAction,
     ].join('، ');
@@ -131,14 +143,39 @@ class _ServiceCell extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (offer != null) ...[
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      offer!.offer.condition == null
+                          ? offer!.offer.badge
+                          : '${offer!.offer.badge} · ${offer!.offer.condition}',
+                      key: Key('service-offer-${service.id}'),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.success,
+                        fontWeight: AppTextStyles.semibold,
+                      ),
+                    ),
+                  ],
                   // A zero price means "not priced yet", not "free".
                   if (hasPrice) ...[
                     const SizedBox(height: AppSpacing.xxs),
-                    // Money never truncates: its own line, free to wrap.
+                    // Money never truncates: its own line, free to wrap. A discounted price is shown only when
+                    // nothing about the day, time or customer can change it; the list price is then struck through.
+                    if (discounted != null)
+                      Text(
+                        price,
+                        key: Key('service-price-was-${service.id}'),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          decoration: TextDecoration.lineThrough,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                     Text(
-                      price,
+                      discounted == null
+                          ? price
+                          : JalaliFormatter.toPersianDigits(PriceFormatter.format(discounted)),
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.primary,
+                        color: discounted == null ? theme.colorScheme.primary : AppColors.success,
                         fontWeight: AppTextStyles.semibold,
                       ),
                     ),

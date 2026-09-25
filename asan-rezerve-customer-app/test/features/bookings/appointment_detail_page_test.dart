@@ -154,6 +154,29 @@ void main() {
     });
   });
 
+  // add-discounts-and-campaigns: the booking keeps the discount it was made with.
+  group('a discounted booking', () {
+    testWidgets('shows the discount and says the price is the payable total', (tester) async {
+      _bookings.upcoming = [
+        fakeBooking('b1', start: DateTime(2030, 1, 5, 16, 30), discountAmount: 50000, discountTitle: 'تخفیف پاییزه'),
+      ];
+      await _open(tester, 'b1');
+
+      expect(find.text(AppStrings.bookingDiscount), findsOneWidget);
+      expect(find.textContaining('تخفیف پاییزه'), findsOneWidget);
+      expect(find.text(AppStrings.bookingPayable), findsOneWidget);
+      expect(find.text(AppStrings.bookingPrice), findsNothing);
+    });
+
+    testWidgets('a booking without one reads as before', (tester) async {
+      _bookings.upcoming = [upcoming];
+      await _open(tester, 'b1');
+
+      expect(find.text(AppStrings.bookingDiscount), findsNothing);
+      expect(find.text(AppStrings.bookingPrice), findsOneWidget);
+    });
+  });
+
   group('an upcoming booking', () {
     testWidgets('offers cancel and reschedule', (tester) async {
       _bookings.upcoming = [upcoming];

@@ -44,6 +44,11 @@ class BookingSummary extends Equatable {
   /// learn the window has closed (QA 2026-09-24).
   final String? rescheduleBlockedReason;
 
+  /// The discount the booking was made with (add-discounts-and-campaigns); [price] is already net of it. Zero and
+  /// null for a booking without one, and from a server that predates discounts.
+  final double discountAmount;
+  final String? discountTitle;
+
   const BookingSummary({
     required this.id,
     required this.providerId,
@@ -66,7 +71,11 @@ class BookingSummary extends Equatable {
     this.reviewStatus,
     this.cancellationReason,
     this.rescheduleBlockedReason,
+    this.discountAmount = 0,
+    this.discountTitle,
   });
+
+  bool get hasDiscount => discountAmount > 0;
 
   /// The customer has written a review for this visit, in whatever state.
   bool get hasReview => reviewStatus != null;
@@ -108,6 +117,8 @@ class BookingSummary extends Equatable {
       reviewStatus: reviewStatus ?? this.reviewStatus,
       cancellationReason: cancellationReason,
       rescheduleBlockedReason: rescheduleBlockedReason,
+      discountAmount: discountAmount,
+      discountTitle: discountTitle,
     );
   }
 
@@ -134,5 +145,7 @@ class BookingSummary extends Equatable {
         reviewStatus,
         cancellationReason,
         rescheduleBlockedReason,
+        discountAmount,
+        discountTitle,
       ];
 }

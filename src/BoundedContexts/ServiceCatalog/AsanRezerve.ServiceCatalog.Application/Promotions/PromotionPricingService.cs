@@ -47,6 +47,17 @@ namespace AsanRezerve.ServiceCatalog.Application.Promotions
         PriceQuote Quote,
         IReadOnlyDictionary<Guid, int> CustomerPriorUses);
 
+    /// <summary>
+    /// The discount a visit was priced with went away before the booking was saved (last use taken, paused). A 409
+    /// with its own code so a client can tell it from a taken slot: the time is still free, only the price changed.
+    /// </summary>
+    public sealed class PromotionUnavailableException : ConflictException
+    {
+        public override string ErrorCode => "PROMOTION_UNAVAILABLE";
+
+        public PromotionUnavailableException(string message) : base(message) { }
+    }
+
     public sealed class PromotionPricingService : IPromotionPricingService
     {
         private readonly IPromotionRepository _promotions;
@@ -90,7 +101,7 @@ namespace AsanRezerve.ServiceCatalog.Application.Promotions
             // The tracked row: its RedemptionCount is the concurrency token, so a race for the last use is lost here
             // by one of the two requests rather than won by both.
             var promotion = await _promotions.GetAsync(applied.PromotionId, cancellationToken)
-                ?? throw new ConflictException("این تخفیف دیگر در دسترس نیست؛ لطفاً دوباره تلاش کنید.");
+                ?? throw new PromotionUnavailableException("این تخفیف دیگر در دسترس نیست؛ لطفاً دوباره تلاش کنید.");
 
             var request = pricing.Request;
             try
@@ -101,7 +112,7 @@ namespace AsanRezerve.ServiceCatalog.Application.Promotions
             {
                 // Another booking took the last use (or the salon paused it) between pricing and now. A conflict, not
                 // a bad request: retried, the visit is priced without it — and the customer sees the new price first.
-                throw new ConflictException(
+                throw new PromotionUnavailableException(
                     "ظرفیت این تخفیف همین حالا تکمیل شد یا دیگر فعال نیست؛ لطفاً دوباره تلاش کنید تا قیمت جدید را ببینید.");
             }
 

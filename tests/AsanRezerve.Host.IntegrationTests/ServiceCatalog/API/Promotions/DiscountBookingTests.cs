@@ -266,6 +266,10 @@ public class DiscountBookingTests : ServiceCatalogIntegrationTestBase
             if (response.StatusCode != HttpStatusCode.Created)
             {
                 response.StatusCode.Should().Be(HttpStatusCode.Conflict, "a lost race is a conflict to retry");
+                var body = await response.Content.ReadAsStringAsync();
+                // Lost on the promotion's counter it is PROMOTION_UNAVAILABLE; lost on the row itself, the generic
+                // concurrency conflict. Either way: retry, never a discount granted twice.
+                body.Should().MatchRegex("PROMOTION_UNAVAILABLE|CONCURRENCY_CONFLICT");
                 continue;
             }
 

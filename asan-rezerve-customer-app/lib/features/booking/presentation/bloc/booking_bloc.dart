@@ -104,7 +104,13 @@ class BookingStepBack extends BookingEvent {
 }
 
 class BookingSubmitted extends BookingEvent {
-  const BookingSubmitted();
+  /// A discount code the quote accepted (add-discounts-and-campaigns); the server prices the visit again.
+  final String? promotionCode;
+
+  const BookingSubmitted({this.promotionCode});
+
+  @override
+  List<Object?> get props => [promotionCode];
 }
 
 class BookingReset extends BookingEvent {
@@ -679,6 +685,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       staffProviderId: staffId,
       startTime: slot.startTime,
       serviceIds: serviceIds,
+      promotionCode: event.promotionCode,
     );
 
     await result.fold(

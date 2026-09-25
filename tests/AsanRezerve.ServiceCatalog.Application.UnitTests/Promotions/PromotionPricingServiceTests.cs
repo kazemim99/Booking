@@ -140,7 +140,7 @@ public class PromotionPricingServiceTests
         Candidates(new PromotionWithEnrollment(promotion, true));
         var pricing = await Service.PriceAsync(Request());
 
-        await Assert.ThrowsAsync<ConflictException>(() => Service.RedeemAsync(pricing, Guid.NewGuid()));
+        await Assert.ThrowsAsync<PromotionUnavailableException>(() => Service.RedeemAsync(pricing, Guid.NewGuid()));
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public class PromotionPricingServiceTests
         current.RecordRedemption(0, Now);
         _promotions.GetAsync(priced.Id, Arg.Any<CancellationToken>()).Returns(current);
 
-        await Assert.ThrowsAsync<ConflictException>(() => Service.RedeemAsync(pricing, Guid.NewGuid()));
+        await Assert.ThrowsAsync<PromotionUnavailableException>(() => Service.RedeemAsync(pricing, Guid.NewGuid()));
     }
 
     [Fact]

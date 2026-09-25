@@ -152,6 +152,12 @@ class ApiConstants {
   /// POST /api/v1/Bookings
   static const String createBooking = '/$apiVersion/Bookings';
 
+  /// POST — the price of a visit with the discount the server would apply (add-discounts-and-campaigns).
+  static const String quoteBooking = '/$apiVersion/Bookings/quote';
+
+  /// GET — a salon's automatic offers for its public page (never codes).
+  static String providerOffers(String providerId) => '/$apiVersion/providers/$providerId/offers';
+
   /// Get booking by ID
   /// GET /api/v1/Bookings/{id}
   static String bookingById(String id) => '/$apiVersion/Bookings/$id';
