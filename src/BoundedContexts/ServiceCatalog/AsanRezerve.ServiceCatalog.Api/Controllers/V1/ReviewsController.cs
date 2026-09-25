@@ -148,7 +148,7 @@ public class ReviewsController : ControllerBase
     /// Business rules:
     /// - Only the customer who made the booking can create a review
     /// - Booking must be in "Completed" status
-    /// - Each booking can only have one review
+    /// - Each booking can only have one review, and each customer one review per salon (409 naming «نظرهای من»)
     /// - Rating must be between 1.0 and 5.0 in 0.5 increments
     /// - Comment is optional but must be 10-2000 characters if provided
     /// - Reviews from actual bookings are automatically marked as verified
@@ -157,9 +157,13 @@ public class ReviewsController : ControllerBase
     ///
     ///     POST /api/v1/reviews/bookings/123e4567-e89b-12d3-a456-426614174000
     ///     {
-    ///       "rating": 4.5,
+    ///       "cleanlinessRating": 5, "skillRating": 4.5, "punctualityRating": 4, "conductRating": 5,
+    ///       "showName": true,
     ///       "comment": "عالی بود! خیلی راضی بودم از خدمات. حتما دوباره میام."
     ///     }
+    ///
+    /// Without "rating" the overall is the four aspects' average to the nearest half star (all four required);
+    /// older apps still send "rating", kept as sent. "showName": false signs the public review «مشتری».
     ///
     /// </remarks>
     /// <response code="201">Review created successfully</response>
@@ -201,7 +205,7 @@ public class ReviewsController : ControllerBase
             customerId);
 
         // Validate rating increments
-        if (request.Rating % 0.5m != 0)
+        if (request.Rating is { } stated && stated % 0.5m != 0)
         {
             return BadRequest(new ApiErrorResponse(
                 "ERR_VALIDATION",
@@ -215,7 +219,8 @@ public class ReviewsController : ControllerBase
             Rating: request.Rating,
             Comment: request.Comment,
             Dimensions: new Domain.ValueObjects.ReviewDimensionRatings(
-                request.CleanlinessRating, request.SkillRating, request.PunctualityRating, request.ConductRating));
+                request.CleanlinessRating, request.SkillRating, request.PunctualityRating, request.ConductRating),
+            ShowName: request.ShowName);
 
         try
         {
@@ -360,7 +365,8 @@ public class ReviewsController : ControllerBase
             request.Rating,
             request.Comment,
             new Domain.ValueObjects.ReviewDimensionRatings(
-                request.CleanlinessRating, request.SkillRating, request.PunctualityRating, request.ConductRating)),
+                request.CleanlinessRating, request.SkillRating, request.PunctualityRating, request.ConductRating),
+            request.ShowName),
             cancellationToken);
 
         return Ok(new
@@ -368,6 +374,8 @@ public class ReviewsController : ControllerBase
             result.ReviewId,
             ModerationStatus = result.ModerationStatus.ToString(),
             result.EditedAt,
+            result.Rating,
+            result.ShowName,
         });
     }
 
@@ -566,7 +574,8 @@ public class ReviewsController : ControllerBase
             CleanlinessRating = result.Dimensions.Cleanliness,
             SkillRating = result.Dimensions.Skill,
             PunctualityRating = result.Dimensions.Punctuality,
-            ConductRating = result.Dimensions.Conduct
+            ConductRating = result.Dimensions.Conduct,
+            ShowName = result.ShowName
         };
     }
 

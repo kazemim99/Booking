@@ -14,7 +14,8 @@ namespace AsanRezerve.ServiceCatalog.Infrastructure.UnitTests.Seeders;
 /// </summary>
 public class DemoSalonReviewsPlanTests
 {
-    private const int Reviewers = 12;
+    /// <summary>One per review: a customer reviews a salon once (reviews-and-reschedule-round2 D4).</summary>
+    private const int Reviewers = DemoSalonReviewsSeeder.ReviewCount;
 
     private static IReadOnlyList<DemoSalonReviewsSeeder.PlannedReview> ThePlan() =>
         DemoSalonReviewsSeeder.Plan(new Random(DemoSalonReviewsSeeder.Seed), Reviewers);
@@ -62,23 +63,52 @@ public class DemoSalonReviewsPlanTests
     }
 
     [Fact]
+    public void Every_review_is_by_a_different_reviewer()
+    {
+        foreach (var seed in Seeds())
+            DemoSalonReviewsSeeder.Plan(new Random(seed), Reviewers).Select(p => p.Reviewer)
+                .Should().OnlyHaveUniqueItems("a customer reviews a salon once").And.OnlyContain(r => r >= 0 && r < Reviewers);
+    }
+
+    [Fact]
+    public void More_reviews_than_reviewers_is_refused()
+    {
+        var act = () => DemoSalonReviewsSeeder.Plan(new Random(1), DemoSalonReviewsSeeder.ReviewCount - 1);
+
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public void A_few_authors_chose_not_to_show_their_name()
+    {
+        ThePlan().Count(p => !p.ShowName).Should().Be(DemoSalonReviewsSeeder.HiddenNames,
+            "the demo shows «مشتری» next to named reviews");
+    }
+
+    [Fact]
     public void No_comment_is_said_twice_at_the_salon()
     {
         ThePlan().Select(p => p.Comment).Should().OnlyHaveUniqueItems();
     }
 
     [Fact]
-    public void Dimensions_sit_near_the_overall_verdict_on_the_half_star_grid()
+    public void All_four_aspects_are_rated_and_the_overall_is_their_average_to_the_half_star()
     {
+        // As the review form does it (reviews-and-reschedule-round2 D1).
         foreach (var plan in Seeds().SelectMany(s => DemoSalonReviewsSeeder.Plan(new Random(s), Reviewers)))
         {
             var d = plan.Dimensions;
-            foreach (var value in new[] { d.Cleanliness, d.Skill, d.Punctuality, d.Conduct }.OfType<decimal>())
+            var aspects = new[] { d.Cleanliness, d.Skill, d.Punctuality, d.Conduct };
+            aspects.Should().OnlyContain(v => v.HasValue, "the form requires all four");
+
+            foreach (var value in aspects.OfType<decimal>())
             {
                 value.Should().BeInRange(1.0m, 5.0m);
                 (value % 0.5m).Should().Be(0m);
                 Math.Abs(value - plan.Rating).Should().BeLessThanOrEqualTo(1.0m);
             }
+
+            Review.OverallFrom(null, d).Should().Be(plan.Rating);
         }
     }
 

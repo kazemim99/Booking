@@ -132,11 +132,11 @@ public sealed class GetProviderReviewsQueryHandler
         var reviewItems = paginatedReviews.Reviews.Select(r => new ReviewItemViewModel(
             ReviewId: r.Id,
             ProviderId: r.ProviderId.Value,
-            CustomerId: r.CustomerId.Value,
+            CustomerId: r.ShowName ? r.CustomerId.Value : null,
             CustomerName: authors.TryGetValue(r.CustomerId.Value, out var author)
-                ? PersonName.ForPublicReview(author.FirstName, author.LastName)
+                ? PersonName.ForPublicReview(author.FirstName, author.LastName, r.ShowName)
                 : PersonName.AnonymousReviewer,
-            BookingId: r.BookingId,
+            BookingId: r.ShowName ? r.BookingId : null,
             Rating: r.RatingValue,
             Comment: r.Comment,
             IsVerified: r.IsVerified,

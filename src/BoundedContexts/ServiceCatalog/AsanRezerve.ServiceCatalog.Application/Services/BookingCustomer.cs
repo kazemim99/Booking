@@ -1,6 +1,7 @@
 using AsanRezerve.Core.Domain.ValueObjects;
 using AsanRezerve.ServiceCatalog.Application.Abstractions.Identity;
 using AsanRezerve.ServiceCatalog.Domain.Aggregates.BookingAggregate;
+using AsanRezerve.ServiceCatalog.Domain.Policies;
 using AsanRezerve.ServiceCatalog.Domain.Repositories;
 
 namespace AsanRezerve.ServiceCatalog.Application.Services
@@ -76,18 +77,36 @@ namespace AsanRezerve.ServiceCatalog.Application.Services
     /// yet, or the one they already wrote. Said up front so the apps offer «ثبت نظر», disable it with the reason, or
     /// show the review — instead of offering it on status alone and failing on the second try.
     /// </summary>
+    /// <remarks>
+    /// Per (customer, SALON) since openspec/changes/_inline/reviews-and-reschedule-round2 (D4): one review per salon,
+    /// so the review a booking carries is the customer's review of that salon, from whichever visit. A visit to a
+    /// salon they already reviewed is not offered «ثبت نظر» but «ویرایش نظر» while <see cref="ReviewEditable"/>;
+    /// <see cref="ReviewBookingId"/> is the visit that review was written for, so a client can tell «برای این سالن قبلاً
+    /// نظر داده‌اید» (another visit) from this visit's own review.
+    /// </remarks>
     public sealed record BookingReviewStanding(
         bool CanReview,
         string? ReviewBlockedReason,
         Guid? ReviewId,
-        string? ReviewStatus)
+        string? ReviewStatus,
+        bool ReviewEditable = false,
+        Guid? ReviewBookingId = null)
     {
         /// <summary>For anyone the booking is not for: nothing to offer, nothing to say.</summary>
         public static readonly BookingReviewStanding None = new(false, null, null, null);
 
-        public static BookingReviewStanding Of(Booking booking, BookingReviewState? review) =>
-            review is not null
-                ? new BookingReviewStanding(false, null, review.ReviewId, review.ModerationStatus.ToString())
+        /// <param name="booking">The booking, for its own readiness when there is no review yet.</param>
+        /// <param name="salonReview">The customer's review of the booking's salon, from any visit; null if none.</param>
+        /// <param name="utcNow">For the edit window.</param>
+        public static BookingReviewStanding Of(Booking booking, BookingReviewState? salonReview, DateTime utcNow) =>
+            salonReview is not null
+                ? new BookingReviewStanding(
+                    false,
+                    null,
+                    salonReview.ReviewId,
+                    salonReview.ModerationStatus.ToString(),
+                    ReviewEditPolicy.CanEdit(salonReview.ModerationStatus, salonReview.CreatedAt, utcNow),
+                    salonReview.BookingId)
                 : new BookingReviewStanding(booking.CanBeReviewed(), booking.ReviewBlockedReason(), null, null);
     }
 }

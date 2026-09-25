@@ -75,10 +75,13 @@ public class DemoSalonReviewsSeedTests : ReviewTestBase
         items.Select(i => i["rating"]!.Value<decimal>()).Distinct().Should().HaveCountGreaterThanOrEqualTo(4);
         items.Should().Contain(i => i["helpfulCount"]!.Value<int>() > 0);
 
-        var firstNames = DemoSalonReviews.Reviewers.Select(r => r.FirstName).ToHashSet();
-        items.Should().OnlyContain(i => firstNames.Contains(i["customerName"]!.Value<string>()!.Split(' ', StringSplitOptions.None)[0])
-                                        && i["customerName"]!.Value<string>()!.EndsWith("."),
-            "real people, named the way the listing names anyone («مریم ر.»)");
+        // Real people, named in full the way the listing names anyone («مریم رضایی») — or «مشتری» for the few who
+        // chose not to show their name (reviews-and-reschedule-round2 D2).
+        var fullNames = DemoSalonReviews.Reviewers.Select(r => $"{r.FirstName} {r.LastName}").ToHashSet();
+        var names = items.Select(i => i["customerName"]!.Value<string>()!).ToList();
+        names.Should().OnlyContain(n => fullNames.Contains(n) || n == "مشتری");
+        names.Count(n => n == "مشتری").Should().Be(DemoSalonReviewsSeeder.HiddenNames);
+        names.Where(n => n != "مشتری").Should().OnlyHaveUniqueItems("one review per customer per salon");
 
         var average = items.Average(i => i["rating"]!.Value<decimal>());
         listing["statistics"]!["averageRating"]!.Value<decimal>().Should().BeApproximately(average, 0.01m);
@@ -112,6 +115,8 @@ public class DemoSalonReviewsSeedTests : ReviewTestBase
         var pairs = reviews.Select(r => new { r, b = visits[r.BookingId] }).ToList();
 
         pairs.Should().HaveCount(DemoSalonReviewsSeeder.ReviewCount);
+        reviews.Select(r => r.CustomerId).Distinct().Should().HaveCount(
+            DemoSalonReviewsSeeder.ReviewCount, "each reviewer reviews the salon once");
         foreach (var pair in pairs)
         {
             pair.b.Status.Should().Be(Domain.Enums.BookingStatus.Completed);

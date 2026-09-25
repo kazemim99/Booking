@@ -2,6 +2,7 @@ using AsanRezerve.Core.Domain.ValueObjects;
 using AsanRezerve.ServiceCatalog.Domain.Aggregates;
 using AsanRezerve.ServiceCatalog.Domain.Aggregates.BookingAggregate;
 using AsanRezerve.ServiceCatalog.Domain.Enums;
+using AsanRezerve.ServiceCatalog.Domain.Policies;
 using AsanRezerve.ServiceCatalog.Domain.ValueObjects;
 using AsanRezerve.ServiceCatalog.Infrastructure.Persistence.Context;
 using AsanRezerve.ServiceCatalog.Infrastructure.Reviews;
@@ -21,12 +22,18 @@ namespace AsanRezerve.ServiceCatalog.Infrastructure.Persistence.Seeders
     /// Every review stands on what a real one stands on: a completed visit of the reviewer's own (a booking in the past,
     /// marked done), the review written after it, published by moderation, and the salon's reply approved. That is why
     /// <see cref="ReviewSeeder"/> produced nothing for two weeks: it only reviews completed bookings, and no seeder makes
-    /// any. The reviewers are real people in the person directory, so the listing names them («مریم ر.») — the host
+    /// any. The reviewers are real people in the person directory, so the listing names them («مریم رضایی») — the host
     /// creates them (it is the one project that reaches both contexts) and passes their ids in.
     /// </para>
     /// <para>
     /// "Random" is a fixed seed: every environment gets the same reviews, and a test can say what they are. Seeding twice
     /// adds nothing — its reviews carry <see cref="Marker"/> as their moderator, which nothing else writes.
+    /// </para>
+    /// <para>
+    /// Since openspec/changes/_inline/reviews-and-reschedule-round2 a customer reviews a salon once (D4), the four aspects
+    /// are what a customer rates and the overall is their average to the half star (D1), and an author may hide their
+    /// name (D2). So each review is by a different reviewer — as many reviewers as reviews — every review carries all
+    /// four aspects with the overall derived from them, and a few authors chose «مشتری».
     /// </para>
     /// </remarks>
     public sealed class DemoSalonReviewsSeeder
@@ -62,7 +69,11 @@ namespace AsanRezerve.ServiceCatalog.Infrastructure.Persistence.Seeders
             ReviewDimensionRatings Dimensions,
             string? Reply,
             int HoursToReview,
-            int HoursToReply);
+            int HoursToReply,
+            bool ShowName = true);
+
+        /// <summary>How many of the salon's reviewers chose not to show their name («مشتری»).</summary>
+        public const int HiddenNames = 3;
 
         // ── What people write, by how the visit went. A women's salon: cut, colour, keratin, bridal make-up. ──
 
@@ -140,11 +151,14 @@ namespace AsanRezerve.ServiceCatalog.Infrastructure.Persistence.Seeders
 
         /// <summary>
         /// The reviews to write, from a seeded random: mostly good, some middling, a few poor — as a salon worth
-        /// showing really looks. Pure, so its shape is testable without a database.
+        /// showing really looks. Each by a different reviewer (one review per customer per salon), all four aspects
+        /// rated and the overall their average to the half star, and <see cref="HiddenNames"/> of the authors hiding
+        /// their name. Pure, so its shape is testable without a database.
         /// </summary>
         public static IReadOnlyList<PlannedReview> Plan(Random random, int reviewers, int count = ReviewCount)
         {
-            if (reviewers < 1) throw new ArgumentOutOfRangeException(nameof(reviewers));
+            if (reviewers < count)
+                throw new ArgumentOutOfRangeException(nameof(reviewers), "One review per reviewer: at least as many reviewers as reviews.");
 
             var pools = new Dictionary<string[], Queue<string>>();
             string Draw(string[] pool)
@@ -154,29 +168,47 @@ namespace AsanRezerve.ServiceCatalog.Infrastructure.Persistence.Seeders
                 return queue.Dequeue();
             }
 
+            // Who writes each review: a different reviewer every time, in a seeded order.
+            var authors = Enumerable.Range(0, reviewers).OrderBy(_ => random.Next()).Take(count).ToList();
+            var hidden = Enumerable.Range(0, count).OrderBy(_ => random.Next()).Take(Math.Min(HiddenNames, count)).ToHashSet();
+
             var plan = new List<PlannedReview>(count);
             for (var i = 0; i < count; i++)
             {
                 var band = random.Next(100);
-                var (rating, comments, replies, replyChance) = band switch
+                var (target, comments) = band switch
                 {
-                    < 55 => (Pick(random, 4.5m, 5.0m, 5.0m), Excellent, ThanksReplies, 65),
-                    < 78 => (Pick(random, 3.5m, 4.0m, 4.0m), Good, ImproveReplies, 70),
-                    < 91 => (Pick(random, 2.5m, 3.0m, 3.0m), Average, ImproveReplies, 90),
-                    _ => (Pick(random, 1.0m, 1.5m, 2.0m), Poor, ApologyReplies, 100),
+                    < 55 => (Pick(random, 4.5m, 5.0m, 5.0m), Excellent),
+                    < 78 => (Pick(random, 3.5m, 4.0m, 4.0m), Good),
+                    < 91 => (Pick(random, 2.5m, 3.0m, 3.0m), Average),
+                    _ => (Pick(random, 1.0m, 1.5m, 2.0m), Poor),
+                };
+
+                // The customer rates the four aspects; the overall is theirs averaged, as the review form does it.
+                var dimensions = new ReviewDimensionRatings(
+                    Dimension(random, target), Dimension(random, target), Dimension(random, target), Dimension(random, target));
+                var rating = ReviewOverallRating.AverageToHalfStar(
+                    dimensions.Cleanliness!.Value, dimensions.Skill!.Value, dimensions.Punctuality!.Value, dimensions.Conduct!.Value);
+
+                // The salon answers by how the customer felt, and every unhappy one.
+                var (replies, replyChance) = rating switch
+                {
+                    >= 4.5m => (ThanksReplies, 65),
+                    > 2.0m => (ImproveReplies, 75),
+                    _ => (ApologyReplies, 100),
                 };
 
                 plan.Add(new PlannedReview(
-                    Reviewer: random.Next(reviewers),
+                    Reviewer: authors[i],
                     DaysAgo: random.Next(3, 150),
                     Hour: random.Next(10, 19),
                     Rating: rating,
                     Comment: Draw(comments),
-                    Dimensions: new ReviewDimensionRatings(
-                        Dimension(random, rating), Dimension(random, rating), Dimension(random, rating), Dimension(random, rating)),
+                    Dimensions: dimensions,
                     Reply: random.Next(100) < replyChance ? Draw(replies) : null,
                     HoursToReview: random.Next(2, 30),
-                    HoursToReply: random.Next(3, 48)));
+                    HoursToReply: random.Next(3, 48),
+                    ShowName: !hidden.Contains(i)));
             }
 
             return plan;
@@ -184,12 +216,11 @@ namespace AsanRezerve.ServiceCatalog.Infrastructure.Persistence.Seeders
 
         private static decimal Pick(Random random, params decimal[] values) => values[random.Next(values.Length)];
 
-        /// <summary>A dimension near the overall verdict (within a star), or left out as a real customer often does.</summary>
-        private static decimal? Dimension(Random random, decimal overall)
+        /// <summary>An aspect near how the visit went — within half a star either way, on the half-star grid.</summary>
+        private static decimal Dimension(Random random, decimal target)
         {
-            if (random.Next(100) >= 75) return null;
-            var shift = Pick(random, -1.0m, -0.5m, 0m, 0m, 0.5m);
-            return Math.Clamp(overall + shift, 1.0m, 5.0m);
+            var shift = Pick(random, -0.5m, 0m, 0m, 0.5m);
+            return Math.Clamp(target + shift, 1.0m, 5.0m);
         }
 
         /// <summary>
@@ -235,8 +266,9 @@ namespace AsanRezerve.ServiceCatalog.Infrastructure.Persistence.Seeders
         public async Task<int> SeedAsync(
             string salonName, IReadOnlyList<Guid> reviewerIds, CancellationToken cancellationToken = default)
         {
-            if (reviewerIds.Count < 2)
-                throw new ArgumentException("Votes need someone besides the author.", nameof(reviewerIds));
+            if (reviewerIds.Count < ReviewCount)
+                throw new ArgumentException(
+                    $"One review per reviewer: {ReviewCount} reviewers needed, {reviewerIds.Count} given.", nameof(reviewerIds));
 
             var salon = await SalonToSeedAsync(salonName, cancellationToken);
             if (salon is null) return 0;
@@ -279,7 +311,7 @@ namespace AsanRezerve.ServiceCatalog.Infrastructure.Persistence.Seeders
 
                 var review = Review.Create(
                     salon.Id, reviewer, booking.Id.Value, planned.Rating, planned.Comment,
-                    isVerified: true, createdBy: Marker, dimensions: planned.Dimensions);
+                    isVerified: true, createdBy: Marker, dimensions: planned.Dimensions, showName: planned.ShowName);
                 review.Publish(Marker);
                 if (planned.Reply is { } reply)
                 {

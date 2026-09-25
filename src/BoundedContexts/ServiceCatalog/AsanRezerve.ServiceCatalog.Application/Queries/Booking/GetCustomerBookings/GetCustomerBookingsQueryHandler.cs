@@ -4,7 +4,6 @@
 using AsanRezerve.Core.Application.Abstractions.CQRS;
 using AsanRezerve.Core.Application.DTOs;
 using AsanRezerve.Core.Domain.ValueObjects;
-using AsanRezerve.Core.Domain.ValueObjects;
 using AsanRezerve.ServiceCatalog.Application.Abstractions.Identity;
 using AsanRezerve.ServiceCatalog.Application.Services;
 using AsanRezerve.ServiceCatalog.Domain.Enums;
@@ -86,14 +85,18 @@ namespace AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetCustomerBook
 
             // Where each booking's review stands, for the person it is for. The list also holds the walk-ins a salon
             // owner entered for their clients (stored under the owner's id): those are not the owner's to review, so
-            // they say nothing. One query for the page.
-            var reviews = await _reviews.GetStatesByBookingIdsAsync(
-                pagedResult.Items.Select(b => b.Id.Value).ToList(), cancellationToken);
+            // they say nothing. One review per salon: each booking carries this person's review of its salon, from
+            // whichever visit. One query for the page.
+            var reviews = await _reviews.GetStatesByProviderIdsAsync(
+                UserId.From(request.CustomerId),
+                pagedResult.Items.Select(b => b.ProviderId).ToList(),
+                cancellationToken);
+            var now = DateTime.UtcNow;
 
             foreach (var booking in pagedResult.Items)
             {
                 var review = BookingCustomer.IsFor(booking, request.CustomerId, theirEntries)
-                    ? BookingReviewStanding.Of(booking, reviews.GetValueOrDefault(booking.Id.Value))
+                    ? BookingReviewStanding.Of(booking, reviews.GetValueOrDefault(booking.ProviderId.Value), now)
                     : BookingReviewStanding.None;
 
                 // Load provider and service for additional details
@@ -123,7 +126,9 @@ namespace AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetCustomerBook
                     CanReview: review.CanReview,
                     ReviewBlockedReason: review.ReviewBlockedReason,
                     ReviewId: review.ReviewId,
-                    ReviewStatus: review.ReviewStatus));
+                    ReviewStatus: review.ReviewStatus,
+                    ReviewEditable: review.ReviewEditable,
+                    ReviewBookingId: review.ReviewBookingId));
             }
 
             _logger.LogInformation(

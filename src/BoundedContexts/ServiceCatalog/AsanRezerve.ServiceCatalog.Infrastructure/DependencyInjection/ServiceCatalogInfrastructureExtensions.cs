@@ -321,6 +321,11 @@ namespace AsanRezerve.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<BackgroundJobs.DailyScheduleDigestJob>();
             services.AddHostedService<BackgroundJobs.DailyScheduleDigestService>();
 
+            // A confirmed booking the salon never marks done or no-show completes by itself 12 hours after its end,
+            // so its customer can review it (openspec/changes/_inline/reviews-and-reschedule-round2 D3).
+            services.AddScoped<BackgroundJobs.AutoCompleteBookingsJob>();
+            services.AddHostedService<BackgroundJobs.AutoCompleteBookingsService>();
+
             // Push: the registry is the address book, the gateway is the boundary with Firebase. The gateway
             // is a singleton because FirebaseApp is process-wide and refuses to be created twice.
             services.AddScoped<Persistence.Notifications.IDeviceTokenRegistry,

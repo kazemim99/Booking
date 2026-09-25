@@ -62,6 +62,18 @@ namespace AsanRezerve.ServiceCatalog.Infrastructure.Persistence.Repositories
                 .ToListAsync(cancellationToken);
         }
 
+        public async Task<IReadOnlyList<BookingId>> GetConfirmedEndedByAsync(
+            DateTime latestSalonEnd, int max, CancellationToken cancellationToken = default)
+        {
+            return await DbSet
+                .AsNoTracking()
+                .Where(b => b.Status == BookingStatus.Confirmed && b.TimeSlot.EndTime <= latestSalonEnd)
+                .OrderBy(b => b.TimeSlot.EndTime)
+                .Select(b => b.Id)
+                .Take(max)
+                .ToListAsync(cancellationToken);
+        }
+
         public async Task<IReadOnlyList<Booking>> GetByStatusAsync(BookingStatus status, CancellationToken cancellationToken = default)
         {
             return await DbSet

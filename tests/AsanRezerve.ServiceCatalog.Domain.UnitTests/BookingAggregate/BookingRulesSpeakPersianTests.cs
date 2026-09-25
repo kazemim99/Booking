@@ -28,12 +28,13 @@ public class BookingRulesSpeakPersianTests
     [Fact]
     public void Rescheduling_inside_the_window_says_how_many_hours_ahead_it_must_be_done()
     {
-        var booking = Confirmed(SalonTime.Now.AddHours(10));
+        // Default policy: two hours (openspec/changes/_inline/reviews-and-reschedule-round2 D5).
+        var booking = Confirmed(SalonTime.Now.AddHours(1));
 
         var ex = Assert.Throws<BusinessRuleViolationException>(
             () => booking.Reschedule(SalonTime.Now.AddDays(3), booking.StaffId));
 
-        Assert.Contains("24", ex.Message);
+        Assert.Contains("تا 2 ساعت پیش از نوبت", ex.Message);
         Assert.Matches(new Regex("[؀-ۿ]"), ex.Message);
     }
 

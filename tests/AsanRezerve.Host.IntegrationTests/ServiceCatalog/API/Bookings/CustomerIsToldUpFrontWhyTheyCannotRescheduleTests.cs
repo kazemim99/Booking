@@ -9,7 +9,7 @@ using Xunit;
 namespace AsanRezerve.ServiceCatalog.IntegrationTests.API.Bookings;
 
 /// <summary>
-/// The 24-hour reschedule rule worked in the QA recording (2026-09-24) — but the customer met it only at the very
+/// The reschedule window rule (24 hours then, 2 by default since reviews-and-reschedule-round2) worked in the QA recording (2026-09-24) — but the customer met it only at the very
 /// end, after choosing a slot. Their booking now says up front whether it can be moved and, when it cannot, why, in
 /// Persian, so the apps can show «تغییر زمان» disabled with the reason instead of a dead end.
 /// </summary>
@@ -51,7 +51,8 @@ public class CustomerIsToldUpFrontWhyTheyCannotRescheduleTests : ServiceCatalogI
     [Fact]
     public async Task Inside_the_window_the_booking_says_why_it_cannot_be_moved()
     {
-        var (customerId, booking) = await BookingAtAsync(SalonTime.Now.AddHours(10));
+        // The default window is two hours (openspec/changes/_inline/reviews-and-reschedule-round2 D5).
+        var (customerId, booking) = await BookingAtAsync(SalonTime.Now.AddHours(1));
 
         var details = await GetAsync(customerId, $"/api/v1/bookings/{booking.Id.Value}");
         var list = await GetAsync(customerId, "/api/v1/bookings/my-bookings");
@@ -59,7 +60,7 @@ public class CustomerIsToldUpFrontWhyTheyCannotRescheduleTests : ServiceCatalogI
             Guid.Parse((i["bookingId"] ?? i["id"])!.Value<string>()!) == booking.Id.Value);
 
         foreach (var reason in new[] { Reason(details), Reason(row) })
-            reason.Should().Contain("24").And.Contain("ساعت");
+            reason.Should().Contain("2 ساعت");
     }
 
     [Fact]

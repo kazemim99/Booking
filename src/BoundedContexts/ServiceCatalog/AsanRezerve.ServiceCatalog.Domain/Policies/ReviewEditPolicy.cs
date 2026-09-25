@@ -14,4 +14,12 @@ public static class ReviewEditPolicy
 
     public static bool IsInsideWindow(DateTime createdAtUtc, DateTime utcNow) =>
         utcNow <= createdAtUtc.AddDays(WindowDays);
+
+    /// <summary>
+    /// Whether the author may edit it right now — the two rules <c>Review.EditByAuthor</c> enforces: still Pending or
+    /// Published (a rejected or hidden review is not editable), and inside the window.
+    /// </summary>
+    public static bool CanEdit(Enums.ReviewModerationStatus status, DateTime createdAtUtc, DateTime utcNow) =>
+        status is Enums.ReviewModerationStatus.Pending or Enums.ReviewModerationStatus.Published
+        && IsInsideWindow(createdAtUtc, utcNow);
 }

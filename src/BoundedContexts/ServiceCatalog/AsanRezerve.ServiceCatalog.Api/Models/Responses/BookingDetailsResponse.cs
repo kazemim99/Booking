@@ -26,11 +26,19 @@ public class BookingDetailsResponse
     /// <summary>Why they cannot review it yet (Persian) — the salon has not marked the visit done; else null.</summary>
     public string? ReviewBlockedReason { get; set; }
 
-    /// <summary>The review they wrote for it, if any.</summary>
+    /// <summary>
+    /// Their review of this booking's salon, from this visit or another (one review per salon), if any.
+    /// </summary>
     public Guid? ReviewId { get; set; }
 
     /// <summary>That review's moderation state: Pending | Published | Rejected | Hidden.</summary>
     public string? ReviewStatus { get; set; }
+
+    /// <summary>That review can still be edited by its author (7-day window, pending or published): «ویرایش نظر».</summary>
+    public bool ReviewEditable { get; set; }
+
+    /// <summary>The visit that review was written for — another booking's id when it is about an earlier visit.</summary>
+    public Guid? ReviewBookingId { get; set; }
 
     // Service information
     public string ServiceName { get; set; } = string.Empty;

@@ -12,17 +12,25 @@ namespace AsanRezerve.ServiceCatalog.Application.Commands.Review.EditReview;
 /// The author changes their review: within 7 days, while it is pending or published. A published review goes back
 /// to the moderation queue, and leaves the provider's rating until it is approved again.
 /// </summary>
+/// <param name="Rating">As on create: null derives the overall from the four aspects, which are then required.</param>
+/// <param name="ShowName">The author's name choice, changeable on every edit.</param>
 public sealed record EditReviewCommand(
     Guid ReviewId,
     Guid EditorId,
-    decimal Rating,
+    decimal? Rating,
     string? Comment,
-    ReviewDimensionRatings? Dimensions) : ICommand<EditReviewResult>
+    ReviewDimensionRatings? Dimensions,
+    bool ShowName = true) : ICommand<EditReviewResult>
 {
     public Guid? IdempotencyKey { get; init; }
 }
 
-public sealed record EditReviewResult(Guid ReviewId, ReviewModerationStatus ModerationStatus, DateTime EditedAt);
+public sealed record EditReviewResult(
+    Guid ReviewId,
+    ReviewModerationStatus ModerationStatus,
+    DateTime EditedAt,
+    decimal Rating = 0,
+    bool ShowName = true);
 
 public sealed class EditReviewCommandHandler : ICommandHandler<EditReviewCommand, EditReviewResult>
 {
@@ -48,7 +56,9 @@ public sealed class EditReviewCommandHandler : ICommandHandler<EditReviewCommand
         var wasPublic = review.IsPubliclyVisible;
         var now = DateTime.UtcNow;
 
-        review.EditByAuthor(request.Rating, request.Dimensions, request.Comment, $"Customer:{request.EditorId}", now);
+        var overall = Domain.Aggregates.Review.OverallFrom(request.Rating, request.Dimensions);
+        review.EditByAuthor(
+            overall, request.Dimensions, request.Comment, $"Customer:{request.EditorId}", now, request.ShowName);
         await _reviews.UpdateAsync(review, cancellationToken);
 
         // An edit to a published review is a customer-triggered unpublish: the rating must drop it now, inside
@@ -56,6 +66,7 @@ public sealed class EditReviewCommandHandler : ICommandHandler<EditReviewCommand
         if (wasPublic)
             await _ratings.RecomputeAsync(review.ProviderId, cancellationToken);
 
-        return new EditReviewResult(review.Id, review.ModerationStatus, review.EditedAt ?? now);
+        return new EditReviewResult(
+            review.Id, review.ModerationStatus, review.EditedAt ?? now, review.RatingValue, review.ShowName);
     }
 }

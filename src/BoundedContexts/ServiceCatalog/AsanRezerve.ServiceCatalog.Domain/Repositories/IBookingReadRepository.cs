@@ -17,6 +17,13 @@ namespace AsanRezerve.ServiceCatalog.Domain.Repositories
     public interface IBookingReadRepository : IReadRepository<Booking, BookingId>
     {
         /// <summary>
+        /// Confirmed bookings whose end (salon clock) is at or before <paramref name="latestSalonEnd"/>, oldest first,
+        /// at most <paramref name="max"/>: the ones due to complete by themselves (Policies.BookingAutoCompletion).
+        /// </summary>
+        Task<IReadOnlyList<BookingId>> GetConfirmedEndedByAsync(
+            DateTime latestSalonEnd, int max, CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Get bookings by customer ID
         /// </summary>
         Task<IReadOnlyList<Booking>> GetByCustomerIdAsync(UserId customerId, CancellationToken cancellationToken = default);

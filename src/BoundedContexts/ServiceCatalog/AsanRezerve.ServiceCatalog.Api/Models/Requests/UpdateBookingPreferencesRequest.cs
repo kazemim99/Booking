@@ -29,7 +29,7 @@ namespace AsanRezerve.ServiceCatalog.Api.Models.Requests
         public int CancellationWindowHours { get; set; } = 24;
         public decimal CancellationFeePercentage { get; set; } = 50;
         public bool AllowRescheduling { get; set; } = true;
-        public int RescheduleWindowHours { get; set; } = 24;
+        public int RescheduleWindowHours { get; set; } = 2; // BookingPolicy.Default (reviews-and-reschedule-round2 D5)
 
         /// <summary>
         /// Parses <see cref="DepositType"/> tolerantly. An unknown or missing value falls back to Percentage — the

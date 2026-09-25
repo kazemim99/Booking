@@ -72,12 +72,15 @@ public sealed record PaginatedReviewsViewModel(
 /// <summary>
 /// Individual review item
 /// </summary>
+/// <param name="CustomerId">Null when the author chose not to show their name: the id is the same on every review they
+/// write, so it would tie this one to their named reviews elsewhere.</param>
+/// <param name="BookingId">Null for the same reason.</param>
 public sealed record ReviewItemViewModel(
     Guid ReviewId,
     Guid ProviderId,
-    Guid CustomerId,
+    Guid? CustomerId,
     string CustomerName,
-    Guid BookingId,
+    Guid? BookingId,
     decimal Rating,
     string? Comment,
     bool IsVerified,

@@ -1,4 +1,4 @@
-Status: STOPPED(decision)
+Status: DONE
 Verify: FULL
 
 User request (2026-09-25, with 5 screenshots of the live customer app): «همه چیز دیپلوی شد.»
@@ -56,18 +56,18 @@ User request (2026-09-25, with 5 screenshots of the live customer app): «همه
 
 ## Tasks
 
-- [ ] 1 API: overall rating derived from the four aspects when not sent (half-star rounding) (unit)
-- [ ] 2 API: `showName` on create/edit review; public label full name or «مشتری»; migration (unit + integration)
-- [ ] 3 API: one review per (customer, salon); booking review state per salon; refusal names the edit (integration)
-- [ ] 4 API: auto-complete confirmed bookings 12 h after their end (hosted service) (unit + integration)
-- [ ] 5 API: reschedule window default 2 h; migrate the old default 24 → 2 on salons, services, open bookings
-- [ ] 6 Seed: Nahal demo — one review per reviewer (18 reviewers)
+- [x] 1 API: overall rating derived from the four aspects when not sent (half-star rounding) (unit)
+- [x] 2 API: `showName` on create/edit review; public label full name or «مشتری»; migration (unit + integration)
+- [x] 3 API: one review per (customer, salon); booking review state per salon; refusal names the edit (integration)
+- [x] 4 API: auto-complete confirmed bookings 12 h after their end (hosted service) (unit + integration)
+- [x] 5 API: reschedule window default 2 h; migrate the old default 24 → 2 on salons, services, open bookings
+- [x] 6 Seed: Nahal demo — one review per reviewer (18 reviewers)
 - [x] 7 Customer app: review form aspects-only with live overall + «نامم نمایش داده نشود»; edit from booking
 - [x] 8 Customer app: rating · count separator; reply redesign; installed-apps directions first; reschedule notice
 - [x] 9 Web: review form aspects-only + name choice; shared rating display (+ search card); reply redesign;
       directions chooser; reschedule notice; «ویرایش نظر»
 - [x] 10 Docs: runbook note on F0 (docs-site «بوکسی» left: docs/KNOWLEDGE_MAP.md marks docs-site historical)
-- [ ] 11 FULL verify
+- [x] 11 FULL verify
 
 ## Decisions
 
@@ -84,6 +84,23 @@ User request (2026-09-25, with 5 screenshots of the live customer app): «همه
 - D6 (tier 1) Items 3 (label) and 4 are the stale deploy (F0): no app change.
 
 ## Log
+
+- 2026-09-25 FULL PASS (20 steps, 559 s): unit + architecture, integration suite, web + admin, both Flutter apps.
+  Committed locally; NOT pushed — the user decides the remote URL first (see the STOPPED(decision) entry). Not
+  deployed: the deploy runner has not taken a job since PR #32 (F0).
+
+- 2026-09-25 Tasks 1–6 (API): migration `20260925141343_AddReviewShowNameAndRescheduleWindowDefault` (ShowName NOT NULL
+  default true in the DB only; 24 → 2 on salons, services, open bookings). Auto-complete: `AutoCompleteBookingsService`
+  every 15 min, `Booking.CompleteAutomatically`, same follow-up notifications as the salon's completion
+  (`BookingCompletionFollowUp`), off in Testing (`Bookings:AutoCompletionEnabled`). Added on request of the clients:
+  `reviewBookingId` on booking payloads, `newBookingId` + `status` on the reschedule response. Self-review: the
+  public list carried `customerId`/`bookingId` on reviews whose author hid their name — the same id on all of a
+  person's reviews, so it tied the anonymous one to their named ones: now null there (test red without, green with).
+- 2026-09-25 Pre-existing red in the integration suite, found on the way: `Todays_free_times_start_no_earlier_than_
+  the_salons_now` failed every day from 16:00 Tehran. Root cause (test setup, not product): the salon was cached with
+  the fixture's 09:00–17:00 while the test's 00:00–23:59 went to the DB unseen; the real hours endpoint clears the
+  cache (probed). Fix: the test clears the cache like its siblings. Residual: 22:30–00:00 Tehran the list is rightly
+  empty and the test fails; closing it needs an injectable clock behind `SalonTime` (FOLLOW-UP, not done).
 
 - 2026-09-25 Task 9 (web): type-check clean, lint 0 errors, vitest 259 pass / the same 36 pre-existing failures in
   the same 5 files (+49 tests). Search `ProviderCard` now shows the rating. The salon settings form's reschedule

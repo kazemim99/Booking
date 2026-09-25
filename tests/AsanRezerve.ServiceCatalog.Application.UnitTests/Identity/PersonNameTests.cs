@@ -123,17 +123,29 @@ public class PersonNameTests
         PersonName.RealParts(" سارا ", " احمدی ").Should().Be(("سارا", "احمدی"));
     }
 
+    // openspec/changes/_inline/reviews-and-reschedule-round2 D2: the full name by default, «مشتری» when the author
+    // chose not to show it. Replaces the first-name-and-initial form («ناصر ع.»).
     [Theory]
-    [InlineData("ناصر", "عابدی", "ناصر ع.")]
-    [InlineData(" سارا ", " احمدی ", "سارا ا.")]
+    [InlineData("ناصر", "عابدی", "ناصر عابدی")]
+    [InlineData(" سارا ", " احمدی ", "سارا احمدی")]
     [InlineData("مریم", null, "مریم")]
     [InlineData("مریم", "9123135143", "مریم")]
     [InlineData("مشتری", "9123135143", "مشتری")]
     [InlineData(null, null, "مشتری")]
     [InlineData(null, "عابدی", "مشتری")]
-    public void A_public_review_is_signed_with_first_name_and_surname_initial(string? first, string? last, string expected)
+    public void A_public_review_is_signed_with_the_authors_full_name(string? first, string? last, string expected)
     {
-        PersonName.ForPublicReview(first, last).Should().Be(expected,
-            "enough to read as a person, not enough to find them — never a placeholder, a phone or an id");
+        PersonName.ForPublicReview(first, last, showName: true).Should().Be(expected,
+            "the author's real name, first and last — never a placeholder, a phone or an id");
+    }
+
+    [Theory]
+    [InlineData("ناصر", "عابدی")]
+    [InlineData("مریم", null)]
+    [InlineData(null, null)]
+    public void An_author_who_chose_not_to_show_their_name_is_signed_as_a_customer(string? first, string? last)
+    {
+        PersonName.ForPublicReview(first, last, showName: false).Should().Be(PersonName.AnonymousReviewer);
+        PersonName.AnonymousReviewer.Should().Be("مشتری");
     }
 }

@@ -86,11 +86,12 @@ public class RescheduleFollowsTheRulesOfTheGridTests : ServiceCatalogIntegration
         await RequestAsync(salon, service, Guid.NewGuid(), wanted); // the wanted slot is ALSO taken
 
         var customerId = Guid.NewGuid();
-        var mine = await RequestAsync(salon, service, customerId, SalonTime.Now.AddHours(10));
+        // Inside the default two-hour window (openspec/changes/_inline/reviews-and-reschedule-round2 D5).
+        var mine = await RequestAsync(salon, service, customerId, SalonTime.Now.AddHours(1));
         var response = await MoveAsync(customerId, mine, wanted);
 
         var message = MessageOf(response);
-        message.Should().Contain("24").And.Contain("ساعت").And.NotContain("Rescheduling");
+        message.Should().Contain("2 ساعت").And.NotContain("Rescheduling");
         message.Should().NotContain("این زمان", "the window is the reason, not the slot");
     }
 }

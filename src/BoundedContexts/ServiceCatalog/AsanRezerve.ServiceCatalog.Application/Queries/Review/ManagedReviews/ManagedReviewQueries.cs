@@ -37,7 +37,9 @@ public sealed record ManagedReviewItem(
     bool CanEdit,
     string? ProviderName = null,
     string? ProviderLogoUrl = null,
-    string? ServiceName = null);
+    string? ServiceName = null,
+    // The author's «نامم نمایش داده نشود» choice, so the edit form opens with it.
+    bool ShowName = true);
 
 /// <param name="AwaitingReplyCount">Business inbox only: published reviews still waiting on the business's reply.</param>
 public sealed record ManagedReviewsViewModel(
@@ -65,8 +67,8 @@ internal static class ManagedReviewMapping
         r.CreatedAt,
         r.EditedAt,
         // What the author may do right now — the same two rules EditByAuthor enforces.
-        CanEdit: r.ModerationStatus is ReviewModerationStatus.Pending or ReviewModerationStatus.Published
-                 && ReviewEditPolicy.IsInsideWindow(r.CreatedAt, utcNow));
+        CanEdit: ReviewEditPolicy.CanEdit(r.ModerationStatus, r.CreatedAt, utcNow),
+        ShowName: r.ShowName);
 }
 
 /// <summary>The signed-in customer's own reviews, every state, newest first.</summary>

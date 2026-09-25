@@ -36,5 +36,11 @@ namespace AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetCustomerBook
         bool CanReview = false,
         string? ReviewBlockedReason = null,
         Guid? ReviewId = null,
-        string? ReviewStatus = null);
+        string? ReviewStatus = null,
+        // Since one review per salon (openspec/changes/_inline/reviews-and-reschedule-round2 D4) the review above is
+        // the customer's review of this booking's SALON, from any visit; true while its author may still edit it
+        // (7 days, pending or published) — the apps offer «ویرایش نظر» instead of «ثبت نظر».
+        bool ReviewEditable = false,
+        // The visit that review was written for; differs from BookingId when it is about another visit to the salon.
+        Guid? ReviewBookingId = null);
 }

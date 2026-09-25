@@ -22,10 +22,12 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates
         public UserId CustomerId { get; private set; }
         public Guid BookingId { get; private set; }
         
-        // Overall rating (1.0 - 5.0) — the customer's own verdict, never computed from the dimensions
+        // Overall rating (1.0 - 5.0). Sent by older apps as the customer's own verdict; otherwise the four aspects'
+        // average to the nearest half star (see OverallFrom).
         public decimal RatingValue { get; private set; }
 
-        // Optional dimension ratings (1.0 - 5.0 each). Null means "not rated", never zero.
+        // Dimension ratings (1.0 - 5.0 each). The current review forms require all four; older reviews and older apps
+        // may leave any out. Null means "not rated", never zero.
         public decimal? CleanlinessRating { get; private set; }
         public decimal? SkillRating { get; private set; }
         public decimal? PunctualityRating { get; private set; }
@@ -33,6 +35,12 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates
 
         // Comment (Persian and/or English)
         public string? Comment { get; private set; }
+
+        /// <summary>
+        /// Whether the public list signs this review with the author's name; false reads «مشتری». The author's choice
+        /// («نامم نمایش داده نشود»), changeable on edit. True for every review written before the choice existed.
+        /// </summary>
+        public bool ShowName { get; private set; } = true;
         
         // Verification — "came from a completed booking". Never changed by moderation.
         public bool IsVerified { get; private set; }
@@ -102,7 +110,8 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates
             string? comment = null,
             bool isVerified = true,
             string? createdBy = null,
-            ReviewDimensionRatings? dimensions = null)
+            ReviewDimensionRatings? dimensions = null,
+            bool showName = true)
         {
             ValidateRating(ratingValue);
             dimensions ??= ReviewDimensionRatings.None;
@@ -122,6 +131,7 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates
                 PunctualityRating = dimensions.Punctuality,
                 ConductRating = dimensions.Conduct,
                 Comment = comment,
+                ShowName = showName,
                 IsVerified = isVerified, // True if from actual booking
                 ModerationStatus = ReviewModerationStatus.Pending, // Not public until an administrator approves it
                 LegacyHelpfulCount = 0,
@@ -311,7 +321,8 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates
             ReviewDimensionRatings? dimensions,
             string? comment,
             string modifiedBy,
-            DateTime utcNow)
+            DateTime utcNow,
+            bool showName = true)
         {
             if (ModerationStatus is not (ReviewModerationStatus.Pending or ReviewModerationStatus.Published))
                 throw new InvalidAggregateStateException(
@@ -338,6 +349,7 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates
             PunctualityRating = dimensions.Punctuality;
             ConductRating = dimensions.Conduct;
             Comment = comment;
+            ShowName = showName;
             EditedAt = utcNow;
             LastModifiedAt = utcNow;
             LastModifiedBy = modifiedBy;
@@ -432,6 +444,25 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates
             return GetAgeInDays() <= 30;
         }
         
+        /// <summary>
+        /// The overall rating a review is stored with: the one the customer sent (older app versions), or — when they
+        /// sent none — the four aspects' average to the nearest half star, which then needs all four. Aspects are
+        /// checked first, so an invalid one is refused by its own name rather than as the overall.
+        /// </summary>
+        public static decimal OverallFrom(decimal? rating, ReviewDimensionRatings? dimensions)
+        {
+            dimensions ??= ReviewDimensionRatings.None;
+            ValidateDimensions(dimensions);
+
+            if (rating is { } stated)
+                return stated;
+
+            if (dimensions is not { Cleanliness: { } c, Skill: { } s, Punctuality: { } p, Conduct: { } d })
+                throw new DomainValidationException("Rating", ReviewOverallRating.AllFourRequired);
+
+            return ReviewOverallRating.AverageToHalfStar(c, s, p, d);
+        }
+
         /// <summary>
         /// Validates rating value
         /// </summary>

@@ -60,8 +60,12 @@ namespace AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetBookingDetai
             var review = BookingReviewStanding.None;
             if (isForCaller)
             {
-                var states = await _reviews.GetStatesByBookingIdsAsync(new[] { booking.Id.Value }, cancellationToken);
-                review = BookingReviewStanding.Of(booking, states.GetValueOrDefault(booking.Id.Value));
+                // One review per salon: the caller's review of this booking's salon, from whichever visit.
+                var states = await _reviews.GetStatesByProviderIdsAsync(
+                    Core.Domain.ValueObjects.UserId.From(request.CallerId!.Value),
+                    new[] { booking.ProviderId },
+                    cancellationToken);
+                review = BookingReviewStanding.Of(booking, states.GetValueOrDefault(booking.ProviderId.Value), DateTime.UtcNow);
             }
 
             return new BookingDetailsViewModel(
@@ -105,7 +109,9 @@ namespace AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetBookingDetai
                 CanReview: review.CanReview,
                 ReviewBlockedReason: review.ReviewBlockedReason,
                 ReviewId: review.ReviewId,
-                ReviewStatus: review.ReviewStatus);
+                ReviewStatus: review.ReviewStatus,
+                ReviewEditable: review.ReviewEditable,
+                ReviewBookingId: review.ReviewBookingId);
         }
     }
 }

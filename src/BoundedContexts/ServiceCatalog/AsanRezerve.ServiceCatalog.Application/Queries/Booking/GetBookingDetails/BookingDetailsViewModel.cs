@@ -37,7 +37,9 @@ namespace AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetBookingDetai
         bool CanReview = false,
         string? ReviewBlockedReason = null,
         Guid? ReviewId = null,
-        string? ReviewStatus = null);
+        string? ReviewStatus = null,
+        bool ReviewEditable = false,
+        Guid? ReviewBookingId = null);
 
     public sealed record PaymentInfoDto(
         decimal TotalAmount,

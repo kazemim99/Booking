@@ -204,7 +204,9 @@ namespace AsanRezerve.ServiceCatalog.Domain.ValueObjects
         }
 
         /// <summary>
-        /// Default policy: 2 hours minimum advance, 90 days max, 24 hours cancellation window, 50% fee
+        /// Default policy: 2 hours minimum advance, 90 days max, 24 hours cancellation window, 50% fee, rescheduling
+        /// until 2 hours before (was 24 — openspec/changes/_inline/reviews-and-reschedule-round2 D5; a moved booking
+        /// is a new request the salon confirms again).
         /// </summary>
         public static BookingPolicy Default => Create(
             minAdvanceBookingHours: 2,
@@ -212,7 +214,7 @@ namespace AsanRezerve.ServiceCatalog.Domain.ValueObjects
             cancellationWindowHours: 24,
             cancellationFeePercentage: 50,
             allowRescheduling: true,
-            rescheduleWindowHours: 24,
+            rescheduleWindowHours: 2,
             // No payment flow exists in the product yet: a deposit-requiring
             // default made every default-policy booking permanently
             // unconfirmable (BOOKING_DEPOSIT_NOT_PAID). Services that

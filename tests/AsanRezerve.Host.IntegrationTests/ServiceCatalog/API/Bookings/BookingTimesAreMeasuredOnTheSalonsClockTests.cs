@@ -1,9 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using AsanRezerve.Core.Domain.ValueObjects;
+using AsanRezerve.Infrastructure.Core.Caching;
 using AsanRezerve.ServiceCatalog.Domain.Aggregates.BookingAggregate;
 using AsanRezerve.ServiceCatalog.Domain.ValueObjects;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
@@ -89,5 +91,14 @@ public class BookingTimesAreMeasuredOnTheSalonsClockTests : ServiceCatalogIntegr
             hours[day] = (new TimeOnly(0, 0), new TimeOnly(23, 59));
         provider.SetBusinessHours(hours);
         await UpdateEntityAsync(provider);
+
+        // The API reads the salon through CachedProviderReadRepository, and the fixture's own bookability check
+        // (MakeBookableAsync) has just cached it with its default 09:00-17:00 hours. This write goes through the
+        // test's DbContext, not the unit of work whose BusinessHoursUpdatedEvent evicts that entry in production,
+        // so without this the request saw 09:00-17:00: the list came back empty from 16:00 salon time on and the
+        // test went red every evening (2026-09-25).
+        var cache = Scope.ServiceProvider.GetRequiredService<ICacheService>();
+        await cache.RemoveAsync($"Provider:{provider.Id.Value}");
+        await cache.RemoveAsync($"Provider:owner:{provider.OwnerId.Value}");
     }
 }

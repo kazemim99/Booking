@@ -8,7 +8,8 @@ namespace AsanRezerve.Host.Composition;
 
 /// <summary>
 /// Seeds the demo salon's reviews (<see cref="DemoSalonReviewsSeeder"/>) by people who exist: the reviewers are created
-/// in the person directory first, by phone, so the public listing names them the way it names anyone («مریم ر.»).
+/// in the person directory first, by phone, so the public listing names them the way it names anyone («مریم رضایی», or
+/// «مشتری» for the few who chose not to show their name).
 /// The host does it because it is the one project that reaches both contexts.
 /// </summary>
 /// <remarks>
@@ -19,7 +20,10 @@ namespace AsanRezerve.Host.Composition;
 /// </remarks>
 public static class DemoSalonReviews
 {
-    /// <summary>The salon's reviewers: its customers are women, as a ladies' salon's are.</summary>
+    /// <summary>
+    /// The salon's reviewers: its customers are women, as a ladies' salon's are. One per review — a customer reviews a
+    /// salon once (openspec/changes/_inline/reviews-and-reschedule-round2 D4) — and the rest of them vote.
+    /// </summary>
     public static readonly IReadOnlyList<(string FirstName, string LastName, string Phone)> Reviewers = new[]
     {
         ("مریم", "رضایی", "+989990001001"),
@@ -34,6 +38,12 @@ public static class DemoSalonReviews
         ("فاطمه", "اکبری", "+989990001010"),
         ("سمانه", "یوسفی", "+989990001011"),
         ("ستاره", "باقری", "+989990001012"),
+        ("لیلا", "رحیمی", "+989990001013"),
+        ("مینا", "قاسمی", "+989990001014"),
+        ("آزاده", "شریفی", "+989990001015"),
+        ("هانیه", "کاظمی", "+989990001016"),
+        ("رویا", "فرهادی", "+989990001017"),
+        ("یاسمن", "توکلی", "+989990001018"),
     };
 
     /// <summary>Seeds the salon's reviews unless it is missing or already has them. Returns how many were written.</summary>

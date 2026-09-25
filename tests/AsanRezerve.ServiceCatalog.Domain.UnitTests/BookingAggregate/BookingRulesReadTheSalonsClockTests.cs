@@ -72,11 +72,25 @@ public class BookingRulesReadTheSalonsClockTests
     [Fact]
     public void An_appointment_inside_the_reschedule_window_cannot_be_moved()
     {
-        // Default policy: rescheduling closes 24 hours before the appointment.
-        var booking = ConfirmedAt(SalonTime.Now.AddHours(22));
+        // Default policy: rescheduling closes 2 hours before the appointment. One hour ahead on the salon's clock is
+        // four and a half on UTC's, so only the salon's clock refuses it.
+        var booking = ConfirmedAt(SalonTime.Now.AddHours(1));
 
         Assert.Throws<BusinessRuleViolationException>(
             () => booking.Reschedule(SalonTime.Now.AddDays(3), booking.StaffId));
+    }
+
+    [Fact]
+    public void A_confirmed_appointment_three_hours_away_can_be_moved_and_waits_for_the_salon_again()
+    {
+        // openspec/changes/_inline/reviews-and-reschedule-round2 D5: movable until two hours before; the new time is a
+        // request the salon confirms again.
+        var booking = ConfirmedAt(SalonTime.Now.AddHours(3));
+
+        var moved = booking.Reschedule(SalonTime.Now.AddDays(3), booking.StaffId);
+
+        Assert.Equal(BookingStatus.Rescheduled, booking.Status);
+        Assert.Equal(BookingStatus.Requested, moved.Status);
     }
 
     [Fact]

@@ -67,26 +67,55 @@ public class ReviewListingTests : ReviewTestBase
     // ── The public listing ──
 
     /// <summary>A published review by a person signed up with these names; returns how the public listing names them.</summary>
-    private async Task<string> PublicNameOfAuthorAsync(string? first, string? last)
+    private async Task<string> PublicNameOfAuthorAsync(string? first, string? last, bool? showName = null)
     {
-        var phone = NewPhone();
-        var author = await SignUpAsync(phone, first, last);
-        var visit = await CompletedVisitAsync(customer: author);
-        var reviewId = await ReviewedAsync(visit);
-        await ModerateAsync(reviewId, "approve");
-
-        var item = ((JArray)(await PublicListingAsync(visit))["reviews"]!["items"]!)
-            .Single(i => i["reviewId"]!.Value<string>() == reviewId.ToString());
+        var (item, phone) = await PublicItemOfAuthorAsync(first, last, showName);
         var name = item["customerName"]!.Value<string>()!;
         name.Should().NotContain(phone[^7..], "a phone number is never part of a name");
         return name;
     }
 
-    [Fact]
-    public async Task A_public_review_names_its_author_by_first_name_and_surname_initial()
+    /// <summary>A published review by a person signed up with these names, as the public listing returns it.</summary>
+    private async Task<(JObject Item, string Phone)> PublicItemOfAuthorAsync(string? first, string? last, bool? showName = null)
     {
-        (await PublicNameOfAuthorAsync("ناصر", "عابدی")).Should().Be("ناصر ع.",
-            "enough to read as a person, not enough to find them; it read «Customer 3fa85f64»");
+        var phone = NewPhone();
+        var author = await SignUpAsync(phone, first, last);
+        var visit = await CompletedVisitAsync(customer: author);
+        var reviewId = await ReviewedAsync(visit, body: showName is { } show
+            ? new { rating = 4.5m, comment = "کار تمیز و دقیقی بود، ممنون از شما", showName = show }
+            : null);
+        await ModerateAsync(reviewId, "approve");
+
+        var item = (JObject)((JArray)(await PublicListingAsync(visit))["reviews"]!["items"]!)
+            .Single(i => i["reviewId"]!.Value<string>() == reviewId.ToString());
+        return (item, phone);
+    }
+
+    [Fact]
+    public async Task A_public_review_names_its_author_in_full_by_default()
+    {
+        // openspec/changes/_inline/reviews-and-reschedule-round2 D2 (was «ناصر ع.»); it once read «Customer 3fa85f64».
+        (await PublicNameOfAuthorAsync("ناصر", "عابدی")).Should().Be("ناصر عابدی");
+        (await PublicNameOfAuthorAsync("ناصر", "عابدی", showName: true)).Should().Be("ناصر عابدی");
+    }
+
+    [Fact]
+    public async Task An_author_who_chose_not_to_show_their_name_is_a_customer()
+    {
+        (await PublicNameOfAuthorAsync("ناصر", "عابدی", showName: false)).Should().Be("مشتری");
+    }
+
+    [Fact]
+    public async Task A_review_without_its_authors_name_carries_nothing_that_ties_it_to_them()
+    {
+        // The customer id is the same on every review a person writes: an anonymous review carrying it could be matched
+        // to their named reviews at other salons. The booking id likewise points at them.
+        var (hidden, _) = await PublicItemOfAuthorAsync("ناصر", "عابدی", showName: false);
+        hidden["customerId"]?.Type.Should().BeOneOf(JTokenType.Null);
+        hidden["bookingId"]?.Type.Should().BeOneOf(JTokenType.Null);
+
+        var (named, _) = await PublicItemOfAuthorAsync("ناصر", "عابدی", showName: true);
+        named["customerId"]!.Type.Should().Be(JTokenType.String);
     }
 
     [Fact]

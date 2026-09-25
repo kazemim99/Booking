@@ -64,6 +64,13 @@ namespace AsanRezerve.ServiceCatalog.Infrastructure.Persistence.Configurations
                 .HasColumnName("Comment")
                 .HasMaxLength(2000);
 
+            // The author's «نامم نمایش داده نشود» choice. Every review from before it existed shows the name: the
+            // migration fills the column with true. No HasDefaultValue(true) in the model on purpose — EF would take
+            // the CLR default (false) as "unset" and insert the database default, so no one could ever hide their name.
+            builder.Property(r => r.ShowName)
+                .IsRequired()
+                .HasColumnName("ShowName");
+
             // Verification Status
             builder.Property(r => r.IsVerified)
                 .IsRequired()

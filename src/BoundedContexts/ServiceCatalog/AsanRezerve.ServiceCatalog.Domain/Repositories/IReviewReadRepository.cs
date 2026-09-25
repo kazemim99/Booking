@@ -91,6 +91,25 @@ public interface IReviewReadRepository : IReadRepository<Review, Guid>
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// This customer's review of each of these salons, in whatever moderation state — one per salon since
+    /// openspec/changes/_inline/reviews-and-reschedule-round2 (D4); where older data holds more than one, the newest.
+    /// Salons they have not reviewed are absent. Keyed by provider id. One query however many salons.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, BookingReviewState>> GetStatesByProviderIdsAsync(
+        UserId customerId,
+        IReadOnlyCollection<ProviderId> providerIds,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// This customer's review of this salon, from any visit — the newest if older data holds more than one. Null when
+    /// they have not reviewed it.
+    /// </summary>
+    Task<Review?> GetLatestByCustomerAndProviderAsync(
+        UserId customerId,
+        ProviderId providerId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// The administrator's moderation queue. <see cref="ReviewModerationFilter.Pending"/> holds every review or
     /// provider reply awaiting a decision, oldest first; <see cref="ReviewModerationFilter.Hidden"/> is where
     /// hidden reviews are found, since they are no longer pending; <see cref="ReviewModerationFilter.Reported"/>
@@ -124,8 +143,16 @@ public interface IReviewReadRepository : IReadRepository<Review, Guid>
         CancellationToken cancellationToken = default);
 }
 
-/// <summary>The review a booking has: which one, and where moderation stands on it.</summary>
-public sealed record BookingReviewState(Guid ReviewId, Enums.ReviewModerationStatus ModerationStatus);
+/// <summary>
+/// The review a booking has — its own, or since one review per salon, the customer's review of the booking's salon:
+/// which one, where moderation stands on it, when it was written (the edit window runs from then), and the visit it was
+/// written for.
+/// </summary>
+public sealed record BookingReviewState(
+    Guid ReviewId,
+    Enums.ReviewModerationStatus ModerationStatus,
+    DateTime CreatedAt = default,
+    Guid? BookingId = null);
 
 /// <summary>What a review is about, by name.</summary>
 public sealed record ReviewContext(string ProviderName, string? ProviderLogoUrl, string? ServiceName);

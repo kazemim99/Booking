@@ -21,4 +21,7 @@ public class CreateReviewResponse
     public decimal? SkillRating { get; set; }
     public decimal? PunctualityRating { get; set; }
     public decimal? ConductRating { get; set; }
+
+    /// <summary>The author's name choice: false signs the public review «مشتری».</summary>
+    public bool ShowName { get; set; } = true;
 }

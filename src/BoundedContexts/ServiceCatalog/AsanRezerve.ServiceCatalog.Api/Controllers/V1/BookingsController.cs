@@ -363,7 +363,7 @@ public class BookingsController : ControllerBase
     /// <response code="403">Not authorized to reschedule this booking</response>
     [HttpPost("{id:guid}/reschedule")]
     [Authorize]
-    [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(RescheduleBookingResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> RescheduleBooking(
@@ -384,8 +384,13 @@ public class BookingsController : ControllerBase
             "Booking {OldBookingId} rescheduled successfully. New booking: {NewBookingId}",
             id, result.NewBookingId);
 
-        return Ok(new MessageResponse(
-            $"Booking rescheduled successfully. New booking ID: {result.NewBookingId}"));
+        // The message is kept word for word — apps in the field parse the new id out of it — and the id and the new
+        // booking's status are said outright beside it: a moved booking is a new request the salon confirms again
+        // (openspec/changes/_inline/reviews-and-reschedule-round2 D5).
+        return Ok(new RescheduleBookingResponse(
+            $"Booking rescheduled successfully. New booking ID: {result.NewBookingId}",
+            result.NewBookingId,
+            result.Status));
     }
 
     /// <summary>
@@ -811,6 +816,8 @@ public class BookingsController : ControllerBase
             ReviewBlockedReason = result.ReviewBlockedReason,
             ReviewId = result.ReviewId,
             ReviewStatus = result.ReviewStatus,
+            ReviewEditable = result.ReviewEditable,
+            ReviewBookingId = result.ReviewBookingId,
             ServiceName = result.ServiceName,
             ProviderBusinessName = result.ProviderName,
             StartTime = result.StartTime,
@@ -863,5 +870,22 @@ public class MessageResponse
     public MessageResponse(string message)
     {
         Message = message;
+    }
+}
+
+/// <summary>
+/// A reschedule's answer: the same message as ever, plus the new booking's id and its status — "Requested": the moved
+/// booking waits for the salon's confirmation again.
+/// </summary>
+public sealed class RescheduleBookingResponse : MessageResponse
+{
+    public Guid NewBookingId { get; set; }
+
+    public string Status { get; set; }
+
+    public RescheduleBookingResponse(string message, Guid newBookingId, string status) : base(message)
+    {
+        NewBookingId = newBookingId;
+        Status = status;
     }
 }

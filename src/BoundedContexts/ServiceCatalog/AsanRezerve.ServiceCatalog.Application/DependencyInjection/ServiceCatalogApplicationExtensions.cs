@@ -42,6 +42,8 @@ namespace AsanRezerve.ServiceCatalog.Application.DependencyInjection
             // nothing calls — see the note on that method.
             services.AddScoped<Services.Notifications.IBookingReminderScheduler, Services.Notifications.BookingReminderScheduler>();
             services.AddScoped<Services.Notifications.IBookingNotificationParameters, Services.Notifications.BookingNotificationParameters>();
+            // What follows a completion, whether the salon marked it or it completed by itself.
+            services.AddScoped<Commands.Booking.CompleteBooking.BookingCompletionFollowUp>();
             services.AddScoped<Services.IBookingCustomerNames, Services.BookingCustomerNames>();
             services.AddScoped<Services.IBookingCustomer, Services.BookingCustomer>();
 

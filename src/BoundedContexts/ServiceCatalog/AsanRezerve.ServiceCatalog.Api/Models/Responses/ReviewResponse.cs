@@ -7,9 +7,9 @@ public class ReviewResponse
 {
     public Guid ReviewId { get; set; }
     public Guid ProviderId { get; set; }
-    public Guid CustomerId { get; set; }
+    public Guid? CustomerId { get; set; }
     public string CustomerName { get; set; } = string.Empty;
-    public Guid BookingId { get; set; }
+    public Guid? BookingId { get; set; }
     public decimal Rating { get; set; }
     public string? Comment { get; set; }
     public bool IsVerified { get; set; }

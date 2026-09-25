@@ -347,10 +347,48 @@ public sealed class ReviewReadRepository
         var rows = await DbSet
             .AsNoTracking()
             .Where(r => bookingIds.Contains(r.BookingId))
-            .Select(r => new { r.BookingId, r.Id, r.ModerationStatus })
+            .Select(r => new { r.BookingId, r.Id, r.ModerationStatus, r.CreatedAt })
             .ToListAsync(cancellationToken);
 
-        return rows.ToDictionary(r => r.BookingId, r => new BookingReviewState(r.Id, r.ModerationStatus));
+        return rows.ToDictionary(
+            r => r.BookingId, r => new BookingReviewState(r.Id, r.ModerationStatus, r.CreatedAt, r.BookingId));
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, BookingReviewState>> GetStatesByProviderIdsAsync(
+        UserId customerId,
+        IReadOnlyCollection<ProviderId> providerIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (providerIds.Count == 0)
+            return new Dictionary<Guid, BookingReviewState>();
+
+        var ids = providerIds.Distinct().ToList();
+        var rows = await DbSet
+            .AsNoTracking()
+            .Where(r => r.CustomerId == customerId && ids.Contains(r.ProviderId))
+            .Select(r => new { r.ProviderId, r.Id, r.ModerationStatus, r.CreatedAt, r.BookingId })
+            .ToListAsync(cancellationToken);
+
+        // Newest per salon: older data may hold more than one (one per booking was the rule before).
+        return rows
+            .GroupBy(r => r.ProviderId.Value)
+            .ToDictionary(
+                g => g.Key,
+                g => g.OrderByDescending(r => r.CreatedAt)
+                      .Select(r => new BookingReviewState(r.Id, r.ModerationStatus, r.CreatedAt, r.BookingId))
+                      .First());
+    }
+
+    public async Task<Review?> GetLatestByCustomerAndProviderAsync(
+        UserId customerId,
+        ProviderId providerId,
+        CancellationToken cancellationToken = default)
+    {
+        return await DbSet
+            .AsNoTracking()
+            .Where(r => r.CustomerId == customerId && r.ProviderId == providerId)
+            .OrderByDescending(r => r.CreatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyList<Review>> GetRecentReviewsAsync(

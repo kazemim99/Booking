@@ -14,30 +14,17 @@ namespace AsanRezerve.ServiceCatalog.Application.Commands.Booking.CompleteBookin
     public sealed class CompleteBookingCommandHandler : ICommandHandler<CompleteBookingCommand, CompleteBookingResult>
     {
         private readonly IBookingWriteRepository _bookingRepository;
-        private readonly IBookingReminderScheduler _reminders;
-        private readonly INotificationRaiser _notifications;
-        private readonly Domain.Repositories.IProviderReadRepository _providers;
-        private readonly IServiceCatalogUnitOfWork _unitOfWork;
+        private readonly BookingCompletionFollowUp _followUp;
         private readonly ILogger<CompleteBookingCommandHandler> _logger;
-
-        private readonly IBookingNotificationParameters _bookingParameters;
 
         public CompleteBookingCommandHandler(
             IBookingWriteRepository bookingRepository,
-            IServiceCatalogUnitOfWork unitOfWork,
-            ILogger<CompleteBookingCommandHandler> logger,
-            IBookingReminderScheduler reminders,
-            INotificationRaiser notifications,
-            Domain.Repositories.IProviderReadRepository providers,
-            IBookingNotificationParameters bookingParameters)
+            BookingCompletionFollowUp followUp,
+            ILogger<CompleteBookingCommandHandler> logger)
         {
-            _bookingParameters = bookingParameters;
             _bookingRepository = bookingRepository;
-            _unitOfWork = unitOfWork;
+            _followUp = followUp;
             _logger = logger;
-            _reminders = reminders;
-            _notifications = notifications;
-            _providers = providers;
         }
 
         public async Task<CompleteBookingResult> Handle(CompleteBookingCommand request, CancellationToken cancellationToken)
@@ -58,50 +45,9 @@ namespace AsanRezerve.ServiceCatalog.Application.Commands.Booking.CompleteBookin
             // Update booking
             await _bookingRepository.UpdateBookingAsync(booking, cancellationToken);
 
-            // The appointment is no longer going to happen, so its unsent reminders must not go out.
-            await _reminders.WithdrawAsync(booking.Id.Value, cancellationToken);
-
-            // Thank the customer, and ask for a review LATER — asking the moment somebody walks out of the
-            // salon is worse than not asking. The 3-day follow-up is withdrawn the moment a review is
-            // submitted (tasks 7.6), including one still sitting in moderation.
-            var completedProvider = await _providers.GetByIdAsync(booking.ProviderId, cancellationToken);
-            var completionParameters = await _bookingParameters.ForAsync(
-                booking, completedProvider?.Profile.BusinessName, cancellationToken);
-
-            await _notifications.RaiseAsync(
-                Domain.Enums.NotificationEventCode.BookingCompleted,
-                booking.CustomerId.Value,
-                dedupKey: booking.Id.Value,
-                parameters: completionParameters,
-                subjectType: BookingReminderScheduler.BookingSubject,
-                subjectId: booking.Id.Value,
-                cancellationToken: cancellationToken);
-
-            await _notifications.RaiseAsync(
-                Domain.Enums.NotificationEventCode.ReviewRequest,
-                booking.CustomerId.Value,
-                dedupKey: booking.Id.Value,
-                parameters: completionParameters,
-                subjectType: BookingReminderScheduler.BookingSubject,
-                subjectId: booking.Id.Value,
-                scheduledFor: DateTime.UtcNow.AddHours(2),
-                cancellationToken: cancellationToken);
-
-            // One follow-up, three days later, and never a third. It is withdrawn the moment a review is
-            // submitted — see CreateReviewCommandHandler — so it only ever reaches somebody who did not
-            // answer. Its own code rather than a second ReviewRequest: the wording differs, and the outbox
-            // de-duplicates on (key, code, recipient), so a repeat under the same code would vanish anyway.
-            await _notifications.RaiseAsync(
-                Domain.Enums.NotificationEventCode.ReviewReminder,
-                booking.CustomerId.Value,
-                dedupKey: booking.Id.Value,
-                parameters: completionParameters,
-                subjectType: BookingReminderScheduler.BookingSubject,
-                subjectId: booking.Id.Value,
-                scheduledFor: DateTime.UtcNow.AddDays(3),
-                cancellationToken: cancellationToken);
-
-
+            // Reminders withdrawn, thank-you, review request and its follow-up — the same as when a booking
+            // completes by itself (AutoCompleteBookingCommand).
+            await _followUp.RaiseAsync(booking, DateTime.UtcNow, cancellationToken);
 
             _logger.LogInformation("Booking {BookingId} completed successfully", booking.Id);
             Telemetry.BookingMetrics.BookingCompleted();

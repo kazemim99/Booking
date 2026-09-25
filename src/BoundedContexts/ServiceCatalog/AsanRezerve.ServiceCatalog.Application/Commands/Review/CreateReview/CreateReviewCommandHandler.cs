@@ -32,6 +32,10 @@ public sealed class CreateReviewCommandHandler : ICommandHandler<CreateReviewCom
     /// right when the appointment itself is off; here the booking still happened, and a review says nothing
     /// about, say, a refund notice queued against the same booking.
     /// </remarks>
+    /// <summary>The refusal when this customer already reviewed the salon, from this visit or another.</summary>
+    public const string AlreadyReviewedThisSalon =
+        "برای این سالن قبلاً نظر داده‌اید؛ می‌توانید همان را از «نظرهای من» ویرایش کنید.";
+
     private static readonly NotificationEventCode[] TheAsk =
     {
         NotificationEventCode.ReviewRequest,
@@ -100,16 +104,32 @@ public sealed class CreateReviewCommandHandler : ICommandHandler<CreateReviewCom
                 "برای این نوبت قبلاً نظر ثبت کرده‌اید؛ می‌توانید همان را از «نظرهای من» ویرایش کنید.");
         }
 
-        // 5. Create the review
+        // 4b. One review per customer per salon, from whichever visit (openspec/changes/_inline/
+        // reviews-and-reschedule-round2 D4). Enforced here, not by a unique index: reviews written before the rule
+        // may already hold duplicates, and an index would fail the migration on deploy. The booking-level unique
+        // index stays.
+        var reviewForSalon = await _reviewReadRepository.GetLatestByCustomerAndProviderAsync(
+            UserId.From(request.CustomerId),
+            booking.ProviderId,
+            cancellationToken);
+
+        if (reviewForSalon != null)
+        {
+            throw new ConflictException(AlreadyReviewedThisSalon);
+        }
+
+        // 5. Create the review. No overall sent (the current forms): the four aspects' average, to the half star.
+        var overall = Domain.Aggregates.Review.OverallFrom(request.Rating, request.Dimensions);
         var review = Domain.Aggregates.Review.Create(
             providerId: booking.ProviderId,
             customerId: UserId.From(request.CustomerId),
             bookingId: request.BookingId,
-            ratingValue: request.Rating,
+            ratingValue: overall,
             comment: request.Comment,
             isVerified: true, // Auto-verify reviews from actual bookings
             createdBy: $"Customer:{request.CustomerId}",
-            dimensions: request.Dimensions);
+            dimensions: request.Dimensions,
+            showName: request.ShowName);
 
         // 6. Save the review
         await _reviewWriteRepository.SaveAsync(review, cancellationToken);
@@ -133,7 +153,7 @@ public sealed class CreateReviewCommandHandler : ICommandHandler<CreateReviewCom
             "Review {ReviewId} created successfully for Booking {BookingId} with rating {Rating}★",
             review.Id,
             request.BookingId,
-            request.Rating);
+            review.RatingValue);
 
         // 8. Return result
         return new CreateReviewResult(
@@ -147,6 +167,7 @@ public sealed class CreateReviewCommandHandler : ICommandHandler<CreateReviewCom
             CreatedAt: review.CreatedAt,
             ModerationStatus: review.ModerationStatus,
             Dimensions: new Domain.ValueObjects.ReviewDimensionRatings(
-                review.CleanlinessRating, review.SkillRating, review.PunctualityRating, review.ConductRating));
+                review.CleanlinessRating, review.SkillRating, review.PunctualityRating, review.ConductRating),
+            ShowName: review.ShowName);
     }
 }

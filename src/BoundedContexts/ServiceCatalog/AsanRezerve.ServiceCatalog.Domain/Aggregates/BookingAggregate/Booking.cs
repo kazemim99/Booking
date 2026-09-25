@@ -9,6 +9,7 @@ using AsanRezerve.Core.Domain.ValueObjects;
 using AsanRezerve.ServiceCatalog.Domain.Aggregates.BookingAggregate.Entities;
 using AsanRezerve.ServiceCatalog.Domain.Enums;
 using AsanRezerve.ServiceCatalog.Domain.Events;
+using AsanRezerve.ServiceCatalog.Domain.Policies;
 using AsanRezerve.ServiceCatalog.Domain.ValueObjects;
 
 namespace AsanRezerve.ServiceCatalog.Domain.Aggregates.BookingAggregate
@@ -356,9 +357,13 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates.BookingAggregate
                 ? ReviewWaitsForTheSalonMessage
                 : null;
 
-        /// <summary>See <see cref="ReviewBlockedReason"/>.</summary>
-        public const string ReviewWaitsForTheSalonMessage =
-            "پس از اینکه سالن این نوبت را «انجام‌شده» ثبت کند، می‌توانید برایش نظر بنویسید.";
+        /// <summary>
+        /// See <see cref="ReviewBlockedReason"/>. Says it opens by itself: a salon that never marks the visit done no
+        /// longer holds the review back forever (<see cref="BookingAutoCompletion"/>).
+        /// </summary>
+        public static readonly string ReviewWaitsForTheSalonMessage =
+            "پس از اینکه سالن این نوبت را «انجام‌شده» ثبت کند، می‌توانید برایش نظر بنویسید. " +
+            $"اگر سالن ثبت نکند، {BookingAutoCompletion.AfterHoursInPersian} ساعت پس از پایان نوبت خودکار «انجام‌شده» می‌شود.";
 
         /// <summary>
         /// Why a review of this booking is refused right now, in words for the customer; null when it can be reviewed.
@@ -481,6 +486,41 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates.BookingAggregate
                 StaffId,
                 TimeSlot.StartTime,
                 CompletedAt.Value));
+        }
+
+        /// <summary>What the history says when a booking completed by itself. Matches the other entries' style.</summary>
+        public const string AutoCompletedHistoryEntry =
+            "Booking completed automatically: not marked done or no-show by the salon within 12 hours of its end";
+
+        /// <summary>
+        /// The visit becomes done by itself: confirmed, and <see cref="BookingAutoCompletion.After"/> past its end on
+        /// the salon's clock without the salon marking it done or no-show
+        /// (openspec/changes/_inline/reviews-and-reschedule-round2 D3). Raises the same <see cref="BookingCompletedEvent"/>
+        /// as <see cref="Complete"/>, so everything that follows a completion — the review request above all — follows
+        /// this one too. The clock is passed in: the job that calls it decides "now".
+        /// </summary>
+        public void CompleteAutomatically(DateTime utcNow)
+        {
+            if (Status != BookingStatus.Confirmed)
+                throw new BusinessRuleViolationException(
+                    new BookingCanOnlyBeCompletedFromConfirmedStateRule(Status));
+
+            if (!BookingAutoCompletion.IsDue(TimeSlot.EndTime, utcNow))
+                throw new BusinessRuleViolationException(new BookingNotYetDueForAutoCompletionRule(TimeSlot.EndTime));
+
+            Status = BookingStatus.Completed;
+            CompletedAt = utcNow;
+
+            AddHistoryEntry(AutoCompletedHistoryEntry, BookingStatus.Completed);
+
+            RaiseDomainEvent(new BookingCompletedEvent(
+                Id,
+                CustomerId,
+                ProviderId,
+                ServiceId,
+                StaffId,
+                TimeSlot.StartTime,
+                utcNow));
         }
 
         /// <summary>
@@ -838,6 +878,21 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates.BookingAggregate
 
         public string Message => $"فقط نوبت‌های تأیید‌شده قابل ثبت به‌عنوان انجام‌شده هستند؛ وضعیت این نوبت: {BookingStatusLabel.Of(_status)}.";
         public string ErrorCode => "BOOKING_INVALID_STATE_FOR_COMPLETION";
+        public bool IsBroken() => true;
+    }
+
+    internal sealed class BookingNotYetDueForAutoCompletionRule : IBusinessRule
+    {
+        private readonly DateTime _salonEnd;
+
+        public BookingNotYetDueForAutoCompletionRule(DateTime salonEnd)
+        {
+            _salonEnd = salonEnd;
+        }
+
+        public string Message =>
+            $"این نوبت هنوز خودکار انجام‌شده نمی‌شود: {BookingAutoCompletion.AfterHoursInPersian} ساعت پس از پایانش ({_salonEnd:yyyy-MM-dd HH:mm}).";
+        public string ErrorCode => "BOOKING_NOT_DUE_FOR_AUTO_COMPLETION";
         public bool IsBroken() => true;
     }
 

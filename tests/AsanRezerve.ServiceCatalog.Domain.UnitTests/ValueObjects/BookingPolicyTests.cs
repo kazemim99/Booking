@@ -219,11 +219,24 @@ public class BookingPolicyTests
     }
 
     [Fact]
+    public void The_default_lets_a_customer_move_a_booking_until_two_hours_before_it()
+    {
+        // openspec/changes/_inline/reviews-and-reschedule-round2 D5: was 24 hours.
+        var policy = BookingPolicy.Default;
+        var now = new DateTime(2026, 9, 25, 10, 0, 0);
+
+        Assert.Equal(2, policy.RescheduleWindowHours);
+        Assert.True(policy.CanReschedule(now.AddHours(2), now));
+        Assert.True(policy.CanReschedule(now.AddHours(3), now));
+        Assert.False(policy.CanReschedule(now.AddHours(1).AddMinutes(59), now));
+    }
+
+    [Fact]
     public void CanReschedule_Should_Return_False_When_Outside_Window()
     {
         // Arrange
-        var policy = BookingPolicy.Default; // 24 hour window
-        var bookingTime = DateTime.UtcNow.AddHours(12);
+        var policy = BookingPolicy.Default; // 2 hour window
+        var bookingTime = DateTime.UtcNow.AddHours(1);
         var currentTime = DateTime.UtcNow;
 
         // Act

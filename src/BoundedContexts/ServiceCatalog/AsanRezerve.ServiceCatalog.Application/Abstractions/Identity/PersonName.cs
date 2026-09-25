@@ -93,23 +93,26 @@ public static class PersonName
         ?? Sanitize(displayName)
         ?? salonName;
 
-    /// <summary>What a public review is signed with when its author has no real name.</summary>
+    /// <summary>What a public review is signed with when its author has no real name, or chose not to show it.</summary>
     public const string AnonymousReviewer = "مشتری";
 
     /// <summary>
-    /// How a review's author is named to the public: first name and surname initial («ناصر ع.») — enough to read as a
-    /// person, not enough to find them — the first name alone when there is no surname, and «مشتری» when there is no
-    /// real name. Never a placeholder, a phone number or an id (it read «Customer 3fa85f64»).
+    /// How a review's author is named to the public: their full real name («ناصر عابدی») — the first name alone when
+    /// there is no surname — unless they ticked «نامم نمایش داده نشود» on the review (<paramref name="showName"/>
+    /// false), or have no real name; then «مشتری». Never a placeholder, a phone number or an id (it read
+    /// «Customer 3fa85f64»). The full name replaced «ناصر ع.» in openspec/changes/_inline/reviews-and-reschedule-round2
+    /// (D2): the author now chooses per review whether to be named at all.
     /// </summary>
-    public static string ForPublicReview(string? firstName, string? lastName)
+    public static string ForPublicReview(string? firstName, string? lastName, bool showName)
     {
+        if (!showName)
+            return AnonymousReviewer;
+
         var (first, last) = RealParts(firstName, lastName);
         if (first.Length == 0)
             return AnonymousReviewer;
 
-        return last.Length == 0
-            ? first
-            : $"{first} {System.Globalization.StringInfo.GetNextTextElement(last)}.";
+        return last.Length == 0 ? first : $"{first} {last}";
     }
 
     /// <summary>Digits, optionally with the separators a phone number is written with; at least one digit.</summary>
