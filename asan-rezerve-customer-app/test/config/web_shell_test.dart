@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:booksy_customer_app/config/theme/app_colors.dart';
-import 'package:booksy_customer_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_colors.dart';
+import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -15,7 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   String read(String path) {
     final file = File(path);
-    expect(file.existsSync(), isTrue, reason: 'Expected $path (run `flutter test` from booksy-customer-app)');
+    expect(file.existsSync(), isTrue, reason: 'Expected $path (run `flutter test` from asan-rezerve-customer-app)');
     return file.readAsStringSync();
   }
 
@@ -40,7 +40,7 @@ void main() {
       expect(html, contains('<title>${AppStrings.appDocumentTitle}</title>'));
       expect(meta(html, 'description'), contains(AppStrings.appTagline));
       expect(meta(html, 'apple-mobile-web-app-title'), AppStrings.homeTitle);
-      expect(html, isNot(contains('booksy_customer_app')));
+      expect(html, isNot(contains('asan_rezerve_customer_app')));
       expect(html, isNot(contains('A new Flutter project')));
     });
 
@@ -190,7 +190,7 @@ void main() {
   group('nginx vhost for customer.nahalkmi.ir', () {
     late String https;
     setUpAll(() {
-      final conf = read('../deployment/nginx/booksy-customer.conf')
+      final conf = read('../deployment/nginx/asan-rezerve-customer.conf')
           .split('\n')
           .map((l) => l.replaceFirst(RegExp(r'#.*$'), ''))
           .join('\n');

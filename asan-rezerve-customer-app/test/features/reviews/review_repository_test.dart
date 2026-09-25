@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:booksy_customer_app/features/reviews/data/datasources/review_remote_datasource.dart';
-import 'package:booksy_customer_app/features/reviews/data/repositories/review_repository_impl.dart';
-import 'package:booksy_customer_app/features/reviews/domain/entities/review.dart';
+import 'package:asan_rezerve_customer_app/features/reviews/data/datasources/review_remote_datasource.dart';
+import 'package:asan_rezerve_customer_app/features/reviews/data/repositories/review_repository_impl.dart';
+import 'package:asan_rezerve_customer_app/features/reviews/domain/entities/review.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 

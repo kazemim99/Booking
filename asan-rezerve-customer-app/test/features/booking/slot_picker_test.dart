@@ -1,8 +1,8 @@
-import 'package:booksy_customer_app/config/theme/app_theme.dart';
-import 'package:booksy_customer_app/core/constants/app_strings.dart';
-import 'package:booksy_customer_app/core/utils/jalali_formatter.dart';
-import 'package:booksy_customer_app/features/booking/domain/entities/booking_entities.dart';
-import 'package:booksy_customer_app/features/booking/presentation/widgets/slot_picker.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_customer_app/core/utils/jalali_formatter.dart';
+import 'package:asan_rezerve_customer_app/features/booking/domain/entities/booking_entities.dart';
+import 'package:asan_rezerve_customer_app/features/booking/presentation/widgets/slot_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';

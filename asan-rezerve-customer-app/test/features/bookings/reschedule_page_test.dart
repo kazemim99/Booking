@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:booksy_customer_app/config/theme/app_theme.dart';
-import 'package:booksy_customer_app/core/di/injection.dart';
-import 'package:booksy_customer_app/core/utils/jalali_formatter.dart';
-import 'package:booksy_customer_app/features/booking/domain/entities/booking_entities.dart';
-import 'package:booksy_customer_app/features/booking/domain/repositories/booking_repository.dart';
-import 'package:booksy_customer_app/features/booking/presentation/widgets/slot_picker.dart';
-import 'package:booksy_customer_app/features/bookings/domain/repositories/bookings_repository.dart';
-import 'package:booksy_customer_app/features/bookings/presentation/pages/reschedule_page.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_customer_app/core/di/injection.dart';
+import 'package:asan_rezerve_customer_app/core/utils/jalali_formatter.dart';
+import 'package:asan_rezerve_customer_app/features/booking/domain/entities/booking_entities.dart';
+import 'package:asan_rezerve_customer_app/features/booking/domain/repositories/booking_repository.dart';
+import 'package:asan_rezerve_customer_app/features/booking/presentation/widgets/slot_picker.dart';
+import 'package:asan_rezerve_customer_app/features/bookings/domain/repositories/bookings_repository.dart';
+import 'package:asan_rezerve_customer_app/features/bookings/presentation/pages/reschedule_page.dart';
 
 import 'bookings_fakes.dart';
 import 'vazir_font.dart';

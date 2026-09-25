@@ -32,7 +32,7 @@ export function useApiAuth() {
   async function register(data: RegisterData): Promise<boolean> {
     try {
       await authStore.register(data)
-      notificationStore.success('Registration Successful', 'Welcome to Booksy!')
+      notificationStore.success('Registration Successful', 'Welcome to AsanRezerve!')
       return true
     } catch (error: unknown) {
       const authError = error as AuthErrorWithMessage

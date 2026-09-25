@@ -5,11 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:booksy_customer_app/config/theme/app_colors.dart';
-import 'package:booksy_customer_app/config/theme/app_theme.dart';
-import 'package:booksy_customer_app/core/constants/app_strings.dart';
-import 'package:booksy_customer_app/core/utils/price_formatter.dart';
-import 'package:booksy_customer_app/core/widgets/widgets.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_colors.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_customer_app/core/utils/price_formatter.dart';
+import 'package:asan_rezerve_customer_app/core/widgets/widgets.dart';
 
 import '../../helpers/contrast.dart';
 

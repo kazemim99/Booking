@@ -1,12 +1,12 @@
 /**
- * Coliride-styled Ant Design theme for the Booksy admin.
+ * Coliride-styled Ant Design theme for the AsanRezerve admin.
  *
- * Maps the shared Booksy/Coliride brand tokens onto Ant Design Vue's GLOBAL theme tokens so
+ * Maps the shared AsanRezerve/Coliride brand tokens onto Ant Design Vue's GLOBAL theme tokens so
  * the whole dashboard inherits the brand without restyling each component. We intentionally use
  * only global/seed tokens (ant-design-vue 4.x leaves most per-component ComponentToken
  * interfaces empty, so component-level keys are unsupported here). Per-component fine-tuning is
- * done with small CSS overrides instead. Keep in sync with booksy-frontend's design-tokens.scss
- * (both will be unified into a shared @booksy/tokens package).
+ * done with small CSS overrides instead. Keep in sync with asanrezerve-frontend's design-tokens.scss
+ * (both will be unified into a shared @asanrezerve/tokens package).
  */
 import type { ThemeConfig } from 'ant-design-vue/es/config-provider/context'
 

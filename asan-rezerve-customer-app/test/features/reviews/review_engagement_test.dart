@@ -1,15 +1,15 @@
 import 'dart:async';
 
-import 'package:booksy_customer_app/core/constants/app_strings.dart';
-import 'package:booksy_customer_app/core/errors/failures.dart';
-import 'package:booksy_customer_app/features/booking/domain/entities/booking_entities.dart';
-import 'package:booksy_customer_app/features/booking/domain/repositories/booking_repository.dart';
-import 'package:booksy_customer_app/features/reviews/domain/entities/review.dart';
-import 'package:booksy_customer_app/features/reviews/domain/repositories/review_repository.dart';
-import 'package:booksy_customer_app/features/reviews/presentation/pages/my_reviews_page.dart';
-import 'package:booksy_customer_app/features/reviews/presentation/widgets/provider_reviews_section.dart';
-import 'package:booksy_customer_app/features/reviews/presentation/widgets/write_review_dialog.dart';
-import 'package:booksy_customer_app/features/search/presentation/bloc/provider_detail_cubit.dart';
+import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_customer_app/core/errors/failures.dart';
+import 'package:asan_rezerve_customer_app/features/booking/domain/entities/booking_entities.dart';
+import 'package:asan_rezerve_customer_app/features/booking/domain/repositories/booking_repository.dart';
+import 'package:asan_rezerve_customer_app/features/reviews/domain/entities/review.dart';
+import 'package:asan_rezerve_customer_app/features/reviews/domain/repositories/review_repository.dart';
+import 'package:asan_rezerve_customer_app/features/reviews/presentation/pages/my_reviews_page.dart';
+import 'package:asan_rezerve_customer_app/features/reviews/presentation/widgets/provider_reviews_section.dart';
+import 'package:asan_rezerve_customer_app/features/reviews/presentation/widgets/write_review_dialog.dart';
+import 'package:asan_rezerve_customer_app/features/search/presentation/bloc/provider_detail_cubit.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

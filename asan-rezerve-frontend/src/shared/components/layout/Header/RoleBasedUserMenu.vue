@@ -129,7 +129,7 @@ const user = computed(() => authStore.user)
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 
 // The person's real name only. A phone sign-up that skipped the name is «مشتری 9384444636», and its synthetic
-// email is «9384444636@booksy.customer» — neither is a name (production QA 2026-09-23).
+// email is «9384444636@asanrezerve.customer» — neither is a name (production QA 2026-09-23).
 const names = computed(() => userNames(user.value))
 
 // Display name

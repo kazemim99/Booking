@@ -2,13 +2,13 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:booksy_customer_app/config/theme/app_colors.dart';
-import 'package:booksy_customer_app/config/theme/app_theme.dart';
-import 'package:booksy_customer_app/core/errors/failures.dart';
-import 'package:booksy_customer_app/features/checkout/domain/entities/checkout_entities.dart';
-import 'package:booksy_customer_app/features/checkout/domain/repositories/checkout_repository.dart';
-import 'package:booksy_customer_app/features/checkout/presentation/bloc/checkout_bloc.dart';
-import 'package:booksy_customer_app/features/checkout/presentation/pages/checkout_page.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_colors.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_customer_app/core/errors/failures.dart';
+import 'package:asan_rezerve_customer_app/features/checkout/domain/entities/checkout_entities.dart';
+import 'package:asan_rezerve_customer_app/features/checkout/domain/repositories/checkout_repository.dart';
+import 'package:asan_rezerve_customer_app/features/checkout/presentation/bloc/checkout_bloc.dart';
+import 'package:asan_rezerve_customer_app/features/checkout/presentation/pages/checkout_page.dart';
 
 import '../../helpers/contrast.dart';
 

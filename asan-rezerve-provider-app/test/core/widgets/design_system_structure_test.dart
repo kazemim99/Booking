@@ -1,11 +1,11 @@
-import 'package:booksy_provider_app/config/theme/app_tokens.dart';
-import 'package:booksy_provider_app/core/widgets/app_card.dart';
-import 'package:booksy_provider_app/core/widgets/app_dashed_divider.dart';
-import 'package:booksy_provider_app/core/widgets/app_icon_button.dart';
-import 'package:booksy_provider_app/core/widgets/app_info_card.dart';
-import 'package:booksy_provider_app/core/widgets/app_list_row.dart';
-import 'package:booksy_provider_app/core/widgets/app_section_header.dart';
-import 'package:booksy_provider_app/core/widgets/app_status_badge.dart';
+import 'package:asan_rezerve_provider_app/config/theme/app_tokens.dart';
+import 'package:asan_rezerve_provider_app/core/widgets/app_card.dart';
+import 'package:asan_rezerve_provider_app/core/widgets/app_dashed_divider.dart';
+import 'package:asan_rezerve_provider_app/core/widgets/app_icon_button.dart';
+import 'package:asan_rezerve_provider_app/core/widgets/app_info_card.dart';
+import 'package:asan_rezerve_provider_app/core/widgets/app_list_row.dart';
+import 'package:asan_rezerve_provider_app/core/widgets/app_section_header.dart';
+import 'package:asan_rezerve_provider_app/core/widgets/app_status_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

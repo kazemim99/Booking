@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:booksy_provider_app/core/api/interceptors/auth_interceptor.dart';
-import 'package:booksy_provider_app/core/api/interceptors/error_interceptor.dart';
-import 'package:booksy_provider_app/core/storage/secure_storage_service.dart';
+import 'package:asan_rezerve_provider_app/core/api/interceptors/auth_interceptor.dart';
+import 'package:asan_rezerve_provider_app/core/api/interceptors/error_interceptor.dart';
+import 'package:asan_rezerve_provider_app/core/storage/secure_storage_service.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';

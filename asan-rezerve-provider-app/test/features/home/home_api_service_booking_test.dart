@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:booksy_provider_app/features/home/data/datasources/home_api_service.dart';
+import 'package:asan_rezerve_provider_app/features/home/data/datasources/home_api_service.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 

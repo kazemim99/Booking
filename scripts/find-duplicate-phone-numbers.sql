@@ -10,7 +10,7 @@
 -- the data is actually clean.
 --
 -- This is not a theoretical concern. 2026-09-08: a new integration test
--- (Booksy.UserManagement.IntegrationTests.Services.PersonProvisioningConcurrencyTests)
+-- (AsanRezerve.UserManagement.IntegrationTests.Services.PersonProvisioningConcurrencyTests)
 -- proved that two concurrent sign-ins for the same brand-new phone number (one as a
 -- customer, one as a provider) currently create two separate person rows -- nothing at the
 -- database level stops it. That test ran against a fresh, empty database; this script checks
@@ -27,7 +27,7 @@
 -- HOW TO RUN
 -- ----------
 -- psql "$CONNECTION_STRING" -f scripts/find-duplicate-phone-numbers.sql
--- (or paste into any Postgres client connected to the `booksy` database)
+-- (or paste into any Postgres client connected to the `asan_rezerve` database)
 --
 -- WHAT TO DO WITH THE RESULT
 -- --------------------------

@@ -1,5 +1,5 @@
-import 'package:booksy_customer_app/core/push/firebase_push_token_source.dart';
-import 'package:booksy_customer_app/core/push/web_push_config.dart';
+import 'package:asan_rezerve_customer_app/core/push/firebase_push_token_source.dart';
+import 'package:asan_rezerve_customer_app/core/push/web_push_config.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// The part of the Firebase source that decides before Firebase is touched. The rest needs a browser or a phone.

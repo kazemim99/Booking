@@ -6,15 +6,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:booksy_customer_app/config/theme/app_theme.dart';
-import 'package:booksy_customer_app/core/constants/app_strings.dart';
-import 'package:booksy_customer_app/core/widgets/empty_state.dart';
-import 'package:booksy_customer_app/core/widgets/error_state.dart';
-import 'package:booksy_customer_app/core/widgets/skeleton_loader.dart';
-import 'package:booksy_customer_app/core/errors/failures.dart';
-import 'package:booksy_customer_app/features/notifications/domain/inbox_item.dart';
-import 'package:booksy_customer_app/features/notifications/presentation/inbox_cubit.dart';
-import 'package:booksy_customer_app/features/notifications/presentation/inbox_page.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_customer_app/core/widgets/empty_state.dart';
+import 'package:asan_rezerve_customer_app/core/widgets/error_state.dart';
+import 'package:asan_rezerve_customer_app/core/widgets/skeleton_loader.dart';
+import 'package:asan_rezerve_customer_app/core/errors/failures.dart';
+import 'package:asan_rezerve_customer_app/features/notifications/domain/inbox_item.dart';
+import 'package:asan_rezerve_customer_app/features/notifications/presentation/inbox_cubit.dart';
+import 'package:asan_rezerve_customer_app/features/notifications/presentation/inbox_page.dart';
 
 import 'inbox_cubit_test.dart' show FakeInboxRepository;
 

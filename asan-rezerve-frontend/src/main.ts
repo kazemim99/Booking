@@ -6,7 +6,7 @@ import router from './core/router'
 import { useRTLInstance } from './core/composables/useRTL'
 import { vClickOutside } from './shared/directives/v-click-outside'
 // Import global styles
-import '../../packages/design-tokens/tokens.css' // shared @booksy/tokens — brand source of truth
+import '../../packages/design-tokens/tokens.css' // shared @asanrezerve/tokens — brand source of truth
 import './assets/styles/main.scss'
 
 // Import translations
@@ -63,7 +63,7 @@ app.directive('click-outside', vClickOutside)
 // Mount app
 app.mount('#app')
 
-console.log('🚀 Booksy Frontend Started')
+console.log('🚀 AsanRezerve Frontend Started')
 console.log('Environment:', import.meta.env.MODE)
 console.log('API URL:', import.meta.env.VITE_USER_MANAGEMENT_API_URL)
 console.log('API URL:', import.meta.env.VITE_SERVICE_CATALOG_API_URL)

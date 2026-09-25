@@ -1,13 +1,13 @@
-import 'package:booksy_provider_app/features/auth/domain/entities/provider_status.dart';
-import 'package:booksy_provider_app/features/home/domain/composition/home_widget_registry.dart';
-import 'package:booksy_provider_app/features/home/domain/entities/home_context.dart';
-import 'package:booksy_provider_app/features/home/domain/entities/home_enums.dart';
-import 'package:booksy_provider_app/features/home/domain/entities/home_inputs.dart';
-import 'package:booksy_provider_app/features/home/domain/services/home_context_resolver.dart';
+import 'package:asan_rezerve_provider_app/features/auth/domain/entities/provider_status.dart';
+import 'package:asan_rezerve_provider_app/features/home/domain/composition/home_widget_registry.dart';
+import 'package:asan_rezerve_provider_app/features/home/domain/entities/home_context.dart';
+import 'package:asan_rezerve_provider_app/features/home/domain/entities/home_enums.dart';
+import 'package:asan_rezerve_provider_app/features/home/domain/entities/home_inputs.dart';
+import 'package:asan_rezerve_provider_app/features/home/domain/services/home_context_resolver.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Verifies the resolver + registry against the fixture matrix in
-/// `booksy-provider-app/PROVIDER_HOME_RESOLVER_SPEC.md` §7. Each row is one
+/// `asanrezerve-provider-app/PROVIDER_HOME_RESOLVER_SPEC.md` §7. Each row is one
 /// assertion of (resolved context) + (ordered visible widgets).
 void main() {
   const resolver = HomeContextResolver();

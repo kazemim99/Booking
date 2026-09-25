@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:booksy_customer_app/config/theme/app_theme.dart';
-import 'package:booksy_customer_app/core/constants/app_strings.dart';
-import 'package:booksy_customer_app/core/errors/failures.dart';
-import 'package:booksy_customer_app/core/widgets/widgets.dart';
-import 'package:booksy_customer_app/features/booking/domain/entities/booking_entities.dart';
-import 'package:booksy_customer_app/features/booking/domain/repositories/booking_repository.dart';
-import 'package:booksy_customer_app/features/booking/presentation/bloc/booking_bloc.dart';
-import 'package:booksy_customer_app/features/booking/presentation/widgets/service_selection_step.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_customer_app/core/errors/failures.dart';
+import 'package:asan_rezerve_customer_app/core/widgets/widgets.dart';
+import 'package:asan_rezerve_customer_app/features/booking/domain/entities/booking_entities.dart';
+import 'package:asan_rezerve_customer_app/features/booking/domain/repositories/booking_repository.dart';
+import 'package:asan_rezerve_customer_app/features/booking/presentation/bloc/booking_bloc.dart';
+import 'package:asan_rezerve_customer_app/features/booking/presentation/widgets/service_selection_step.dart';
 
 /// Widget tests for the multi-select service step.
 ///

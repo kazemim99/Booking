@@ -1,6 +1,6 @@
-import 'package:booksy_provider_app/config/theme/app_theme.dart';
-import 'package:booksy_provider_app/config/theme/app_tokens.dart';
-import 'package:booksy_provider_app/core/widgets/app_page_scaffold.dart';
+import 'package:asan_rezerve_provider_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_provider_app/config/theme/app_tokens.dart';
+import 'package:asan_rezerve_provider_app/core/widgets/app_page_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

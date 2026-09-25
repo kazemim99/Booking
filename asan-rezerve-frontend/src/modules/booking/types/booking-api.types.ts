@@ -6,7 +6,7 @@
 
 /**
  * Customer booking DTO with enriched data (service/provider/staff names)
- * Matches backend: Booksy.ServiceCatalog.Application.Queries.Booking.GetCustomerBookings.CustomerBookingDto
+ * Matches backend: AsanRezerve.ServiceCatalog.Application.Queries.Booking.GetCustomerBookings.CustomerBookingDto
  */
 export interface CustomerBookingDto {
   bookingId: string
@@ -33,7 +33,7 @@ export interface CustomerBookingDto {
 
 /**
  * Generic paginated result wrapper
- * Matches backend: Booksy.Core.Application.DTOs.PagedResult<T>
+ * Matches backend: AsanRezerve.Core.Application.DTOs.PagedResult<T>
  */
 export interface PagedResult<T> {
   items: T[]
@@ -53,7 +53,7 @@ export interface PagedResult<T> {
 
 /**
  * Pagination request parameters
- * Matches backend: Booksy.Core.Application.DTOs.PaginationRequest
+ * Matches backend: AsanRezerve.Core.Application.DTOs.PaginationRequest
  */
 export interface PaginationRequest {
   page?: number // PageNumber in backend (default: 1)
@@ -64,7 +64,7 @@ export interface PaginationRequest {
 
 /**
  * Booking response (basic booking info without enrichment)
- * Matches backend: Booksy.ServiceCatalog.Api.Models.Responses.BookingResponse
+ * Matches backend: AsanRezerve.ServiceCatalog.Api.Models.Responses.BookingResponse
  */
 export interface BookingResponse {
   id: string

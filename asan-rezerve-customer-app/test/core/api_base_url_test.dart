@@ -1,4 +1,4 @@
-import 'package:booksy_customer_app/core/api/config/api_constants.dart';
+import 'package:asan_rezerve_customer_app/core/api/config/api_constants.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// The web build talks to the deployed API only because CI compiles the URL in

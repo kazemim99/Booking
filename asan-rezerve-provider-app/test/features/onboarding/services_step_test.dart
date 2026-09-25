@@ -1,10 +1,10 @@
-import 'package:booksy_provider_app/core/constants/app_strings.dart';
-import 'package:booksy_provider_app/core/widgets/app_list_row.dart';
-import 'package:booksy_provider_app/core/widgets/app_section_header.dart';
-import 'package:booksy_provider_app/features/onboarding/domain/entities/onboarding_data.dart';
-import 'package:booksy_provider_app/features/onboarding/domain/repositories/onboarding_repository.dart';
-import 'package:booksy_provider_app/features/onboarding/presentation/cubit/onboarding_cubit.dart';
-import 'package:booksy_provider_app/features/onboarding/presentation/steps/services_step.dart';
+import 'package:asan_rezerve_provider_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_provider_app/core/widgets/app_list_row.dart';
+import 'package:asan_rezerve_provider_app/core/widgets/app_section_header.dart';
+import 'package:asan_rezerve_provider_app/features/onboarding/domain/entities/onboarding_data.dart';
+import 'package:asan_rezerve_provider_app/features/onboarding/domain/repositories/onboarding_repository.dart';
+import 'package:asan_rezerve_provider_app/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:asan_rezerve_provider_app/features/onboarding/presentation/steps/services_step.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

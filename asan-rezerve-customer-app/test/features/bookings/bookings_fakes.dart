@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:dartz/dartz.dart';
 
-import 'package:booksy_customer_app/core/errors/failures.dart';
-import 'package:booksy_customer_app/features/booking/domain/entities/booking_entities.dart';
-import 'package:booksy_customer_app/features/booking/domain/repositories/booking_repository.dart';
-import 'package:booksy_customer_app/features/bookings/domain/entities/booking_summary.dart';
-import 'package:booksy_customer_app/features/bookings/domain/repositories/bookings_repository.dart';
+import 'package:asan_rezerve_customer_app/core/errors/failures.dart';
+import 'package:asan_rezerve_customer_app/features/booking/domain/entities/booking_entities.dart';
+import 'package:asan_rezerve_customer_app/features/booking/domain/repositories/booking_repository.dart';
+import 'package:asan_rezerve_customer_app/features/bookings/domain/entities/booking_summary.dart';
+import 'package:asan_rezerve_customer_app/features/bookings/domain/repositories/bookings_repository.dart';
 
 /// A booking as the appointments screens see it. [start] defaults to two days
 /// after a fixed "now" so nothing depends on the wall clock.

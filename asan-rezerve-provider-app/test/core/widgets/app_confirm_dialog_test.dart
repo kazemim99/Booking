@@ -1,7 +1,7 @@
 import 'dart:async' show unawaited;
 
-import 'package:booksy_provider_app/core/widgets/app_confirm_dialog.dart';
-import 'package:booksy_provider_app/core/widgets/app_dialog_header.dart';
+import 'package:asan_rezerve_provider_app/core/widgets/app_confirm_dialog.dart';
+import 'package:asan_rezerve_provider_app/core/widgets/app_dialog_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

@@ -1,7 +1,7 @@
-import 'package:booksy_provider_app/core/errors/failures.dart';
-import 'package:booksy_provider_app/features/invitations/domain/invitation_repository.dart';
-import 'package:booksy_provider_app/features/invitations/domain/invitation_summary.dart';
-import 'package:booksy_provider_app/features/invitations/presentation/register_and_accept_cubit.dart';
+import 'package:asan_rezerve_provider_app/core/errors/failures.dart';
+import 'package:asan_rezerve_provider_app/features/invitations/domain/invitation_repository.dart';
+import 'package:asan_rezerve_provider_app/features/invitations/domain/invitation_summary.dart';
+import 'package:asan_rezerve_provider_app/features/invitations/presentation/register_and_accept_cubit.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';

@@ -1,14 +1,14 @@
 import 'dart:async';
 
-import 'package:booksy_provider_app/core/errors/failures.dart';
-import 'package:booksy_provider_app/core/network/connectivity_service.dart';
-import 'package:booksy_provider_app/features/auth/domain/entities/provider_status.dart';
-import 'package:booksy_provider_app/features/home/domain/composition/home_widget_registry.dart';
-import 'package:booksy_provider_app/features/home/domain/entities/home_enums.dart';
-import 'package:booksy_provider_app/features/home/domain/entities/home_inputs.dart';
-import 'package:booksy_provider_app/features/home/domain/entities/home_snapshot.dart';
-import 'package:booksy_provider_app/features/home/domain/repositories/home_repository.dart';
-import 'package:booksy_provider_app/features/home/presentation/cubit/home_cubit.dart';
+import 'package:asan_rezerve_provider_app/core/errors/failures.dart';
+import 'package:asan_rezerve_provider_app/core/network/connectivity_service.dart';
+import 'package:asan_rezerve_provider_app/features/auth/domain/entities/provider_status.dart';
+import 'package:asan_rezerve_provider_app/features/home/domain/composition/home_widget_registry.dart';
+import 'package:asan_rezerve_provider_app/features/home/domain/entities/home_enums.dart';
+import 'package:asan_rezerve_provider_app/features/home/domain/entities/home_inputs.dart';
+import 'package:asan_rezerve_provider_app/features/home/domain/entities/home_snapshot.dart';
+import 'package:asan_rezerve_provider_app/features/home/domain/repositories/home_repository.dart';
+import 'package:asan_rezerve_provider_app/features/home/presentation/cubit/home_cubit.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';

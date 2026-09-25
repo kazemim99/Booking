@@ -41,7 +41,7 @@ export function useRegister() {
       if (success) {
         // On success, show toast notification and handle redirect
         registrationSuccess.value = true
-        toast.success('Registration Successful! Welcome to Booksy!')
+        toast.success('Registration Successful! Welcome to AsanRezerve!')
 
         // Redirect based on user type
         await handlePostRegistrationRedirect(data.userType as UserType)

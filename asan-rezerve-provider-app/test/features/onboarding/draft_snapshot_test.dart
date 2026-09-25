@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:booksy_provider_app/features/onboarding/data/models/draft_snapshot.dart';
-import 'package:booksy_provider_app/features/onboarding/domain/entities/onboarding_data.dart';
+import 'package:asan_rezerve_provider_app/features/onboarding/data/models/draft_snapshot.dart';
+import 'package:asan_rezerve_provider_app/features/onboarding/domain/entities/onboarding_data.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// The `data` object of a REAL GET /v1/Registration/progress response,

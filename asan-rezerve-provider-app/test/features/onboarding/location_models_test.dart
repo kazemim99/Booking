@@ -1,4 +1,4 @@
-import 'package:booksy_provider_app/features/onboarding/data/models/location_models.dart';
+import 'package:asan_rezerve_provider_app/features/onboarding/data/models/location_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

@@ -1,5 +1,5 @@
-import 'package:booksy_provider_app/core/contacts/contact_picker.dart';
-import 'package:booksy_provider_app/features/home/domain/entities/saved_customer.dart';
+import 'package:asan_rezerve_provider_app/core/contacts/contact_picker.dart';
+import 'package:asan_rezerve_provider_app/features/home/domain/entities/saved_customer.dart';
 
 /// Stands in for the phone's contact picker: [picked] is what the provider
 /// "ticks"; [calls] counts how often the picker was opened.

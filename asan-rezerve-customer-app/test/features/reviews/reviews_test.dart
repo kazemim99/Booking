@@ -1,7 +1,7 @@
-import 'package:booksy_customer_app/core/constants/app_strings.dart';
-import 'package:booksy_customer_app/features/reviews/domain/entities/review.dart';
-import 'package:booksy_customer_app/features/reviews/presentation/widgets/provider_reviews_section.dart';
-import 'package:booksy_customer_app/features/reviews/presentation/widgets/write_review_dialog.dart';
+import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_customer_app/features/reviews/domain/entities/review.dart';
+import 'package:asan_rezerve_customer_app/features/reviews/presentation/widgets/provider_reviews_section.dart';
+import 'package:asan_rezerve_customer_app/features/reviews/presentation/widgets/write_review_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

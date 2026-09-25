@@ -1,5 +1,5 @@
-import 'package:booksy_customer_app/core/utils/jalali_formatter.dart';
-import 'package:booksy_customer_app/core/utils/relative_time.dart';
+import 'package:asan_rezerve_customer_app/core/utils/jalali_formatter.dart';
+import 'package:asan_rezerve_customer_app/core/utils/relative_time.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// How long ago a notification arrived (UX review 2026-09-23, G.2: inbox rows showed no time at all). "Now"

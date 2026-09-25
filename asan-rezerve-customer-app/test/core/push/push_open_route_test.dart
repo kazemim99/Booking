@@ -1,5 +1,5 @@
-import 'package:booksy_customer_app/config/routes/app_router.dart';
-import 'package:booksy_customer_app/core/push/push_open_route.dart';
+import 'package:asan_rezerve_customer_app/config/routes/app_router.dart';
+import 'package:asan_rezerve_customer_app/core/push/push_open_route.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Where a tapped push lands. The payload names the notification and, when there is one, the booking.

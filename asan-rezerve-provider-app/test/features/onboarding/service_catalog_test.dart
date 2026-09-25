@@ -1,5 +1,5 @@
-import 'package:booksy_provider_app/features/onboarding/domain/entities/onboarding_data.dart';
-import 'package:booksy_provider_app/features/onboarding/domain/entities/service_catalog.dart';
+import 'package:asan_rezerve_provider_app/features/onboarding/domain/entities/onboarding_data.dart';
+import 'package:asan_rezerve_provider_app/features/onboarding/domain/entities/service_catalog.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// The catalogue is seed content the provider edits, so what matters is that it

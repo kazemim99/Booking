@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:booksy_customer_app/core/storage/secure_storage_service.dart';
+import 'package:asan_rezerve_customer_app/core/storage/secure_storage_service.dart';
 
 /// Regression cover for a defect that surfaced two different ways in the running app:
 /// the splash screen hanging forever, and the home page showing the raw platform error

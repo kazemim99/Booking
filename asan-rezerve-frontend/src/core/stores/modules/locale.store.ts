@@ -28,7 +28,7 @@ interface LocaleSettings {
 
 // ==================== Constants ====================
 
-const STORAGE_KEY = 'booksy_locale_settings'
+const STORAGE_KEY = 'asanrezerve_locale_settings'
 
 const DEFAULT_LOCALE: Language = 'fa' as Language
 const DEFAULT_FALLBACK: Language = 'en' as Language

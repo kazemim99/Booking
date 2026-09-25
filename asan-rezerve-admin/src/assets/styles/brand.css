@@ -4,7 +4,7 @@
  * Ant's global theme tokens (src/config/antd-theme.ts) handle palette/radius/font, but a few
  * signature Coliride touches (flat bold buttons, border-over-shadow cards, brand chrome) live
  * below Ant's token surface. Ant v4 injects component CSS at runtime, so these overrides use
- * !important to win. Uses the shared @booksy/tokens custom properties.
+ * !important to win. Uses the shared @asanrezerve/tokens custom properties.
  */
 
 /* Flat, bold, rounded buttons — Coliride's signature button */

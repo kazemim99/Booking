@@ -1,20 +1,20 @@
 // ========================================
-// Booksy.UserManagement.API/Controllers/V1/PhoneVerificationController.cs
+// AsanRezerve.UserManagement.API/Controllers/V1/PhoneVerificationController.cs
 // ========================================
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using Booksy.UserManagement.API.Models.Requests;
-using Booksy.UserManagement.API.Models.Responses;
-using Booksy.UserManagement.Application.CQRS.Commands.PhoneVerification.VerifyPhone;
-using Booksy.UserManagement.Application.CQRS.Commands.PhoneVerification.ResendOtp;
-using Booksy.UserManagement.Application.CQRS.Commands.PhoneVerification.CompleteCustomerAuthentication;
-using Booksy.UserManagement.Application.CQRS.Commands.PhoneVerification.CompleteProviderAuthentication;
-using Booksy.UserManagement.Domain.Enums;
-using Booksy.Core.Domain.Exceptions;
+using AsanRezerve.UserManagement.API.Models.Requests;
+using AsanRezerve.UserManagement.API.Models.Responses;
+using AsanRezerve.UserManagement.Application.CQRS.Commands.PhoneVerification.VerifyPhone;
+using AsanRezerve.UserManagement.Application.CQRS.Commands.PhoneVerification.ResendOtp;
+using AsanRezerve.UserManagement.Application.CQRS.Commands.PhoneVerification.CompleteCustomerAuthentication;
+using AsanRezerve.UserManagement.Application.CQRS.Commands.PhoneVerification.CompleteProviderAuthentication;
+using AsanRezerve.UserManagement.Domain.Enums;
+using AsanRezerve.Core.Domain.Exceptions;
 
-namespace Booksy.UserManagement.API.Controllers.V1;
+namespace AsanRezerve.UserManagement.API.Controllers.V1;
 
 /// <summary>
 /// Phone verification and OTP management endpoints

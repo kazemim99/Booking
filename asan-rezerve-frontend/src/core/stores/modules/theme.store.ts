@@ -32,7 +32,7 @@ interface ThemeColors {
 
 // ==================== Constants ====================
 
-const STORAGE_KEY = 'booksy_theme_settings'
+const STORAGE_KEY = 'asanrezerve_theme_settings'
 
 const DEFAULT_COLOR_SCHEME: ColorScheme = 'light'
 const DEFAULT_FONT_SIZE: FontSize = 'medium'

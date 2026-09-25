@@ -1,7 +1,7 @@
 <template>
   <aside class="customer-sidebar" :class="{ collapsed }" dir="rtl">
     <div class="sidebar-header">
-      <h2 v-if="!collapsed">Booksy</h2>
+      <h2 v-if="!collapsed">AsanRezerve</h2>
       <button @click="$emit('update:collapsed', !collapsed)" class="toggle-btn">
         <span>☰</span>
       </button>

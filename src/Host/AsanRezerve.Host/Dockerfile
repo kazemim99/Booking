@@ -1,5 +1,5 @@
 # Modular-monolith host image. Build context is the repository root
-# (see <DockerfileContext> in Booksy.Host.csproj).
+# (see <DockerfileContext> in AsanRezerve.Host.csproj).
 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 USER root
@@ -17,8 +17,8 @@ WORKDIR /src
 COPY nuget.config ./
 COPY src/ src/
 
-RUN dotnet restore "src/Host/Booksy.Host/Booksy.Host.csproj"
-RUN dotnet publish "src/Host/Booksy.Host/Booksy.Host.csproj" \
+RUN dotnet restore "src/Host/AsanRezerve.Host/AsanRezerve.Host.csproj"
+RUN dotnet publish "src/Host/AsanRezerve.Host/AsanRezerve.Host.csproj" \
     -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false --no-restore
 
 FROM base AS final
@@ -31,4 +31,4 @@ COPY --from=build /app/publish .
 USER root
 RUN mkdir -p /app/wwwroot/uploads && chown -R $APP_UID /app/wwwroot
 USER $APP_UID
-ENTRYPOINT ["dotnet", "Booksy.Host.dll"]
+ENTRYPOINT ["dotnet", "AsanRezerve.Host.dll"]

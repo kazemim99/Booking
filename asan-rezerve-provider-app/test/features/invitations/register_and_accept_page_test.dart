@@ -1,9 +1,9 @@
-import 'package:booksy_provider_app/core/constants/app_strings.dart';
-import 'package:booksy_provider_app/core/widgets/app_loading.dart';
-import 'package:booksy_provider_app/features/invitations/domain/invitation_repository.dart';
-import 'package:booksy_provider_app/features/invitations/domain/invitation_summary.dart';
-import 'package:booksy_provider_app/features/invitations/presentation/register_and_accept_cubit.dart';
-import 'package:booksy_provider_app/features/invitations/presentation/register_and_accept_page.dart';
+import 'package:asan_rezerve_provider_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_provider_app/core/widgets/app_loading.dart';
+import 'package:asan_rezerve_provider_app/features/invitations/domain/invitation_repository.dart';
+import 'package:asan_rezerve_provider_app/features/invitations/domain/invitation_summary.dart';
+import 'package:asan_rezerve_provider_app/features/invitations/presentation/register_and_accept_cubit.dart';
+import 'package:asan_rezerve_provider_app/features/invitations/presentation/register_and_accept_page.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

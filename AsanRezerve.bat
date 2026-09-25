@@ -1,6 +1,6 @@
 @echo off
-REM Booksy Launcher Batch File
-REM This allows you to run 'booksy start' or 'booksy stop' from anywhere
+REM AsanRezerve Launcher Batch File
+REM This allows you to run 'asan-rezerve start' or 'asan-rezerve stop' from anywhere
 
 if "%1"=="start" (
     powershell -ExecutionPolicy Bypass -File "c:\Repos\Booking\run-all.ps1"
@@ -8,6 +8,6 @@ if "%1"=="start" (
     powershell -ExecutionPolicy Bypass -File "c:\Repos\Booking\stop-all.ps1"
 ) else (
     echo Usage:
-    echo   booksy start  - Start all services
-    echo   booksy stop   - Stop all services
+    echo   asan-rezerve start  - Start all services
+    echo   asan-rezerve stop   - Stop all services
 )

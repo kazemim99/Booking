@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:booksy_customer_app/core/utils/price_formatter.dart';
+import 'package:asan_rezerve_customer_app/core/utils/price_formatter.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Money in this app is Toman, written in Persian digits and grouped in threes

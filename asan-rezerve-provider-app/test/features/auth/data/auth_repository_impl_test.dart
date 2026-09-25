@@ -1,9 +1,9 @@
-import 'package:booksy_provider_app/core/api/models/api_response.dart';
-import 'package:booksy_provider_app/core/storage/secure_storage_service.dart';
-import 'package:booksy_provider_app/features/auth/data/datasources/auth_api_service.dart';
-import 'package:booksy_provider_app/features/auth/data/models/auth_models.dart';
-import 'package:booksy_provider_app/features/auth/data/repositories/auth_repository_impl.dart';
-import 'package:booksy_provider_app/features/auth/domain/entities/provider_status.dart';
+import 'package:asan_rezerve_provider_app/core/api/models/api_response.dart';
+import 'package:asan_rezerve_provider_app/core/storage/secure_storage_service.dart';
+import 'package:asan_rezerve_provider_app/features/auth/data/datasources/auth_api_service.dart';
+import 'package:asan_rezerve_provider_app/features/auth/data/models/auth_models.dart';
+import 'package:asan_rezerve_provider_app/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:asan_rezerve_provider_app/features/auth/domain/entities/provider_status.dart';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';

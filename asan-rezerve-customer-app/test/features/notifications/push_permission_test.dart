@@ -1,9 +1,9 @@
-import 'package:booksy_customer_app/config/theme/app_theme.dart';
-import 'package:booksy_customer_app/core/constants/app_strings.dart';
-import 'package:booksy_customer_app/core/push/push_registration.dart';
-import 'package:booksy_customer_app/features/notifications/presentation/push_enable_tile.dart';
-import 'package:booksy_customer_app/features/notifications/presentation/push_permission_cubit.dart';
-import 'package:booksy_customer_app/features/notifications/presentation/push_soft_prompt.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_customer_app/core/push/push_registration.dart';
+import 'package:asan_rezerve_customer_app/features/notifications/presentation/push_enable_tile.dart';
+import 'package:asan_rezerve_customer_app/features/notifications/presentation/push_permission_cubit.dart';
+import 'package:asan_rezerve_customer_app/features/notifications/presentation/push_soft_prompt.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

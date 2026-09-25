@@ -7,7 +7,7 @@ import type { LocaleState } from '../types/locale.types'
 import { Language, Direction, DateFormat, NumberFormat, LOCALE_CONFIG } from '../types/locale.types'
 
 
-const STORAGE_KEY = 'booksy_admin_locale_settings'
+const STORAGE_KEY = 'asanrezerve_admin_locale_settings'
 
 export const useLocaleStore = defineStore('locale', () => {
   // State

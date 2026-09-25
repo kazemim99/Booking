@@ -1,7 +1,7 @@
 <template>
   <footer class="admin-footer">
     <div class="content">
-      <span class="muted">© {{ currentYear }} Booksy Admin</span>
+      <span class="muted">© {{ currentYear }} AsanRezerve Admin</span>
       <div class="links">
         <router-link to="/admin/reports">Reports</router-link>
         <router-link to="/admin/users">Users</router-link>

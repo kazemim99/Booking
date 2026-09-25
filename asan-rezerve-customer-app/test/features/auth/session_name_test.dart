@@ -5,12 +5,12 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:booksy_customer_app/core/storage/secure_storage_service.dart';
-import 'package:booksy_customer_app/features/auth/data/datasources/auth_api_service.dart';
-import 'package:booksy_customer_app/features/auth/data/repositories/auth_repository_impl.dart';
-import 'package:booksy_customer_app/features/auth/domain/entities/user.dart';
-import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_event.dart';
-import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_state.dart';
+import 'package:asan_rezerve_customer_app/core/storage/secure_storage_service.dart';
+import 'package:asan_rezerve_customer_app/features/auth/data/datasources/auth_api_service.dart';
+import 'package:asan_rezerve_customer_app/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:asan_rezerve_customer_app/features/auth/domain/entities/user.dart';
+import 'package:asan_rezerve_customer_app/features/auth/presentation/bloc/auth_event.dart';
+import 'package:asan_rezerve_customer_app/features/auth/presentation/bloc/auth_state.dart';
 
 import '../../helpers/fake_auth_bloc.dart';
 

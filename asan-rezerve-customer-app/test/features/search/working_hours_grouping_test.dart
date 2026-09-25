@@ -1,5 +1,5 @@
-import 'package:booksy_customer_app/features/booking/domain/entities/booking_entities.dart';
-import 'package:booksy_customer_app/features/search/presentation/widgets/working_hours_section.dart';
+import 'package:asan_rezerve_customer_app/features/booking/domain/entities/booking_entities.dart';
+import 'package:asan_rezerve_customer_app/features/search/presentation/widgets/working_hours_section.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Seven rows that say the same thing are seven rows nobody reads

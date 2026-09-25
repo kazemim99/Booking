@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:booksy_customer_app/core/constants/app_strings.dart';
-import 'package:booksy_customer_app/core/errors/dio_failure_mapper.dart';
-import 'package:booksy_customer_app/core/errors/failures.dart';
+import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_customer_app/core/errors/dio_failure_mapper.dart';
+import 'package:asan_rezerve_customer_app/core/errors/failures.dart';
 
 /// Every network action funnels through [mapDioFailure], so whatever it returns is
 /// literally what the user reads in the snackbar.

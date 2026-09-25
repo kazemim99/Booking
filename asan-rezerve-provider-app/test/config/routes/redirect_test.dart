@@ -1,7 +1,7 @@
-import 'package:booksy_provider_app/config/routes/app_router.dart';
-import 'package:booksy_provider_app/features/auth/domain/entities/provider_session.dart';
-import 'package:booksy_provider_app/features/auth/domain/entities/provider_status.dart';
-import 'package:booksy_provider_app/features/auth/presentation/bloc/auth_state.dart';
+import 'package:asan_rezerve_provider_app/config/routes/app_router.dart';
+import 'package:asan_rezerve_provider_app/features/auth/domain/entities/provider_session.dart';
+import 'package:asan_rezerve_provider_app/features/auth/domain/entities/provider_status.dart';
+import 'package:asan_rezerve_provider_app/features/auth/presentation/bloc/auth_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 String? redirect(String location, AuthFlowStatus status, {String? query}) {

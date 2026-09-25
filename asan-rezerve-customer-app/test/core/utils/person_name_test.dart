@@ -1,4 +1,4 @@
-import 'package:booksy_customer_app/core/utils/person_name.dart';
+import 'package:asan_rezerve_customer_app/core/utils/person_name.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Who counts as named (QA walkthrough 2026-09-22: a customer's profile read «ارائه‌دهنده 9384444636», and

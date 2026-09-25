@@ -10,11 +10,11 @@ pause
 
 echo.
 echo Step 2: Creating migration...
-cd ..\src\BoundedContexts\ServiceCatalog\Booksy.ServiceCatalog.Api
+cd ..\src\BoundedContexts\ServiceCatalog\AsanRezerve.ServiceCatalog.Api
 
 dotnet ef migrations add RemoveGalleryImageRowVersion ^
   --context ServiceCatalogDbContext ^
-  --project "../Booksy.ServiceCatalog.Infrastructure/Booksy.ServiceCatalog.Infrastructure.csproj" ^
+  --project "../AsanRezerve.ServiceCatalog.Infrastructure/AsanRezerve.ServiceCatalog.Infrastructure.csproj" ^
   --output-dir "Persistence/Migrations"
 
 if %ERRORLEVEL% NEQ 0 (
@@ -27,7 +27,7 @@ echo.
 echo Step 3: Applying migration to database...
 dotnet ef database update ^
   --context ServiceCatalogDbContext ^
-  --project "../Booksy.ServiceCatalog.Infrastructure/Booksy.ServiceCatalog.Infrastructure.csproj"
+  --project "../AsanRezerve.ServiceCatalog.Infrastructure/AsanRezerve.ServiceCatalog.Infrastructure.csproj"
 
 if %ERRORLEVEL% NEQ 0 (
     echo Migration application failed!

@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:booksy_customer_app/core/push/push_registration.dart';
-import 'package:booksy_customer_app/core/push/push_token_source.dart';
+import 'package:asan_rezerve_customer_app/core/push/push_registration.dart';
+import 'package:asan_rezerve_customer_app/core/push/push_token_source.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Registering this device so a push has somewhere to arrive.

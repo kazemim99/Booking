@@ -34,7 +34,7 @@ bld/
 [Ll]ogs/
 # ...but not source folders that happen to be called logs: the admin panel's Logs page
 # was never committed because of the rule above, and CI could not build the app (2026-09-19).
-!booksy-admin/src/views/logs/
+!asan-rezerve-admin/src/views/logs/
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
@@ -204,7 +204,7 @@ PublishScripts/
 # except build/, which is used as an MSBuild target.
 !**/[Pp]ackages/build/
 # ...and except design-tokens/, which is SOURCE, not restored NuGet output: it holds
-# the shared brand stylesheet that booksy-frontend/src/main.ts imports directly
+# the shared brand stylesheet that asan-rezerve-frontend/src/main.ts imports directly
 # (`../../packages/design-tokens/tokens.css`). This rule comes from the stock Visual
 # Studio template and was silently swallowing it, so the file lived only on developer
 # machines and never in the repo -- meaning the frontend could not be built from a

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:booksy_customer_app/core/errors/failures.dart';
-import 'package:booksy_customer_app/features/bookings/presentation/bloc/appointment_detail_cubit.dart';
+import 'package:asan_rezerve_customer_app/core/errors/failures.dart';
+import 'package:asan_rezerve_customer_app/features/bookings/presentation/bloc/appointment_detail_cubit.dart';
 
 import 'bookings_fakes.dart';
 

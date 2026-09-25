@@ -16,8 +16,8 @@
 
       <!-- Logo -->
       <router-link to="/" class="logo">
-        <img src="@/assets/logo.svg" alt="Booksy" />
-        <span class="logo-text">Booksy</span>
+        <img src="@/assets/logo.svg" alt="AsanRezerve" />
+        <span class="logo-text">AsanRezerve</span>
       </router-link>
 
       <!-- Spacer -->

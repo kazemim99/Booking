@@ -19,7 +19,7 @@ export default defineConfig({
     host: true,
     port: 5173,
     strictPort: true,
-    // allow importing the sibling packages/design-tokens (shared @booksy/tokens) in dev
+    // allow importing the sibling packages/design-tokens (shared @asanrezerve/tokens) in dev
     fs: { allow: ['..'] },
   },
   // Explicitly enable source maps for better debugging

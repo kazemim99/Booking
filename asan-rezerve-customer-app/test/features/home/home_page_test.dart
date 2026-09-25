@@ -4,33 +4,33 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:booksy_customer_app/config/theme/app_theme.dart';
-import 'package:booksy_customer_app/core/constants/app_strings.dart';
-import 'package:booksy_customer_app/core/errors/failures.dart';
-import 'package:booksy_customer_app/core/location/location_service.dart';
-import 'package:booksy_customer_app/core/storage/secure_storage_service.dart';
-import 'package:booksy_customer_app/core/widgets/widgets.dart';
-import 'package:booksy_customer_app/core/utils/price_formatter.dart';
-import 'package:booksy_customer_app/features/home/domain/entities/favorite_provider.dart';
-import 'package:booksy_customer_app/features/home/domain/entities/provider_summary.dart';
-import 'package:booksy_customer_app/features/home/domain/entities/recently_visited_provider.dart';
-import 'package:booksy_customer_app/features/home/domain/repositories/home_repository.dart';
-import 'package:booksy_customer_app/features/home/domain/usecases/get_home_data.dart';
-import 'package:booksy_customer_app/features/home/presentation/bloc/home_bloc.dart';
-import 'package:booksy_customer_app/features/home/presentation/bloc/home_state.dart';
-import 'package:booksy_customer_app/features/home/presentation/pages/home_page.dart';
-import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:booksy_customer_app/features/notifications/domain/inbox_item.dart';
-import 'package:booksy_customer_app/features/notifications/domain/inbox_repository.dart';
-import 'package:booksy_customer_app/features/notifications/presentation/inbox_cubit.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_customer_app/core/errors/failures.dart';
+import 'package:asan_rezerve_customer_app/core/location/location_service.dart';
+import 'package:asan_rezerve_customer_app/core/storage/secure_storage_service.dart';
+import 'package:asan_rezerve_customer_app/core/widgets/widgets.dart';
+import 'package:asan_rezerve_customer_app/core/utils/price_formatter.dart';
+import 'package:asan_rezerve_customer_app/features/home/domain/entities/favorite_provider.dart';
+import 'package:asan_rezerve_customer_app/features/home/domain/entities/provider_summary.dart';
+import 'package:asan_rezerve_customer_app/features/home/domain/entities/recently_visited_provider.dart';
+import 'package:asan_rezerve_customer_app/features/home/domain/repositories/home_repository.dart';
+import 'package:asan_rezerve_customer_app/features/home/domain/usecases/get_home_data.dart';
+import 'package:asan_rezerve_customer_app/features/home/presentation/bloc/home_bloc.dart';
+import 'package:asan_rezerve_customer_app/features/home/presentation/bloc/home_state.dart';
+import 'package:asan_rezerve_customer_app/features/home/presentation/pages/home_page.dart';
+import 'package:asan_rezerve_customer_app/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:asan_rezerve_customer_app/features/notifications/domain/inbox_item.dart';
+import 'package:asan_rezerve_customer_app/features/notifications/domain/inbox_repository.dart';
+import 'package:asan_rezerve_customer_app/features/notifications/presentation/inbox_cubit.dart';
 
 import '../../helpers/fake_auth_bloc.dart';
-import 'package:booksy_customer_app/features/home/presentation/widgets/featured_provider_card.dart';
-import 'package:booksy_customer_app/features/home/presentation/widgets/home_category_row.dart';
-import 'package:booksy_customer_app/features/home/presentation/widgets/nearby_provider_card.dart';
-import 'package:booksy_customer_app/features/search/domain/repositories/search_repository.dart';
-import 'package:booksy_customer_app/features/search/presentation/bloc/nearby_providers_cubit.dart';
-import 'package:booksy_customer_app/features/search/presentation/widgets/service_categories.dart';
+import 'package:asan_rezerve_customer_app/features/home/presentation/widgets/featured_provider_card.dart';
+import 'package:asan_rezerve_customer_app/features/home/presentation/widgets/home_category_row.dart';
+import 'package:asan_rezerve_customer_app/features/home/presentation/widgets/nearby_provider_card.dart';
+import 'package:asan_rezerve_customer_app/features/search/domain/repositories/search_repository.dart';
+import 'package:asan_rezerve_customer_app/features/search/presentation/bloc/nearby_providers_cubit.dart';
+import 'package:asan_rezerve_customer_app/features/search/presentation/widgets/service_categories.dart';
 
 /// Widget tests for the redesigned home surface.
 ///

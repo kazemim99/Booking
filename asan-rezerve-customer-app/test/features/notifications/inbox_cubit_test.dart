@@ -1,10 +1,10 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:booksy_customer_app/core/errors/failures.dart';
-import 'package:booksy_customer_app/features/notifications/domain/inbox_item.dart';
-import 'package:booksy_customer_app/features/notifications/domain/inbox_repository.dart';
-import 'package:booksy_customer_app/features/notifications/presentation/inbox_cubit.dart';
+import 'package:asan_rezerve_customer_app/core/errors/failures.dart';
+import 'package:asan_rezerve_customer_app/features/notifications/domain/inbox_item.dart';
+import 'package:asan_rezerve_customer_app/features/notifications/domain/inbox_repository.dart';
+import 'package:asan_rezerve_customer_app/features/notifications/presentation/inbox_cubit.dart';
 
 /// The customer's inbox and the bell's badge share one cubit, so they cannot disagree. These hold the rules that
 /// keep the number true: an already-read notice changes nothing, a failed request is put back exactly as it was,

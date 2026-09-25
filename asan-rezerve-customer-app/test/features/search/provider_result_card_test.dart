@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:booksy_customer_app/config/theme/app_colors.dart';
-import 'package:booksy_customer_app/config/theme/app_theme.dart';
-import 'package:booksy_customer_app/core/constants/app_strings.dart';
-import 'package:booksy_customer_app/core/utils/price_formatter.dart';
-import 'package:booksy_customer_app/core/widgets/provider_meta_line.dart';
-import 'package:booksy_customer_app/core/widgets/provider_rating.dart';
-import 'package:booksy_customer_app/features/home/domain/entities/provider_summary.dart';
-import 'package:booksy_customer_app/features/search/presentation/widgets/provider_result_card.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_colors.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_customer_app/core/utils/price_formatter.dart';
+import 'package:asan_rezerve_customer_app/core/widgets/provider_meta_line.dart';
+import 'package:asan_rezerve_customer_app/core/widgets/provider_rating.dart';
+import 'package:asan_rezerve_customer_app/features/home/domain/entities/provider_summary.dart';
+import 'package:asan_rezerve_customer_app/features/search/presentation/widgets/provider_result_card.dart';
 
 Widget _wrap(Widget child, {double textScale = 1.0}) => MaterialApp(
       theme: AppTheme.light,

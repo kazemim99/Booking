@@ -1,6 +1,6 @@
 /**
  * Global Enumeration Types
- * Centralized enumerations used across the Booksy application
+ * Centralized enumerations used across the AsanRezerve application
  */
 
 // ==================== User & Authentication ====================

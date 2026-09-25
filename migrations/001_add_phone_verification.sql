@@ -92,8 +92,8 @@ END
 GO
 
 -- 4. Grant permissions (adjust based on your security setup)
--- GRANT SELECT, INSERT, UPDATE, DELETE ON user_management.PhoneVerifications TO booksy_api_user;
--- GRANT EXECUTE ON user_management.sp_CleanupExpiredPhoneVerifications TO booksy_api_user;
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON user_management.PhoneVerifications TO asan_rezerve_api_user;
+-- GRANT EXECUTE ON user_management.sp_CleanupExpiredPhoneVerifications TO asan_rezerve_api_user;
 
 PRINT '========================================';
 PRINT 'Phone Verification Migration Completed Successfully';

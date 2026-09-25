@@ -1,7 +1,7 @@
-import 'package:booksy_provider_app/app.dart';
-import 'package:booksy_provider_app/core/constants/app_strings.dart';
-import 'package:booksy_provider_app/core/di/injection.dart';
-import 'package:booksy_provider_app/core/storage/secure_storage_service.dart';
+import 'package:asan_rezerve_provider_app/app.dart';
+import 'package:asan_rezerve_provider_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_provider_app/core/di/injection.dart';
+import 'package:asan_rezerve_provider_app/core/storage/secure_storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -175,7 +175,7 @@ void main() {
           reason: 'the signed-in phone number must be pre-filled');
       expect(phoneField.readOnly, isTrue,
           reason: 'the verified phone number must not be editable');
-      await _fill(tester, const Key('onboarding-email'), 'ui@booksy.test');
+      await _fill(tester, const Key('onboarding-email'), 'ui@asanrezerve.test');
       // Required by the backend validator (BusinessDescription .NotEmpty).
       await _fill(tester, const Key('onboarding-description'), 'سالن اصلاح مردانه');
       await _tap(tester, find.widgetWithText(FilledButton, AppStrings.next));

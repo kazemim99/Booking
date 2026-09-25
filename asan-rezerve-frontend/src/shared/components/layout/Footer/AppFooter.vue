@@ -3,7 +3,7 @@
     <div class="footer-content">
       <!-- Left Section -->
       <div class="footer-left">
-        <p class="copyright">© {{ currentYear }} Booksy. All rights reserved.</p>
+        <p class="copyright">© {{ currentYear }} AsanRezerve. All rights reserved.</p>
       </div>
 
       <!-- Center Section - Links -->

@@ -1,6 +1,6 @@
-import 'package:booksy_provider_app/config/routes/app_router.dart';
-import 'package:booksy_provider_app/features/notifications/domain/inbox_item.dart';
-import 'package:booksy_provider_app/features/notifications/presentation/inbox_destination.dart';
+import 'package:asan_rezerve_provider_app/config/routes/app_router.dart';
+import 'package:asan_rezerve_provider_app/features/notifications/domain/inbox_item.dart';
+import 'package:asan_rezerve_provider_app/features/notifications/presentation/inbox_destination.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Where a tapped notification goes (QA walkthrough 2026-09-22: a booking notice must open THAT booking).

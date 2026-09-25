@@ -1,4 +1,4 @@
-import 'package:booksy_provider_app/core/widgets/app_snackbar.dart';
+import 'package:asan_rezerve_provider_app/core/widgets/app_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

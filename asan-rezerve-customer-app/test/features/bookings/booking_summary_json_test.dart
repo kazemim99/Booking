@@ -1,4 +1,4 @@
-import 'package:booksy_customer_app/features/bookings/data/booking_summary_json.dart';
+import 'package:asan_rezerve_customer_app/features/bookings/data/booking_summary_json.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Who does the work (QA recording 2026-09-23 #8): the booking APIs send the staff member's name as `staffName`

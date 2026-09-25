@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 /**
- * Playwright E2E configuration for booksy-frontend.
+ * Playwright E2E configuration for asanrezerve-frontend.
  *
  * Drives the real Vue app (port 3000) against a running monolith stack. The Vite
  * dev server proxies /api to the host on :5050 (see vite.config.ts). For OTP login

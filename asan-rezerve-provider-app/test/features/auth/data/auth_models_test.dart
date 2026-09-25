@@ -1,5 +1,5 @@
-import 'package:booksy_provider_app/features/auth/data/models/auth_models.dart';
-import 'package:booksy_provider_app/features/auth/domain/entities/provider_status.dart';
+import 'package:asan_rezerve_provider_app/features/auth/data/models/auth_models.dart';
+import 'package:asan_rezerve_provider_app/features/auth/domain/entities/provider_status.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

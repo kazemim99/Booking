@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:booksy_customer_app/core/constants/app_strings.dart';
-import 'package:booksy_customer_app/features/booking/data/datasources/booking_remote_datasource.dart';
-import 'package:booksy_customer_app/features/booking/data/repositories/booking_repository_impl.dart';
-import 'package:booksy_customer_app/features/booking/presentation/widgets/slot_picker.dart';
+import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_customer_app/features/booking/data/datasources/booking_remote_datasource.dart';
+import 'package:asan_rezerve_customer_app/features/booking/data/repositories/booking_repository_impl.dart';
+import 'package:asan_rezerve_customer_app/features/booking/presentation/widgets/slot_picker.dart';
 import 'package:dio/dio.dart';
-import 'package:booksy_customer_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

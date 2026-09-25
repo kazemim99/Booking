@@ -6,7 +6,7 @@ import router from './router'
 import App from './App.vue'
 
 import 'ant-design-vue/dist/reset.css'
-import '../../packages/design-tokens/tokens.css' // shared @booksy/tokens — brand source of truth
+import '../../packages/design-tokens/tokens.css' // shared @asanrezerve/tokens — brand source of truth
 import './assets/styles/main.css'
 
 // Import translation files

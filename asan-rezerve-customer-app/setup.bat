@@ -3,7 +3,7 @@ REM Flutter Customer App - Quick Setup Script for Windows
 REM This script helps automate the setup process
 
 echo ====================================
-echo Booksy Customer App - Quick Setup
+echo AsanRezerve Customer App - Quick Setup
 echo ====================================
 echo.
 

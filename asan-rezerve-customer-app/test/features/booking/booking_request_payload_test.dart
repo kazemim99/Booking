@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:booksy_customer_app/features/booking/data/datasources/booking_remote_datasource.dart';
+import 'package:asan_rezerve_customer_app/features/booking/data/datasources/booking_remote_datasource.dart';
 
 /// Wire-format tests for the multi-service booking request.
 ///

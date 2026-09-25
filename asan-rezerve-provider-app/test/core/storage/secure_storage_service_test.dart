@@ -1,4 +1,4 @@
-import 'package:booksy_provider_app/core/storage/secure_storage_service.dart';
+import 'package:asan_rezerve_provider_app/core/storage/secure_storage_service.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';

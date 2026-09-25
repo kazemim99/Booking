@@ -62,7 +62,7 @@ test('realistic: provider onboards with map pin, custom hours, gallery, back-edi
  * that HTTP call with an in-process call into UserManagement's token issuance
  * (IJwtTokenService) — ServiceCatalog.Api doesn't currently reference
  * UserManagement.Application, so this needs a proper cross-context abstraction
- * (e.g. a shared interface both contexts wire up in Booksy.Host), not a quick
+ * (e.g. a shared interface both contexts wire up in AsanRezerve.Host), not a quick
  * patch, and is out of scope for this e2e-hardening change. Un-skip once Epic 1.1
  * lands; the set-main flow itself is wired below.
  */

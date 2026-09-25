@@ -32,7 +32,7 @@
         </div>
         <h3 class="provider-cta-card-title">صاحب کسب‌وکار هستید؟</h3>
         <p class="provider-cta-card-text">
-          کسب‌وکار خود را با Booksy رشد دهید. به هزاران ارائه‌دهنده موفق بپیوندید
+          کسب‌وکار خود را با AsanRezerve رشد دهید. به هزاران ارائه‌دهنده موفق بپیوندید
         </p>
         <button class="cta-btn provider" @click="goToProviderLogin">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">

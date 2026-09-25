@@ -1,20 +1,20 @@
 @Tags(['live'])
 library;
 
-import 'package:booksy_provider_app/core/storage/secure_storage_service.dart';
-import 'package:booksy_provider_app/features/auth/data/datasources/auth_api_service.dart';
-import 'package:booksy_provider_app/features/auth/data/repositories/auth_repository_impl.dart';
-import 'package:booksy_provider_app/features/auth/domain/entities/provider_status.dart';
-import 'package:booksy_provider_app/features/auth/domain/usecases/complete_provider_authentication_usecase.dart';
-import 'package:booksy_provider_app/features/auth/domain/usecases/send_verification_code_usecase.dart';
-import 'package:booksy_provider_app/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:booksy_provider_app/features/auth/presentation/bloc/auth_event.dart';
-import 'package:booksy_provider_app/features/auth/presentation/bloc/auth_state.dart';
-import 'package:booksy_provider_app/features/onboarding/data/datasources/onboarding_api_service.dart';
-import 'package:booksy_provider_app/features/onboarding/data/repositories/onboarding_repository_impl.dart';
-import 'package:booksy_provider_app/features/onboarding/domain/entities/onboarding_data.dart';
-import 'package:booksy_provider_app/features/onboarding/presentation/cubit/onboarding_cubit.dart';
-import 'package:booksy_provider_app/features/onboarding/presentation/cubit/onboarding_state.dart';
+import 'package:asan_rezerve_provider_app/core/storage/secure_storage_service.dart';
+import 'package:asan_rezerve_provider_app/features/auth/data/datasources/auth_api_service.dart';
+import 'package:asan_rezerve_provider_app/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:asan_rezerve_provider_app/features/auth/domain/entities/provider_status.dart';
+import 'package:asan_rezerve_provider_app/features/auth/domain/usecases/complete_provider_authentication_usecase.dart';
+import 'package:asan_rezerve_provider_app/features/auth/domain/usecases/send_verification_code_usecase.dart';
+import 'package:asan_rezerve_provider_app/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:asan_rezerve_provider_app/features/auth/presentation/bloc/auth_event.dart';
+import 'package:asan_rezerve_provider_app/features/auth/presentation/bloc/auth_state.dart';
+import 'package:asan_rezerve_provider_app/features/onboarding/data/datasources/onboarding_api_service.dart';
+import 'package:asan_rezerve_provider_app/features/onboarding/data/repositories/onboarding_repository_impl.dart';
+import 'package:asan_rezerve_provider_app/features/onboarding/domain/entities/onboarding_data.dart';
+import 'package:asan_rezerve_provider_app/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:asan_rezerve_provider_app/features/onboarding/presentation/cubit/onboarding_state.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -126,7 +126,7 @@ void main() {
       ownerFirstName: 'رضا',
       ownerLastName: 'محمدی',
       phone: phone,
-      email: 'e2e@booksy.test',
+      email: 'e2e@asanrezerve.test',
       description: 'تست یکپارچه',
     ));
     await cubit.next();
@@ -236,7 +236,7 @@ void main() {
       ownerFirstName: 'علی',
       ownerLastName: 'رضایی',
       phone: resumePhone,
-      email: 'resume@booksy.test',
+      email: 'resume@asanrezerve.test',
       description: 'توضیح تست',
     ));
     await first.next(); // → 2
@@ -276,7 +276,7 @@ void main() {
     expect(data.businessInfo.businessName, 'سالن بازیابی');
     expect(data.businessInfo.ownerFirstName, 'علی');
     expect(data.businessInfo.ownerLastName, 'رضایی');
-    expect(data.businessInfo.email, 'resume@booksy.test');
+    expect(data.businessInfo.email, 'resume@asanrezerve.test');
     expect(data.businessInfo.description, 'توضیح تست');
     expect(data.categoryId, 'barbershop'); // survives the enum round-trip
     expect(data.address.addressLine1, contains('خیابان آزادی'));

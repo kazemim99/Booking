@@ -1,6 +1,6 @@
-import 'package:booksy_customer_app/config/theme/app_theme.dart';
-import 'package:booksy_customer_app/core/widgets/app_viewport_frame.dart';
-import 'package:booksy_customer_app/main.dart' show buildAppShell;
+import 'package:asan_rezerve_customer_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_customer_app/core/widgets/app_viewport_frame.dart';
+import 'package:asan_rezerve_customer_app/main.dart' show buildAppShell;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

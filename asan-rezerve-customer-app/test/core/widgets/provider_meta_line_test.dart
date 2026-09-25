@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:booksy_customer_app/config/theme/app_theme.dart';
-import 'package:booksy_customer_app/core/constants/app_strings.dart';
-import 'package:booksy_customer_app/core/utils/price_formatter.dart';
-import 'package:booksy_customer_app/core/widgets/provider_meta_line.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_customer_app/core/utils/price_formatter.dart';
+import 'package:asan_rezerve_customer_app/core/widgets/provider_meta_line.dart';
 
 /// The provider meta line (customer-app-ux-review-fixes F.1): a Toman app says
 /// what a salon costs as «از ۱۲۰٬۰۰۰ تومان», never as `$$`, and a separator

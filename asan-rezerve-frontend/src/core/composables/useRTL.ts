@@ -44,8 +44,8 @@ export function useRTL() {
 
   function saveLanguagePreference(lang: Language): void {
     try {
-      localStorage.setItem('booksy_language', lang)
-      localStorage.setItem('booksy_direction', direction.value)
+      localStorage.setItem('asanrezerve_language', lang)
+      localStorage.setItem('asanrezerve_direction', direction.value)
     } catch (error) {
       console.error('Failed to save language preference:', error)
     }
@@ -53,7 +53,7 @@ export function useRTL() {
 
   function loadLanguagePreference(): void {
     try {
-      const savedLang = localStorage.getItem('booksy_language') as Language
+      const savedLang = localStorage.getItem('asanrezerve_language') as Language
       if (savedLang) {
         setLanguage(savedLang)
       }

@@ -1,6 +1,6 @@
 /**
  * Common Type Definitions
- * Shared types used across the Booksy application
+ * Shared types used across the AsanRezerve application
  */
 
 // ==================== Utility Types ====================

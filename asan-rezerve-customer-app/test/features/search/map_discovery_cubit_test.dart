@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:booksy_customer_app/core/errors/failures.dart';
-import 'package:booksy_customer_app/core/location/geocoding_service.dart';
-import 'package:booksy_customer_app/core/location/location_service.dart';
-import 'package:booksy_customer_app/features/home/domain/entities/provider_summary.dart';
-import 'package:booksy_customer_app/features/search/domain/repositories/search_repository.dart';
-import 'package:booksy_customer_app/features/search/presentation/bloc/map_discovery_cubit.dart';
+import 'package:asan_rezerve_customer_app/core/errors/failures.dart';
+import 'package:asan_rezerve_customer_app/core/location/geocoding_service.dart';
+import 'package:asan_rezerve_customer_app/core/location/location_service.dart';
+import 'package:asan_rezerve_customer_app/features/home/domain/entities/provider_summary.dart';
+import 'package:asan_rezerve_customer_app/features/search/domain/repositories/search_repository.dart';
+import 'package:asan_rezerve_customer_app/features/search/presentation/bloc/map_discovery_cubit.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 

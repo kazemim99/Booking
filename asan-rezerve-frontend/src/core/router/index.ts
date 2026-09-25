@@ -24,7 +24,7 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/views/HomeView.vue'),
     meta: {
       requiresAuth: false, // Landing page is public
-      title: 'Booksy - Find & Book Beauty & Wellness Services',
+      title: 'AsanRezerve - Find & Book Beauty & Wellness Services',
     },
   },
   ...authRoutes,
@@ -97,7 +97,7 @@ router.beforeEach(navigationGuard)
 // After each navigation
 router.afterEach((to) => {
   // Update document title
-  document.title = to.meta.title ? `${to.meta.title} | Booksy` : 'Booksy'
+  document.title = to.meta.title ? `${to.meta.title} | AsanRezerve` : 'AsanRezerve'
 })
 
 // Global error handler

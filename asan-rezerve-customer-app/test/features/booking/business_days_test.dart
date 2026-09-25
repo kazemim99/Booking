@@ -1,6 +1,6 @@
-import 'package:booksy_customer_app/features/booking/data/repositories/booking_repository_impl.dart';
-import 'package:booksy_customer_app/features/booking/domain/business_days.dart';
-import 'package:booksy_customer_app/features/booking/domain/entities/booking_entities.dart';
+import 'package:asan_rezerve_customer_app/features/booking/data/repositories/booking_repository_impl.dart';
+import 'package:asan_rezerve_customer_app/features/booking/domain/business_days.dart';
+import 'package:asan_rezerve_customer_app/features/booking/domain/entities/booking_entities.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// The day strip greys out the weekdays a salon is shut (UX review 2026-09-23, #4). The salon's hours name each day

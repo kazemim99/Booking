@@ -3,7 +3,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import { useLocaleStore } from '../locale.store'
 import { Language, Direction, DateFormat, NumberFormat } from '../../types/locale.types'
 
-const STORAGE_KEY = 'booksy_admin_locale_settings'
+const STORAGE_KEY = 'asanrezerve_admin_locale_settings'
 
 describe('locale store', () => {
   beforeEach(() => {

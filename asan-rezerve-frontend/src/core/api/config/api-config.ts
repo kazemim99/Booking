@@ -1,7 +1,7 @@
 /**
  * Backend API Configuration
  *
- * The backend is a single modular-monolith host (Booksy.Host) serving every
+ * The backend is a single modular-monolith host (AsanRezerve.Host) serving every
  * bounded context under one origin. Both keys below resolve to the same host;
  * they are kept separate only so callers can stay context-aware. In all
  * environments the VITE_* vars are set to the relative '/api' path (proxied to

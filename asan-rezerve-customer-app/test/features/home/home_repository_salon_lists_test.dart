@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:booksy_customer_app/features/home/data/datasources/home_remote_datasource.dart';
-import 'package:booksy_customer_app/features/home/data/repositories/home_repository_impl.dart';
-import 'package:booksy_customer_app/features/home/domain/entities/favorite_provider.dart';
-import 'package:booksy_customer_app/features/home/domain/entities/recently_visited_provider.dart';
+import 'package:asan_rezerve_customer_app/features/home/data/datasources/home_remote_datasource.dart';
+import 'package:asan_rezerve_customer_app/features/home/data/repositories/home_repository_impl.dart';
+import 'package:asan_rezerve_customer_app/features/home/domain/entities/favorite_provider.dart';
+import 'package:asan_rezerve_customer_app/features/home/domain/entities/recently_visited_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 

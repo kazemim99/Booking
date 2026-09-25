@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:booksy_provider_app/core/errors/failures.dart';
-import 'package:booksy_provider_app/features/auth/domain/entities/provider_session.dart';
-import 'package:booksy_provider_app/features/auth/domain/repositories/auth_repository.dart';
-import 'package:booksy_provider_app/features/reviews/data/reviews_api_service.dart';
-import 'package:booksy_provider_app/features/reviews/data/reviews_repository_impl.dart';
-import 'package:booksy_provider_app/features/reviews/domain/business_review.dart';
+import 'package:asan_rezerve_provider_app/core/errors/failures.dart';
+import 'package:asan_rezerve_provider_app/features/auth/domain/entities/provider_session.dart';
+import 'package:asan_rezerve_provider_app/features/auth/domain/repositories/auth_repository.dart';
+import 'package:asan_rezerve_provider_app/features/reviews/data/reviews_api_service.dart';
+import 'package:asan_rezerve_provider_app/features/reviews/data/reviews_repository_impl.dart';
+import 'package:asan_rezerve_provider_app/features/reviews/domain/business_review.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';

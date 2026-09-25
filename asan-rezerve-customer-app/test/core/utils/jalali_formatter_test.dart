@@ -1,4 +1,4 @@
-import 'package:booksy_customer_app/core/utils/jalali_formatter.dart';
+import 'package:asan_rezerve_customer_app/core/utils/jalali_formatter.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// customer-app-ux-review-fixes A.5: weekday names are the single-word spellings the rest of the app

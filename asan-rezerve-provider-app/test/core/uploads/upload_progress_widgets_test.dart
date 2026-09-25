@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:booksy_provider_app/core/constants/app_strings.dart';
-import 'package:booksy_provider_app/core/uploads/upload_progress_widgets.dart';
-import 'package:booksy_provider_app/core/uploads/upload_queue.dart';
-import 'package:booksy_provider_app/features/onboarding/domain/entities/onboarding_data.dart';
+import 'package:asan_rezerve_provider_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_provider_app/core/uploads/upload_progress_widgets.dart';
+import 'package:asan_rezerve_provider_app/core/uploads/upload_queue.dart';
+import 'package:asan_rezerve_provider_app/features/onboarding/domain/entities/onboarding_data.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

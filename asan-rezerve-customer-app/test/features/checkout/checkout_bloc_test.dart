@@ -1,10 +1,10 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:booksy_customer_app/core/errors/failures.dart';
-import 'package:booksy_customer_app/features/checkout/domain/entities/checkout_entities.dart';
-import 'package:booksy_customer_app/features/checkout/domain/repositories/checkout_repository.dart';
-import 'package:booksy_customer_app/features/checkout/presentation/bloc/checkout_bloc.dart';
+import 'package:asan_rezerve_customer_app/core/errors/failures.dart';
+import 'package:asan_rezerve_customer_app/features/checkout/domain/entities/checkout_entities.dart';
+import 'package:asan_rezerve_customer_app/features/checkout/domain/repositories/checkout_repository.dart';
+import 'package:asan_rezerve_customer_app/features/checkout/presentation/bloc/checkout_bloc.dart';
 
 /// C4 Alpha checkout bloc.
 ///

@@ -1,13 +1,13 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:booksy_customer_app/core/errors/failures.dart';
-import 'package:booksy_customer_app/core/storage/secure_storage_service.dart';
-import 'package:booksy_customer_app/features/home/domain/repositories/home_repository.dart';
-import 'package:booksy_customer_app/features/home/domain/usecases/get_home_data.dart';
-import 'package:booksy_customer_app/features/home/presentation/bloc/home_bloc.dart';
-import 'package:booksy_customer_app/features/home/presentation/bloc/home_event.dart';
-import 'package:booksy_customer_app/features/home/presentation/bloc/home_state.dart';
+import 'package:asan_rezerve_customer_app/core/errors/failures.dart';
+import 'package:asan_rezerve_customer_app/core/storage/secure_storage_service.dart';
+import 'package:asan_rezerve_customer_app/features/home/domain/repositories/home_repository.dart';
+import 'package:asan_rezerve_customer_app/features/home/domain/usecases/get_home_data.dart';
+import 'package:asan_rezerve_customer_app/features/home/presentation/bloc/home_bloc.dart';
+import 'package:asan_rezerve_customer_app/features/home/presentation/bloc/home_event.dart';
+import 'package:asan_rezerve_customer_app/features/home/presentation/bloc/home_state.dart';
 
 class FakeGetHomeData implements GetHomeData {
   Either<Failure, HomeData>? callResult;

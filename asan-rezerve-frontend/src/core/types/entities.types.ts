@@ -1,6 +1,6 @@
 /**
  * Entity Type Definitions
- * Domain entity interfaces for the Booksy application
+ * Domain entity interfaces for the AsanRezerve application
  */
 
 import type {

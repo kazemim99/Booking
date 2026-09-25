@@ -83,7 +83,7 @@ const appClasses = computed(() => ({
 // ============================================
 
 onMounted(() => {
-  console.log('🚀 Booksy App Mounted')
+  console.log('🚀 AsanRezerve App Mounted')
   console.log('📍 Direction:', direction.value)
 })
 </script>

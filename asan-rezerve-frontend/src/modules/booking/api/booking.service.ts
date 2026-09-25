@@ -1,7 +1,7 @@
 /**
  * Booking Service
  * Handles all booking-related API operations
- * Based on Booksy API Collection v1
+ * Based on AsanRezerve API Collection v1
  */
 
 import { serviceCategoryClient } from '@/core/api/client/http-client'

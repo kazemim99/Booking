@@ -1,4 +1,4 @@
-import 'package:booksy_provider_app/core/utils/persian_digits.dart';
+import 'package:asan_rezerve_provider_app/core/utils/persian_digits.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 

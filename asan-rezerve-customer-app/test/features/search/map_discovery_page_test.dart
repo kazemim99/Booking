@@ -3,15 +3,15 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:booksy_customer_app/config/theme/app_theme.dart';
-import 'package:booksy_customer_app/core/constants/app_strings.dart';
-import 'package:booksy_customer_app/core/location/geocoding_service.dart';
-import 'package:booksy_customer_app/core/location/location_service.dart';
-import 'package:booksy_customer_app/features/home/domain/entities/provider_summary.dart';
-import 'package:booksy_customer_app/features/search/domain/repositories/search_repository.dart';
-import 'package:booksy_customer_app/features/search/presentation/bloc/map_discovery_cubit.dart';
-import 'package:booksy_customer_app/features/search/presentation/pages/map_discovery_page.dart';
-import 'package:booksy_customer_app/features/search/presentation/widgets/map_provider_card.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_customer_app/core/location/geocoding_service.dart';
+import 'package:asan_rezerve_customer_app/core/location/location_service.dart';
+import 'package:asan_rezerve_customer_app/features/home/domain/entities/provider_summary.dart';
+import 'package:asan_rezerve_customer_app/features/search/domain/repositories/search_repository.dart';
+import 'package:asan_rezerve_customer_app/features/search/presentation/bloc/map_discovery_cubit.dart';
+import 'package:asan_rezerve_customer_app/features/search/presentation/pages/map_discovery_page.dart';
+import 'package:asan_rezerve_customer_app/features/search/presentation/widgets/map_provider_card.dart';
 
 /// Widget-level tests for the map + carousel discovery page.
 ///

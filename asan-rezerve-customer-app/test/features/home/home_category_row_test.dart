@@ -1,6 +1,6 @@
-import 'package:booksy_customer_app/core/constants/app_strings.dart';
-import 'package:booksy_customer_app/features/home/domain/entities/category.dart';
-import 'package:booksy_customer_app/features/home/presentation/widgets/home_category_row.dart';
+import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_customer_app/features/home/domain/entities/category.dart';
+import 'package:asan_rezerve_customer_app/features/home/presentation/widgets/home_category_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

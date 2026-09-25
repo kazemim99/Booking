@@ -3,7 +3,7 @@
     <div class="header-container">
       <!-- Logo -->
       <router-link to="/" class="logo">
-        <span class="logo-text">Booksy</span>
+        <span class="logo-text">AsanRezerve</span>
       </router-link>
 
       <!-- Right Side Actions -->

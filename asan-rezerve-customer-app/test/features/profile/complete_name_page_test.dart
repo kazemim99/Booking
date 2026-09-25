@@ -1,14 +1,14 @@
 import 'dart:async';
 
-import 'package:booksy_customer_app/config/theme/app_theme.dart';
-import 'package:booksy_customer_app/core/constants/app_strings.dart';
-import 'package:booksy_customer_app/core/di/injection.dart';
-import 'package:booksy_customer_app/core/storage/secure_storage_service.dart';
-import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_state.dart';
-import 'package:booksy_customer_app/features/profile/data/datasources/profile_remote_datasource.dart';
-import 'package:booksy_customer_app/features/profile/presentation/bloc/profile_cubit.dart';
-import 'package:booksy_customer_app/features/profile/presentation/pages/complete_name_page.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_customer_app/core/di/injection.dart';
+import 'package:asan_rezerve_customer_app/core/storage/secure_storage_service.dart';
+import 'package:asan_rezerve_customer_app/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:asan_rezerve_customer_app/features/auth/presentation/bloc/auth_state.dart';
+import 'package:asan_rezerve_customer_app/features/profile/data/datasources/profile_remote_datasource.dart';
+import 'package:asan_rezerve_customer_app/features/profile/presentation/bloc/profile_cubit.dart';
+import 'package:asan_rezerve_customer_app/features/profile/presentation/pages/complete_name_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';

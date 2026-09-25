@@ -1,4 +1,4 @@
-import 'package:booksy_customer_app/core/push/push_click_message.dart';
+import 'package:asan_rezerve_customer_app/core/push/push_click_message.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// A notification tapped while the app is already open in a tab reaches the page as a message from the push service
@@ -16,7 +16,7 @@ void main() {
 
   test('the type the worker sends is the one the page listens for', () {
     // web/push/firebase-messaging-sw.js posts this literal; renaming one side alone would silently drop every tap.
-    expect(pushClickMessageType, 'booksy-push-open');
+    expect(pushClickMessageType, 'asanrezerve-push-open');
   });
 
   test('a tap with no data still opens something (the inbox decides)', () {
@@ -25,7 +25,7 @@ void main() {
 
   test('other messages are ignored', () {
     expect(pushClickData(null), isNull);
-    expect(pushClickData('booksy-push-open'), isNull);
+    expect(pushClickData('asanrezerve-push-open'), isNull);
     expect(pushClickData({'type': 'push-received', 'data': {'bookingId': 'b1'}}), isNull,
         reason: "Firebase's own foreground message must not be taken for a tap");
     expect(pushClickData({'data': {'bookingId': 'b1'}}), isNull);

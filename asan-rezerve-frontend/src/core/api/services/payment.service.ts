@@ -140,7 +140,7 @@ class PaymentService {
    *   "bookingId": "booking-123",
    *   "amount": 2000000,
    *   "description": "پرداخت رزرو کوتاهی مو",
-   *   "callbackUrl": "https://booksy.ir/payment/callback",
+   *   "callbackUrl": "https://asanrezerve.ir/payment/callback",
    *   "mobile": "09123456789",
    *   "email": "user@example.com"
    * }

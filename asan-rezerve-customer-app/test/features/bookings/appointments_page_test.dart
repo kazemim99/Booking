@@ -3,15 +3,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:booksy_customer_app/config/theme/app_theme.dart';
-import 'package:booksy_customer_app/core/constants/app_strings.dart';
-import 'package:booksy_customer_app/core/di/injection.dart';
-import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:booksy_customer_app/features/bookings/presentation/bloc/appointments_bloc.dart';
-import 'package:booksy_customer_app/features/bookings/presentation/pages/appointments_page.dart';
-import 'package:booksy_customer_app/features/bookings/presentation/pages/reschedule_page.dart';
-import 'package:booksy_customer_app/features/booking/domain/repositories/booking_repository.dart';
-import 'package:booksy_customer_app/features/bookings/domain/repositories/bookings_repository.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_customer_app/core/di/injection.dart';
+import 'package:asan_rezerve_customer_app/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:asan_rezerve_customer_app/features/bookings/presentation/bloc/appointments_bloc.dart';
+import 'package:asan_rezerve_customer_app/features/bookings/presentation/pages/appointments_page.dart';
+import 'package:asan_rezerve_customer_app/features/bookings/presentation/pages/reschedule_page.dart';
+import 'package:asan_rezerve_customer_app/features/booking/domain/repositories/booking_repository.dart';
+import 'package:asan_rezerve_customer_app/features/bookings/domain/repositories/bookings_repository.dart';
 
 import '../../helpers/fake_auth_bloc.dart';
 import 'bookings_fakes.dart';

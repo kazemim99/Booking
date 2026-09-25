@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:booksy_customer_app/core/errors/failures.dart';
-import 'package:booksy_customer_app/features/home/domain/repositories/home_repository.dart';
-import 'package:booksy_customer_app/features/search/presentation/bloc/provider_customer_cubit.dart';
+import 'package:asan_rezerve_customer_app/core/errors/failures.dart';
+import 'package:asan_rezerve_customer_app/features/home/domain/repositories/home_repository.dart';
+import 'package:asan_rezerve_customer_app/features/search/presentation/bloc/provider_customer_cubit.dart';
 
 /// The signed-in customer's side of a salon profile (customer-app-ux-review-fixes
 /// C.4/C.5): the visit is recorded once and silently, and the heart is

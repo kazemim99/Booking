@@ -74,7 +74,7 @@ test('with a tab open, the tap focuses it and hands it the push data instead of 
   assert.deepEqual(log.opened, []);
   // Through JSON: objects made inside the worker's context have that context's prototypes.
   assert.deepEqual(JSON.parse(JSON.stringify(log.posted)), [
-    { tabUrl: `${SITE}#/home`, message: { type: 'booksy-push-open', data: { bookingId: 'b1' } } },
+    { tabUrl: `${SITE}#/home`, message: { type: 'asanrezerve-push-open', data: { bookingId: 'b1' } } },
   ]);
 });
 

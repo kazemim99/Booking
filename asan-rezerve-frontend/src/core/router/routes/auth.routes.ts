@@ -8,7 +8,7 @@ const authRoutes: RouteRecordRaw[] = [
     component: () => import('@/modules/auth/views/LoginView.vue'),
     meta: {
       isPublic: true,
-      title: 'ورود مشتری - رزرو نوبت | Booksy'
+      title: 'ورود مشتری - رزرو نوبت | AsanRezerve'
     }
   },
   {
@@ -17,7 +17,7 @@ const authRoutes: RouteRecordRaw[] = [
     component: () => import('@/modules/auth/views/VerificationView.vue'),
     meta: {
       isPublic: true,
-      title: 'تأیید شماره تلفن - مشتری | Booksy',
+      title: 'تأیید شماره تلفن - مشتری | AsanRezerve',
       userType: 'Customer' // Meta field to identify route type
     }
   },
@@ -29,7 +29,7 @@ const authRoutes: RouteRecordRaw[] = [
     component: () => import('@/modules/auth/views/ProviderLoginView.vue'),
     meta: {
       isPublic: true,
-      title: 'ورود ارائه‌دهندگان - پنل کسب و کار | Booksy'
+      title: 'ورود ارائه‌دهندگان - پنل کسب و کار | AsanRezerve'
     }
   },
   {
@@ -38,7 +38,7 @@ const authRoutes: RouteRecordRaw[] = [
     component: () => import('@/modules/auth/views/VerificationView.vue'),
     meta: {
       isPublic: true,
-      title: 'تأیید شماره تلفن - ارائه‌دهنده | Booksy',
+      title: 'تأیید شماره تلفن - ارائه‌دهنده | AsanRezerve',
       userType: 'Provider' // Meta field to identify route type
     }
   },

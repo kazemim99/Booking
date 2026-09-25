@@ -1,15 +1,15 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:booksy_customer_app/core/errors/failures.dart';
-import 'package:booksy_customer_app/core/push/push_registration.dart';
-import 'package:booksy_customer_app/features/auth/domain/entities/user.dart';
-import 'package:booksy_customer_app/features/auth/domain/repositories/auth_repository.dart';
-import 'package:booksy_customer_app/features/auth/domain/usecases/complete_authentication_usecase.dart';
-import 'package:booksy_customer_app/features/auth/domain/usecases/send_verification_code_usecase.dart';
-import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_event.dart';
-import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_state.dart';
+import 'package:asan_rezerve_customer_app/core/errors/failures.dart';
+import 'package:asan_rezerve_customer_app/core/push/push_registration.dart';
+import 'package:asan_rezerve_customer_app/features/auth/domain/entities/user.dart';
+import 'package:asan_rezerve_customer_app/features/auth/domain/repositories/auth_repository.dart';
+import 'package:asan_rezerve_customer_app/features/auth/domain/usecases/complete_authentication_usecase.dart';
+import 'package:asan_rezerve_customer_app/features/auth/domain/usecases/send_verification_code_usecase.dart';
+import 'package:asan_rezerve_customer_app/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:asan_rezerve_customer_app/features/auth/presentation/bloc/auth_event.dart';
+import 'package:asan_rezerve_customer_app/features/auth/presentation/bloc/auth_state.dart';
 
 /// Push registration rides the real auth flow. A registration service that nothing calls is the exact failure
 /// add-notification-clients exists to fix, so these go through the bloc rather than the service.

@@ -15,7 +15,7 @@
 **/bin
 **/charts
 # ...but NOT application source that happens to live in a directory called charts/.
-# The rule above is the stock template's Helm-chart exclusion; booksy-frontend has real
+# The rule above is the stock template's Helm-chart exclusion; asan-rezerve-frontend has real
 # Vue chart components at src/shared/components/charts/ and
 # src/modules/provider/components/charts/ (imported as '@/shared/components/charts'),
 # and stripping them from the build context broke every frontend image build with

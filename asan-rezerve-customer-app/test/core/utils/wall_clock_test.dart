@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:booksy_customer_app/core/utils/wall_clock.dart';
-import 'package:booksy_customer_app/features/bookings/data/booking_summary_json.dart';
+import 'package:asan_rezerve_customer_app/core/utils/wall_clock.dart';
+import 'package:asan_rezerve_customer_app/features/bookings/data/booking_summary_json.dart';
 
 /// A booking's time is the salon's wall clock: «۱۰:۳۰» is half past ten at the salon, whatever zone the phone is in
 /// and whatever zone suffix the server happens to write (QA 2026-09-23: the API wrote "…T10:30:00Z", the app moved it

@@ -1,4 +1,4 @@
-import 'package:booksy_customer_app/core/location/geocoding_service.dart';
+import 'package:asan_rezerve_customer_app/core/location/geocoding_service.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 

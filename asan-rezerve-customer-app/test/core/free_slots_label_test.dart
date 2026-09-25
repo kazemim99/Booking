@@ -1,4 +1,4 @@
-import 'package:booksy_customer_app/core/widgets/provider_meta_line.dart';
+import 'package:asan_rezerve_customer_app/core/widgets/provider_meta_line.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// "How soon can I book here?" on a card

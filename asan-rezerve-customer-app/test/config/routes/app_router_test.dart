@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:booksy_customer_app/config/feature_flags.dart';
-import 'package:booksy_customer_app/config/routes/app_router.dart';
-import 'package:booksy_customer_app/features/auth/domain/entities/user.dart';
-import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_state.dart';
+import 'package:asan_rezerve_customer_app/config/feature_flags.dart';
+import 'package:asan_rezerve_customer_app/config/routes/app_router.dart';
+import 'package:asan_rezerve_customer_app/features/auth/domain/entities/user.dart';
+import 'package:asan_rezerve_customer_app/features/auth/presentation/bloc/auth_state.dart';
 
 import '../../helpers/fake_auth_bloc.dart';
 

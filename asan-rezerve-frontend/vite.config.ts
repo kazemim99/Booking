@@ -18,10 +18,10 @@ export default defineConfig({
   server: {
     port: 3000,
     host: 'localhost',
-    // allow importing the sibling packages/design-tokens (shared @booksy/tokens) in dev
+    // allow importing the sibling packages/design-tokens (shared @asanrezerve/tokens) in dev
     fs: { allow: ['..'] },
     proxy: {
-      // Proxy all /api requests to the Booksy monolith host (gateway retired)
+      // Proxy all /api requests to the AsanRezerve monolith host (gateway retired)
       // NOTE: local dev runs the host on :5050 (:5000 is taken by the CoRide backend).
       '/api': {
         target: 'http://localhost:5050',

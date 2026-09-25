@@ -1,10 +1,10 @@
-import 'package:booksy_customer_app/config/theme/app_colors.dart';
-import 'package:booksy_customer_app/config/theme/app_theme.dart';
-import 'package:booksy_customer_app/core/utils/persian_formatter.dart';
-import 'package:booksy_customer_app/core/widgets/app_button.dart';
-import 'package:booksy_customer_app/core/widgets/app_text_field.dart';
-import 'package:booksy_customer_app/features/reviews/domain/entities/review.dart';
-import 'package:booksy_customer_app/features/reviews/presentation/widgets/write_review_dialog.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_colors.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_customer_app/core/utils/persian_formatter.dart';
+import 'package:asan_rezerve_customer_app/core/widgets/app_button.dart';
+import 'package:asan_rezerve_customer_app/core/widgets/app_text_field.dart';
+import 'package:asan_rezerve_customer_app/features/reviews/domain/entities/review.dart';
+import 'package:asan_rezerve_customer_app/features/reviews/presentation/widgets/write_review_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

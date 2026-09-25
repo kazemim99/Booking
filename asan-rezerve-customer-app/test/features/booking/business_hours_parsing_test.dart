@@ -1,4 +1,4 @@
-import 'package:booksy_customer_app/features/booking/data/repositories/booking_repository_impl.dart';
+import 'package:asan_rezerve_customer_app/features/booking/data/repositories/booking_repository_impl.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Regression cover for the provider profile's working-hours block.

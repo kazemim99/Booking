@@ -1,4 +1,4 @@
-package com.example.booksy_customer_app
+package com.example.asan_rezerve_customer_app
 
 import io.flutter.embedding.android.FlutterActivity
 

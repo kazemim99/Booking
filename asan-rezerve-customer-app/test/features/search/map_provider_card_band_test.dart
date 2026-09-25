@@ -1,6 +1,6 @@
-import 'package:booksy_customer_app/config/theme/app_text_styles.dart';
-import 'package:booksy_customer_app/config/theme/app_theme.dart';
-import 'package:booksy_customer_app/features/search/presentation/widgets/map_provider_card.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_text_styles.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_customer_app/features/search/presentation/widgets/map_provider_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

@@ -6,7 +6,7 @@ class AppStrings {
   AppStrings._();
 
   // App
-  static const String appName = 'Booksy';
+  static const String appName = 'AsanRezerve';
   static const String appTagline = 'رزرو آنلاین خدمات زیبایی';
 
   // Navigation tabs

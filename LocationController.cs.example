@@ -1,8 +1,8 @@
-using Booksy.Core.Domain.Domain.Entities;
+using AsanRezerve.Core.Domain.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace Booksy.Api.Controllers
+namespace AsanRezerve.Api.Controllers
 {
     /// <summary>
     /// API Controller for managing locations (Provinces and Cities)

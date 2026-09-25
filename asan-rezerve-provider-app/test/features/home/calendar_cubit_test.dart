@@ -1,10 +1,10 @@
 import 'dart:async';
 
-import 'package:booksy_provider_app/core/errors/failures.dart';
-import 'package:booksy_provider_app/core/network/connectivity_service.dart';
-import 'package:booksy_provider_app/features/home/domain/entities/home_booking.dart';
-import 'package:booksy_provider_app/features/home/domain/repositories/home_repository.dart';
-import 'package:booksy_provider_app/features/home/presentation/cubit/calendar_cubit.dart';
+import 'package:asan_rezerve_provider_app/core/errors/failures.dart';
+import 'package:asan_rezerve_provider_app/core/network/connectivity_service.dart';
+import 'package:asan_rezerve_provider_app/features/home/domain/entities/home_booking.dart';
+import 'package:asan_rezerve_provider_app/features/home/domain/repositories/home_repository.dart';
+import 'package:asan_rezerve_provider_app/features/home/presentation/cubit/calendar_cubit.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';

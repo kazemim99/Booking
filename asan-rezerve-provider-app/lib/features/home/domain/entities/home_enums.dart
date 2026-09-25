@@ -1,6 +1,6 @@
 /// Enumerations for the Provider Home ("Today") composition.
 ///
-/// These mirror `booksy-provider-app/PROVIDER_HOME_RESOLVER_SPEC.md` §1 and are
+/// These mirror `asanrezerve-provider-app/PROVIDER_HOME_RESOLVER_SPEC.md` §1 and are
 /// the vocabulary the resolver (`HomeContextResolver`) and the widget registry
 /// (`HomeWidgetRegistry`) operate on. Kept free of any Flutter/UI dependency so
 /// the whole composition engine is pure and unit-testable.

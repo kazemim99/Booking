@@ -1,4 +1,4 @@
-import 'package:booksy_customer_app/core/push/web_push_config.dart';
+import 'package:asan_rezerve_customer_app/core/push/web_push_config.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Browser push is configured at BUILD time: CI passes the Firebase Web app's config and the VAPID public key as
@@ -9,7 +9,7 @@ void main() {
     apiKey: 'api-key',
     appId: '1:123:web:abc',
     messagingSenderId: '123',
-    projectId: 'booksy-demo',
+    projectId: 'asanrezerve-demo',
     vapidKey: 'BPublicVapidKey',
   );
 
@@ -43,7 +43,7 @@ void main() {
     expect(options.apiKey, 'api-key');
     expect(options.appId, '1:123:web:abc');
     expect(options.messagingSenderId, '123');
-    expect(options.projectId, 'booksy-demo');
+    expect(options.projectId, 'asanrezerve-demo');
   });
 
   group('service worker address', () {
@@ -60,7 +60,7 @@ void main() {
         'apiKey': 'api-key',
         'appId': '1:123:web:abc',
         'messagingSenderId': '123',
-        'projectId': 'booksy-demo',
+        'projectId': 'asanrezerve-demo',
       });
     });
 

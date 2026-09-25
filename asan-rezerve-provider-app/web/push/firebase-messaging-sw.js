@@ -1,5 +1,5 @@
 /*
- * Web push service worker (identical in booksy-customer-app and booksy-provider-app).
+ * Web push service worker (identical in asanrezerve-customer-app and asanrezerve-provider-app).
  *
  * The app registers it (lib/core/push/web_push_config.dart › serviceWorkerPath) as
  *   push/firebase-messaging-sw.js?apiKey=…&appId=…&messagingSenderId=…&projectId=…
@@ -23,7 +23,7 @@
 const FIREBASE_JS_SDK = '12.19.0';
 
 // lib/core/push/push_click_message.dart › pushClickMessageType. Renaming one side alone drops every tap.
-const TAP_MESSAGE = 'booksy-push-open';
+const TAP_MESSAGE = 'asanrezerve-push-open';
 
 self.addEventListener('notificationclick', (event) => {
   const notification = event.notification;

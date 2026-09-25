@@ -1,5 +1,5 @@
 /**
- * What counts as a person's real name (the same rule as booksy-frontend's core/utils/person-name).
+ * What counts as a person's real name (the same rule as asanrezerve-frontend's core/utils/person-name).
  *
  * A person signed up by phone is stored as «مشتری 9384444636» / «ارائه‌دهنده 9123135143» — the word for their side
  * of the marketplace, then their phone's national number — until they give a name. Production QA 2026-09-23 found

@@ -461,7 +461,7 @@ class _LocationStepState extends State<LocationStep> {
                       TileLayer(
                         urlTemplate:
                             'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        userAgentPackageName: 'com.booksy.provider',
+                        userAgentPackageName: 'com.asanrezerve.provider',
                       ),
                       if (_pin != null)
                         MarkerLayer(

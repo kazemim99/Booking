@@ -1,7 +1,7 @@
-import 'package:booksy_provider_app/features/auth/domain/entities/provider_status.dart';
-import 'package:booksy_provider_app/features/onboarding/data/models/draft_snapshot.dart';
-import 'package:booksy_provider_app/features/onboarding/data/models/onboarding_models.dart';
-import 'package:booksy_provider_app/features/onboarding/domain/entities/onboarding_data.dart';
+import 'package:asan_rezerve_provider_app/features/auth/domain/entities/provider_status.dart';
+import 'package:asan_rezerve_provider_app/features/onboarding/data/models/draft_snapshot.dart';
+import 'package:asan_rezerve_provider_app/features/onboarding/data/models/onboarding_models.dart';
+import 'package:asan_rezerve_provider_app/features/onboarding/domain/entities/onboarding_data.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

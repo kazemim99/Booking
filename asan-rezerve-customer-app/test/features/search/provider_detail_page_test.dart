@@ -5,22 +5,22 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:booksy_customer_app/config/theme/app_theme.dart';
-import 'package:booksy_customer_app/core/constants/app_strings.dart';
-import 'package:booksy_customer_app/core/errors/failures.dart';
-import 'package:booksy_customer_app/core/utils/jalali_formatter.dart';
-import 'package:booksy_customer_app/core/utils/price_formatter.dart';
-import 'package:booksy_customer_app/core/widgets/widgets.dart';
-import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_event.dart';
-import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_state.dart';
-import 'package:booksy_customer_app/features/booking/domain/entities/booking_entities.dart';
-import 'package:booksy_customer_app/features/booking/domain/repositories/booking_repository.dart';
-import 'package:booksy_customer_app/features/home/domain/repositories/home_repository.dart';
-import 'package:booksy_customer_app/features/search/presentation/bloc/provider_customer_cubit.dart';
-import 'package:booksy_customer_app/features/search/presentation/bloc/provider_detail_cubit.dart';
-import 'package:booksy_customer_app/features/search/presentation/pages/provider_detail_page.dart';
-import 'package:booksy_customer_app/features/reviews/domain/entities/review.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_customer_app/core/errors/failures.dart';
+import 'package:asan_rezerve_customer_app/core/utils/jalali_formatter.dart';
+import 'package:asan_rezerve_customer_app/core/utils/price_formatter.dart';
+import 'package:asan_rezerve_customer_app/core/widgets/widgets.dart';
+import 'package:asan_rezerve_customer_app/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:asan_rezerve_customer_app/features/auth/presentation/bloc/auth_event.dart';
+import 'package:asan_rezerve_customer_app/features/auth/presentation/bloc/auth_state.dart';
+import 'package:asan_rezerve_customer_app/features/booking/domain/entities/booking_entities.dart';
+import 'package:asan_rezerve_customer_app/features/booking/domain/repositories/booking_repository.dart';
+import 'package:asan_rezerve_customer_app/features/home/domain/repositories/home_repository.dart';
+import 'package:asan_rezerve_customer_app/features/search/presentation/bloc/provider_customer_cubit.dart';
+import 'package:asan_rezerve_customer_app/features/search/presentation/bloc/provider_detail_cubit.dart';
+import 'package:asan_rezerve_customer_app/features/search/presentation/pages/provider_detail_page.dart';
+import 'package:asan_rezerve_customer_app/features/reviews/domain/entities/review.dart';
 
 import '../../helpers/fake_auth_bloc.dart';
 

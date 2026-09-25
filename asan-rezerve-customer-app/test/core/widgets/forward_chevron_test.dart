@@ -1,4 +1,4 @@
-import 'package:booksy_customer_app/core/widgets/forward_chevron.dart';
+import 'package:asan_rezerve_customer_app/core/widgets/forward_chevron.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:booksy_customer_app/core/api/models/provider_models.dart';
-import 'package:booksy_customer_app/features/search/data/datasources/search_remote_datasource.dart';
-import 'package:booksy_customer_app/features/search/data/repositories/search_repository_impl.dart';
+import 'package:asan_rezerve_customer_app/core/api/models/provider_models.dart';
+import 'package:asan_rezerve_customer_app/features/search/data/datasources/search_remote_datasource.dart';
+import 'package:asan_rezerve_customer_app/features/search/data/repositories/search_repository_impl.dart';
 
 /// customer-app-ux-review-fixes F.2/F.3: explore and the map show when a salon
 /// can next be booked. Neither `/Providers/search` nor `/Providers/by-location`

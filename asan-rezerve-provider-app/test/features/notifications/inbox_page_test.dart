@@ -1,10 +1,10 @@
-import 'package:booksy_provider_app/core/constants/app_strings.dart';
-import 'package:booksy_provider_app/core/errors/failures.dart';
-import 'package:booksy_provider_app/features/notifications/domain/inbox_item.dart';
-import 'package:booksy_provider_app/features/notifications/domain/inbox_repository.dart';
-import 'package:booksy_provider_app/features/notifications/presentation/inbox_bell.dart';
-import 'package:booksy_provider_app/features/notifications/presentation/inbox_cubit.dart';
-import 'package:booksy_provider_app/features/notifications/presentation/inbox_page.dart';
+import 'package:asan_rezerve_provider_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_provider_app/core/errors/failures.dart';
+import 'package:asan_rezerve_provider_app/features/notifications/domain/inbox_item.dart';
+import 'package:asan_rezerve_provider_app/features/notifications/domain/inbox_repository.dart';
+import 'package:asan_rezerve_provider_app/features/notifications/presentation/inbox_bell.dart';
+import 'package:asan_rezerve_provider_app/features/notifications/presentation/inbox_cubit.dart';
+import 'package:asan_rezerve_provider_app/features/notifications/presentation/inbox_page.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

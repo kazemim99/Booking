@@ -22,21 +22,21 @@ void main() async {
   // Configure dependency injection
   await configureDependencies();
 
-  runApp(BooksyCustomerApp(
+  runApp(AsanRezerveCustomerApp(
     authBloc: getIt<AuthBloc>()..add(const CheckAuthStatusEvent()),
   ));
 }
 
-class BooksyCustomerApp extends StatefulWidget {
+class AsanRezerveCustomerApp extends StatefulWidget {
   final AuthBloc authBloc;
 
-  const BooksyCustomerApp({super.key, required this.authBloc});
+  const AsanRezerveCustomerApp({super.key, required this.authBloc});
 
   @override
-  State<BooksyCustomerApp> createState() => _BooksyCustomerAppState();
+  State<AsanRezerveCustomerApp> createState() => _AsanRezerveCustomerAppState();
 }
 
-class _BooksyCustomerAppState extends State<BooksyCustomerApp> {
+class _AsanRezerveCustomerAppState extends State<AsanRezerveCustomerApp> {
   late final GoRouter _router = AppRouter.create(widget.authBloc);
 
   /// Lets a push that arrives while the app is on screen show a snackbar from outside the widget tree.

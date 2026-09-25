@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:booksy_customer_app/features/booking/data/repositories/booking_repository_impl.dart';
-import 'package:booksy_customer_app/features/booking/domain/entities/booking_entities.dart';
+import 'package:asan_rezerve_customer_app/features/booking/data/repositories/booking_repository_impl.dart';
+import 'package:asan_rezerve_customer_app/features/booking/domain/entities/booking_entities.dart';
 
 /// The staff list drives the "choose a team member" step: the bloc shows that step
 /// only when more than one active member comes back, and each entry's name is what

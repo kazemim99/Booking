@@ -1,5 +1,5 @@
-import 'package:booksy_customer_app/core/utils/persian_formatter.dart';
-import 'package:booksy_customer_app/core/utils/price_formatter.dart';
+import 'package:asan_rezerve_customer_app/core/utils/persian_formatter.dart';
+import 'package:asan_rezerve_customer_app/core/utils/price_formatter.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// customer-app-ux-review-fixes A.6: numbers are grouped with the Arabic/Persian thousands separator

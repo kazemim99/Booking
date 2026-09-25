@@ -35,9 +35,9 @@ export default async function globalSetup(): Promise<void> {
     })
   } catch (err) {
     throw new Error(
-      '[global-setup] preflight failed — the Booksy host is not reachable or not accepting ' +
+      '[global-setup] preflight failed — the AsanRezerve host is not reachable or not accepting ' +
         'sandbox OTP auth. Start it with OTP_SANDBOX_CODE=123456 Sms__SandboxMode=true ' +
-        'ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/Host/Booksy.Host ' +
+        'ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/Host/AsanRezerve.Host ' +
         '(see e2e/README.md).',
       { cause: err },
     )

@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:booksy_customer_app/core/errors/failures.dart';
-import 'package:booksy_customer_app/features/bookings/domain/entities/booking_summary.dart';
-import 'package:booksy_customer_app/features/bookings/domain/repositories/bookings_repository.dart';
-import 'package:booksy_customer_app/features/bookings/presentation/bloc/appointments_bloc.dart';
+import 'package:asan_rezerve_customer_app/core/errors/failures.dart';
+import 'package:asan_rezerve_customer_app/features/bookings/domain/entities/booking_summary.dart';
+import 'package:asan_rezerve_customer_app/features/bookings/domain/repositories/bookings_repository.dart';
+import 'package:asan_rezerve_customer_app/features/bookings/presentation/bloc/appointments_bloc.dart';
 
 BookingSummary _booking(String id, {String status = 'Confirmed'}) =>
     BookingSummary(

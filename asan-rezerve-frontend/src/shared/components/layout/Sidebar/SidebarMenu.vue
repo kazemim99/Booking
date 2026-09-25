@@ -69,7 +69,7 @@
     <div v-if="!isCollapsed" class="sidebar-footer">
       <div class="footer-info">
         <p class="footer-version">Version 1.0.0</p>
-        <p class="footer-copyright">© 2025 Booksy</p>
+        <p class="footer-copyright">© 2025 AsanRezerve</p>
       </div>
     </div>
   </nav>

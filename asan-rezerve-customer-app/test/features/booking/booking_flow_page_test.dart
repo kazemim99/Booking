@@ -5,30 +5,30 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:booksy_customer_app/config/routes/app_router.dart';
-import 'package:booksy_customer_app/config/theme/app_colors.dart';
-import 'package:booksy_customer_app/config/theme/app_theme.dart';
-import 'package:booksy_customer_app/core/constants/app_strings.dart';
-import 'package:booksy_customer_app/core/errors/failures.dart';
-import 'package:booksy_customer_app/core/storage/secure_storage_service.dart';
-import 'package:booksy_customer_app/core/utils/jalali_formatter.dart';
-import 'package:booksy_customer_app/core/widgets/widgets.dart';
-import 'package:booksy_customer_app/features/auth/domain/entities/user.dart';
-import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:booksy_customer_app/features/auth/presentation/bloc/auth_state.dart';
-import 'package:booksy_customer_app/features/booking/domain/entities/booking_entities.dart';
-import 'package:booksy_customer_app/features/booking/domain/repositories/booking_repository.dart';
-import 'package:booksy_customer_app/features/booking/presentation/bloc/booking_bloc.dart';
-import 'package:booksy_customer_app/features/booking/presentation/pages/booking_flow_page.dart';
-import 'package:booksy_customer_app/features/booking/presentation/widgets/slot_picker.dart';
-import 'package:booksy_customer_app/features/profile/data/datasources/profile_remote_datasource.dart';
-import 'package:booksy_customer_app/features/profile/presentation/bloc/profile_cubit.dart';
+import 'package:asan_rezerve_customer_app/config/routes/app_router.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_colors.dart';
+import 'package:asan_rezerve_customer_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_customer_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_customer_app/core/errors/failures.dart';
+import 'package:asan_rezerve_customer_app/core/storage/secure_storage_service.dart';
+import 'package:asan_rezerve_customer_app/core/utils/jalali_formatter.dart';
+import 'package:asan_rezerve_customer_app/core/widgets/widgets.dart';
+import 'package:asan_rezerve_customer_app/features/auth/domain/entities/user.dart';
+import 'package:asan_rezerve_customer_app/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:asan_rezerve_customer_app/features/auth/presentation/bloc/auth_state.dart';
+import 'package:asan_rezerve_customer_app/features/booking/domain/entities/booking_entities.dart';
+import 'package:asan_rezerve_customer_app/features/booking/domain/repositories/booking_repository.dart';
+import 'package:asan_rezerve_customer_app/features/booking/presentation/bloc/booking_bloc.dart';
+import 'package:asan_rezerve_customer_app/features/booking/presentation/pages/booking_flow_page.dart';
+import 'package:asan_rezerve_customer_app/features/booking/presentation/widgets/slot_picker.dart';
+import 'package:asan_rezerve_customer_app/features/profile/data/datasources/profile_remote_datasource.dart';
+import 'package:asan_rezerve_customer_app/features/profile/presentation/bloc/profile_cubit.dart';
 
 import '../../helpers/fake_auth_bloc.dart';
 
-import 'package:booksy_customer_app/core/di/injection.dart';
-import 'package:booksy_customer_app/core/push/push_registration.dart';
-import 'package:booksy_customer_app/features/notifications/presentation/push_permission_cubit.dart';
+import 'package:asan_rezerve_customer_app/core/di/injection.dart';
+import 'package:asan_rezerve_customer_app/core/push/push_registration.dart';
+import 'package:asan_rezerve_customer_app/features/notifications/presentation/push_permission_cubit.dart';
 
 class _NeverAskedPush implements PushSettings {
   @override

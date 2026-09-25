@@ -3,7 +3,7 @@
     <div class="footer-content">
       <!-- Copyright and Version Info -->
       <div class="footer-info">
-        <span class="copyright">© {{ currentYear }} Booksy</span>
+        <span class="copyright">© {{ currentYear }} AsanRezerve</span>
         <span class="version">v{{ appVersion }}</span>
       </div>
 

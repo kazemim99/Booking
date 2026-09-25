@@ -51,7 +51,7 @@ class MapDiscoveryPage extends StatefulWidget {
   static const String tileUrlTemplate =
       'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
-  static const String userAgentPackageName = 'com.booksy.customer';
+  static const String userAgentPackageName = 'com.asanrezerve.customer';
 
   static const double initialZoom = 13;
   static const double maxZoom = 18;
