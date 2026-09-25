@@ -40,7 +40,7 @@ implementation task. `scripts/verify.sh fast` after each task, `full` to finish.
 ## 3. Application
 - [ ] 3.1 Unit tests: PromotionPricingService loading (provider promos + joined campaigns, new-customer, prior uses).
 - [ ] 3.2 IPromotionPricingService + QuoteBookingPriceQuery.
-- [ ] 3.3 Unit tests: create/update validators (FluentValidation) for provider and admin commands.
+- [ ] 3.3 Unit tests: request parsing (PromotionTermsInput.ToTerms) and handler guards; domain is the single validator.
 - [ ] 3.4 Provider commands/queries: create, update, pause, resume, end, list with stats; campaigns list, join, leave.
 - [ ] 3.5 Admin commands/queries: platform campaign CRUD + lifecycle, list all with filters, details with enrollments/stats.
 - [ ] 3.6 CreateBooking applies the best discount + redemption (customer bookings only); invalid code → 400 with reason.
@@ -93,6 +93,15 @@ implementation task. `scripts/verify.sh fast` after each task, `full` to finish.
 - Tier 1: release/transfer happen in the command handlers, not domain event handlers (those run in a separate scope/DbContext).
 - Tier 1: usage limits enforced by a concurrency token on `Promotion.RedemptionCount`; lost race → existing 409 path.
 - Tier 1: promotion management needs ManageOrganization (owner/manager), not ManageBookings.
+- Tier 1: no FluentValidation validators for promotions — the aggregate is the single validator (Persian 400s by field);
+  request parsing refuses shape errors. Validators would duplicate every rule in a second place.
+- Tier 1: a use lost between pricing and redeeming (limit reached, paused) is a 409 with a Persian retry message, not a
+  400 — retried, the visit is priced without it (spec: "fails with a conflict and, when retried, is priced without it").
+- Tier 2 (fix): CreateBookingResult now fills DurationMinutes/Currency/PaymentStatus/CreatedAt; they were never set, so
+  the 201 body carried an empty currency.
+- Tier 2 (test infra): PostgresTestContainerFixture honours ASANREZERVE_TEST_POSTGRES (an existing server instead of a
+  container) and scripts/verify treats it as the db source, so FULL can run where no Docker daemon exists. Opt-in;
+  unset changes nothing.
 
 ## Log
 

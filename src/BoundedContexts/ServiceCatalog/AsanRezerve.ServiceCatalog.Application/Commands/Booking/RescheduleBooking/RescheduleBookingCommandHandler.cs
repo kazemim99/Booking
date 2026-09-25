@@ -40,6 +40,7 @@ namespace AsanRezerve.ServiceCatalog.Application.Commands.Booking.RescheduleBook
         private const int BufferMinutes = Services.AvailabilityService.BufferTimeMinutes;
 
         private readonly IBookingNotificationParameters _bookingParameters;
+        private readonly Promotions.IPromotionPricingService _promotions;
 
         public RescheduleBookingCommandHandler(
             IBookingWriteRepository bookingWriteRepository,
@@ -53,8 +54,10 @@ namespace AsanRezerve.ServiceCatalog.Application.Commands.Booking.RescheduleBook
             ILogger<RescheduleBookingCommandHandler> logger,
             IBookingReminderScheduler reminders,
             INotificationRaiser notifications,
-            IBookingNotificationParameters bookingParameters)
+            IBookingNotificationParameters bookingParameters,
+            Promotions.IPromotionPricingService promotions)
         {
+            _promotions = promotions;
             _bookingParameters = bookingParameters;
             _bookingWriteRepository = bookingWriteRepository;
             _bookingReadRepository = bookingReadRepository;
@@ -157,6 +160,10 @@ namespace AsanRezerve.ServiceCatalog.Application.Commands.Booking.RescheduleBook
 
             // Save new booking
             await _bookingWriteRepository.SaveBookingAsync(newBooking, cancellationToken);
+
+            // The successor carries the discount (Booking.Reschedule copies it), so the redemption moves with it:
+            // cancelling the new booking later must find and release it.
+            await _promotions.TransferAsync(existingBooking.Id.Value, newBooking.Id.Value, cancellationToken);
 
             // Rescheduling closes the old booking and opens a new one, so the reminders move with it.
             // Leaving the old ones would tell the customer to turn up at an hour that is no longer

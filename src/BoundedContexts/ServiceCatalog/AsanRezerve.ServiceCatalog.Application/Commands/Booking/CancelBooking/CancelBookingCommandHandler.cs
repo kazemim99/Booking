@@ -19,6 +19,7 @@ namespace AsanRezerve.ServiceCatalog.Application.Commands.Booking.CancelBooking
         private readonly ILogger<CancelBookingCommandHandler> _logger;
 
         private readonly IBookingNotificationParameters _bookingParameters;
+        private readonly Promotions.IPromotionPricingService _promotions;
 
         public CancelBookingCommandHandler(
             IBookingWriteRepository bookingRepository,
@@ -29,8 +30,10 @@ namespace AsanRezerve.ServiceCatalog.Application.Commands.Booking.CancelBooking
             IBookingReminderScheduler reminders,
             INotificationRaiser notifications,
             Domain.Repositories.IProviderReadRepository providers,
-            IBookingNotificationParameters bookingParameters)
+            IBookingNotificationParameters bookingParameters,
+            Promotions.IPromotionPricingService promotions)
         {
+            _promotions = promotions;
             _bookingParameters = bookingParameters;
             _bookingRepository = bookingRepository;
             _availabilityWriteRepository = availabilityWriteRepository;
@@ -129,6 +132,10 @@ namespace AsanRezerve.ServiceCatalog.Application.Commands.Booking.CancelBooking
 
             // Update booking
             await _bookingRepository.UpdateBookingAsync(booking, cancellationToken);
+
+            // A cancelled booking gives its discount's use back to the promotion (decision 2026-09-25), committed with
+            // the cancellation below. Customer or salon, it makes no difference.
+            await _promotions.ReleaseForBookingAsync(booking.Id.Value, DateTime.UtcNow, cancellationToken);
 
             // The appointment is off, so its unsent reminders must not go out.
             await _reminders.WithdrawAsync(booking.Id.Value, cancellationToken);

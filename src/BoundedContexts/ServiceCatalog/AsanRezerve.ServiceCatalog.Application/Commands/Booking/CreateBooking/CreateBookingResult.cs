@@ -24,5 +24,10 @@ namespace AsanRezerve.ServiceCatalog.Application.Commands.Booking.CreateBooking
         public string Currency { get; set; }
         public string PaymentStatus { get; set; }
         public DateTime CreatedAt { get; set; }
+
+        /// <summary>The services' list prices; <see cref="TotalPrice"/> is this minus <see cref="DiscountAmount"/>.</summary>
+        public decimal Subtotal { get; init; }
+        public decimal DiscountAmount { get; init; }
+        public Promotions.AppliedDiscountDto? AppliedDiscount { get; init; }
     }
 }

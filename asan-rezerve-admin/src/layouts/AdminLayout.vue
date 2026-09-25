@@ -32,6 +32,11 @@
           <span>{{ $t('navigation.reviews') }}</span>
         </a-menu-item>
 
+        <a-menu-item key="promotions">
+          <tag-outlined />
+          <span>{{ $t('navigation.promotions') }}</span>
+        </a-menu-item>
+
         <a-menu-item key="gallery">
           <picture-outlined />
           <span>{{ $t('navigation.gallery') }}</span>
@@ -140,6 +145,7 @@ import {
   ShopOutlined,
   PictureOutlined,
   MessageOutlined,
+  TagOutlined,
   AppstoreOutlined,
   BarChartOutlined,
   DollarOutlined,

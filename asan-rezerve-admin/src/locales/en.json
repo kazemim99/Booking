@@ -61,7 +61,8 @@
     "payments": "Payments",
     "orders": "Orders",
     "logs": "Logs",
-    "settings": "Settings"
+    "settings": "Settings",
+    "promotions": "Campaigns & discounts"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -452,6 +453,134 @@
     "reasonSeenBy": {
       "customer": "This reason is sent to the customer who wrote the review.",
       "provider": "This reason is shown to the salon in their app."
+    }
+  },
+  "promotions": {
+    "title": "Campaigns & discounts",
+    "subtitle": "Publish platform campaigns and oversee salons' own discounts",
+    "newCampaign": "New campaign",
+    "tabs": {
+      "Platform": "Platform campaigns",
+      "Provider": "Salon discounts"
+    },
+    "searchPlaceholder": "Search title or code",
+    "allStatuses": "All statuses",
+    "retry": "Retry",
+    "empty": {
+      "Platform": "No campaign published yet",
+      "Provider": "No salon has created a discount"
+    },
+    "columns": {
+      "title": "Title",
+      "benefit": "Discount",
+      "period": "Validity",
+      "state": "State",
+      "usage": "Usage",
+      "salons": "Joined salons"
+    },
+    "status": {
+      "Active": "Active",
+      "Paused": "Paused",
+      "Ended": "Ended"
+    },
+    "state": {
+      "Scheduled": "Scheduled",
+      "Active": "Active",
+      "Paused": "Paused",
+      "Expired": "Expired",
+      "Exhausted": "Used up",
+      "Ended": "Ended"
+    },
+    "activation": {
+      "Automatic": "Automatic",
+      "Code": "With a code"
+    },
+    "kind": {
+      "Percentage": "Percentage",
+      "FixedAmount": "Fixed amount"
+    },
+    "actions": {
+      "pause": "Pause",
+      "resume": "Resume",
+      "end": "End"
+    },
+    "confirmEnd": "Ending a discount cannot be undone. Continue?",
+    "pausedByPlatform": "Paused by support; the salon cannot resume it",
+    "totalDiscount": "Total discount given",
+    "salon": "Salon",
+    "participants": "Joined salons ({n})",
+    "noParticipants": "No salon has joined this campaign yet",
+    "totalCount": "{n} items",
+    "saved": "Saved",
+    "done": "Done",
+    "toman": "Toman",
+    "conditions": {
+      "newCustomers": "New customers only",
+      "minimum": "Minimum {amount}",
+      "hours": "{from}–{to}",
+      "perCustomer": "{n}× per customer"
+    },
+    "days": {
+      "0": "Sunday",
+      "1": "Monday",
+      "2": "Tuesday",
+      "3": "Wednesday",
+      "4": "Thursday",
+      "5": "Friday",
+      "6": "Saturday"
+    },
+    "form": {
+      "createTitle": "New platform campaign",
+      "editTitle": "Edit campaign",
+      "fundingNote": "Campaigns are opt-in for salons: a campaign applies only at salons that join it, and each salon funds the discount it honours.",
+      "title": "Title",
+      "titlePlaceholder": "e.g. Nowruz festival",
+      "description": "Description",
+      "sectionBenefit": "Discount",
+      "sectionConditions": "Conditions",
+      "activation": "How it applies",
+      "activationHint": {
+        "Automatic": "Shown on prices and applied without a code.",
+        "Code": "The customer enters the code when booking."
+      },
+      "code": "Code",
+      "codeHint": "4–20 characters: letters, digits and dashes",
+      "codeLocked": "This code has been used and cannot change.",
+      "generate": "Generate",
+      "kind": "Type",
+      "percent": "Percent off",
+      "amount": "Amount off",
+      "cap": "Maximum discount",
+      "validity": "Validity",
+      "startsNow": "Starting now",
+      "noEnd": "No end date",
+      "days": "Days of the week",
+      "daysHint": "None selected means every day. Day and time are read from the appointment.",
+      "dailyWindow": "Only within a time window (e.g. off-peak hours)",
+      "dailyWindowHint": "For appointments starting within this window.",
+      "to": "to",
+      "minimum": "Minimum booking amount",
+      "audience": "Audience",
+      "newCustomersOnly": "Only a customer's first booking at each salon",
+      "totalLimit": "Total uses",
+      "perCustomerLimit": "Uses per customer",
+      "unlimited": "Unlimited",
+      "preview": "How customers see it"
+    },
+    "errors": {
+      "titleRequired": "Title is required",
+      "titleTooLong": "At most 80 characters",
+      "descriptionTooLong": "At most 500 characters",
+      "codeRequired": "A code is required",
+      "codeFormat": "4–20 characters: letters, digits and dashes only",
+      "percentRange": "Between 1 and 90",
+      "amountPositive": "A whole amount above zero",
+      "positive": "Must be above zero",
+      "notNegative": "Cannot be negative",
+      "dailyWindow": "Start must be before end",
+      "endBeforeStart": "End must be after start",
+      "endInPast": "End is in the past",
+      "atLeastOne": "At least 1"
     }
   }
 }

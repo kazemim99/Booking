@@ -48,6 +48,9 @@ public sealed class PostgresTestContainerFixture : IAsyncLifetime
 
     private string? _databaseName;
 
+    /// <summary>Connection string of an existing server to use instead of starting a container.</summary>
+    public const string ExternalServerVariable = "ASANREZERVE_TEST_POSTGRES";
+
     public string ConnectionString { get; private set; } = string.Empty;
 
     public async Task InitializeAsync()
@@ -120,6 +123,17 @@ public sealed class PostgresTestContainerFixture : IAsyncLifetime
         {
             if (_serverConnectionString is not null)
             {
+                return _serverConnectionString;
+            }
+
+            // An already-running PostgreSQL 16 server instead of a container, for machines without a Docker daemon
+            // (sandboxed agents, locked-down CI runners). Opt-in only: unset, nothing changes. The server needs a
+            // role allowed to CREATE/DROP DATABASE; every fixture still gets its own throwaway database on it.
+            var external = Environment.GetEnvironmentVariable(ExternalServerVariable);
+            if (!string.IsNullOrWhiteSpace(external))
+            {
+                _serverConnectionString = external;
+                Console.WriteLine($"✅ Using external PostgreSQL from {ExternalServerVariable}: {MaskPassword(external)}");
                 return _serverConnectionString;
             }
 
