@@ -5,6 +5,7 @@ import type { ProviderReview } from '../../types/reviews.types'
 
 const review = (overrides: Partial<ProviderReview> = {}): ProviderReview => ({
   reviewId: 'r1',
+  customerName: 'مریم ر.',
   rating: 4.5,
   comment: 'کار تمیز و دقیقی بود',
   isVerified: true,
@@ -18,6 +19,14 @@ const review = (overrides: Partial<ProviderReview> = {}): ProviderReview => ({
 })
 
 describe('ReviewCard', () => {
+  // openspec/changes/_inline/customer-reviews-and-nahal-seed: the listing names the author; the card dropped it.
+  it('names its author the way the listing signs them, with their initial', () => {
+    const wrapper = mount(ReviewCard, { props: { review: review() } })
+
+    expect(wrapper.get('[data-test="review-author"]').text()).toBe('مریم ر.')
+    expect(wrapper.get('.review-card__avatar').text()).toBe('م')
+  })
+
   it('shows only the dimensions the customer rated', () => {
     const wrapper = mount(ReviewCard, { props: { review: review() } })
 

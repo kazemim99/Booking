@@ -7,6 +7,7 @@
 
 import type { AxiosError } from 'axios'
 import { toastService } from '@/core/services/toast.service'
+import { persianServerMessage } from './server-message'
 
 interface ApiError {
   message: string
@@ -36,16 +37,18 @@ export function errorInterceptor(error: AxiosError<ApiError>) {
       // Handled by auth interceptor - don't show duplicate toast
       break
 
+    // The server's own reason when it is written for the customer (Persian at the source, since 2026-09); a
+    // generic line otherwise. «این اطلاعات قبلاً ثبت شده است» answered every conflict, whatever it was.
     case 403:
-      toastService.error('شما اجازه دسترسی به این بخش را ندارید', 'دسترسی ممنوع')
+      toastService.error(persianServerMessage(data) ?? 'شما اجازه دسترسی به این بخش را ندارید', 'دسترسی ممنوع')
       break
 
     case 404:
-      toastService.error('اطلاعات مورد نظر یافت نشد', 'یافت نشد')
+      toastService.error(persianServerMessage(data) ?? 'اطلاعات مورد نظر یافت نشد', 'یافت نشد')
       break
 
     case 409:
-      toastService.error('این اطلاعات قبلاً ثبت شده است', 'تداخل در داده‌ها')
+      toastService.error(persianServerMessage(data) ?? 'این اطلاعات قبلاً ثبت شده است', 'تداخل در داده‌ها')
       break
 
     case 422:
@@ -73,7 +76,14 @@ export function errorInterceptor(error: AxiosError<ApiError>) {
 }
 
 function handleValidationError(data: ApiError) {
-  if (data.errors) {
+  // A controller's `errors: [{ code, message }]` is a list, not a field map: its entries are objects, and toasting
+  // one showed «[object Object]». Its first message is the reason.
+  if (Array.isArray(data?.errors)) {
+    toastService.error(persianServerMessage(data) ?? 'داده‌های ورودی نامعتبر است', 'خطای اعتبارسنجی')
+    return
+  }
+
+  if (data?.errors) {
     // Show all validation errors as separate toasts
     const errorMessages = Object.entries(data.errors).flatMap(([field, messages]) => {
       return messages

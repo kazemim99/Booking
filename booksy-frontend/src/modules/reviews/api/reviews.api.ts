@@ -64,6 +64,7 @@ function body(input: ReviewInput): Json {
 function toProviderReview(item: Json): ProviderReview {
   return {
     reviewId: String(item.reviewId),
+    customerName: strOrNull(item.customerName)?.trim() || 'مشتری',
     rating: num(item.rating),
     comment: strOrNull(item.comment),
     isVerified: item.isVerified === true,

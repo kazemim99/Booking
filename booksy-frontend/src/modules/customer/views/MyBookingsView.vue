@@ -78,6 +78,13 @@
             <p v-if="booking.staffName" class="staff">👤 {{ booking.staffName }}</p>
             <p class="duration">⏱ {{ booking.formattedDuration }}</p>
             <p class="price">💰 {{ booking.formattedPrice }}</p>
+            <!-- Where the visit's review stands: written (and its state), or waiting for the salon to mark it done -->
+            <p v-if="booking.reviewStatusLabel" class="review-state" data-testid="booking-review-state">
+              ⭐ نظر شما: {{ booking.reviewStatusLabel }}
+            </p>
+            <p v-else-if="booking.reviewBlockedReason" class="review-waiting" data-testid="booking-review-waiting">
+              ⏳ {{ booking.reviewBlockedReason }}
+            </p>
           </div>
           <div class="booking-actions">
             <button @click="viewDetails(booking.bookingId)" class="btn-view">جزئیات</button>
@@ -90,12 +97,29 @@
             >
               {{ cancellingBookingId === booking.bookingId ? 'در حال لغو...' : 'لغو رزرو' }}
             </button>
+            <button
+              v-if="booking.canReview"
+              @click="reviewing = booking"
+              class="btn-review"
+              data-testid="booking-review-button"
+            >
+              ⭐ ثبت نظر
+            </button>
             <button v-if="booking.isPast" @click="rebookService(booking)" class="btn-rebook">
               رزرو مجدد
             </button>
           </div>
         </div>
       </div>
+
+      <WriteReviewModal
+        v-if="reviewing"
+        :is-open="!!reviewing"
+        :booking-id="reviewing.bookingId"
+        :subject="`${reviewing.providerName} · ${reviewing.serviceName}`"
+        @close="reviewing = null"
+        @saved="reviewed"
+      />
 
       <!-- Pagination -->
       <div v-if="pagination.totalPages > 1" class="pagination">
@@ -132,6 +156,7 @@ import { useRouter } from 'vue-router'
 import { bookingService } from '@/modules/booking/api/booking.service'
 import type { CustomerBookingDto } from '@/modules/booking/types/booking-api.types'
 import { mapToEnrichedBookingView, type EnrichedBookingView } from '@/modules/booking/mappers/booking-dto.mapper'
+import WriteReviewModal from '@/modules/reviews/components/WriteReviewModal.vue'
 
 const router = useRouter()
 const activeTab = ref<'upcoming' | 'past' | 'cancelled'>('upcoming')
@@ -141,6 +166,20 @@ const bookings = ref<EnrichedBookingView[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
 const cancellingBookingId = ref<string | null>(null)
+
+// The visit being reviewed, while its modal is open.
+const reviewing = ref<EnrichedBookingView | null>(null)
+
+/** Saved: the card says so at once — the server's copy says the same on the next load. */
+function reviewed(reviewId: string) {
+  const id = reviewing.value?.bookingId
+  bookings.value = bookings.value.map(b =>
+    b.bookingId === id
+      ? { ...b, canReview: false, reviewId, reviewStatus: 'Pending' as const, reviewStatusLabel: 'در انتظار تأیید' }
+      : b,
+  )
+  reviewing.value = null
+}
 
 // Pagination state
 const pagination = ref({
@@ -556,6 +595,20 @@ onMounted(() => {
   background: var(--color-red-200, #fecaca);
 }
 
+.btn-review {
+  padding: 0.5rem 1rem;
+  border: 1px solid #f59e0b;
+  background: #fffbeb;
+  color: #92400e;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-review:hover { background: #fef3c7; }
+.review-state, .review-waiting {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
 .btn-rebook {
   background: var(--color-gray-100, #f3f4f6);
   color: var(--color-gray-700, #374151);

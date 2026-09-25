@@ -54,7 +54,7 @@ User request (2026-09-25): «الان من چرا نمیتونم بعنوان م
 - [x] 6 Customer app: review state from the server on the booking card and page (button / reason / submitted state)
 - [x] 7 Customer app: review/vote errors show the server's Persian reason
 - [x] 8 Customer app: salon page reviews — error with retry, load more, author name
-- [ ] 9 Web: «ثبت نظر» on My Bookings and the bookings sidebar (modal with ReviewForm), states, author name on cards
+- [x] 9 Web: «ثبت نظر» on My Bookings and the bookings sidebar (modal with ReviewForm), states, author name on cards
 - [ ] 10 Provider app: «تکمیل»/«عدم حضور» offered only when the server accepts them
 - [?] 11 DECISION: should a confirmed booking complete by itself some hours after its end (unless marked no-show)?
 - [?] 12 DECISION: put the Nahal demo reviews on production, where real customers would read them as genuine?
