@@ -29,7 +29,15 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetBookingDetails
         // Same rule as CustomerBookingDto.StaffName.
         string? StaffName = null,
         // Same rule as CustomerBookingDto.RescheduleBlockedReason.
-        string? RescheduleBlockedReason = null);
+        string? RescheduleBlockedReason = null,
+        // The caller is the person this booking is for: its own customer, or — for a booking the salon entered — the
+        // person with its client-book entry's verified mobile (IBookingCustomer). Lets that person open it.
+        bool IsForCaller = false,
+        // Same rule as CustomerBookingDto's review fields; empty unless IsForCaller.
+        bool CanReview = false,
+        string? ReviewBlockedReason = null,
+        Guid? ReviewId = null,
+        string? ReviewStatus = null);
 
     public sealed record PaymentInfoDto(
         decimal TotalAmount,

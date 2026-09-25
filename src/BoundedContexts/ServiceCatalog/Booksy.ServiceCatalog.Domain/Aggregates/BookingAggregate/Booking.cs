@@ -341,6 +341,36 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate
         }
 
         /// <summary>
+        /// Whether the visit is on record as done — the one state a review may be written for.
+        /// </summary>
+        public bool CanBeReviewed() => Status == BookingStatus.Completed;
+
+        /// <summary>
+        /// Why this booking cannot be reviewed YET, in words for the customer — null when it can be, and null when it
+        /// never will be (cancelled, no-show) or the visit is still ahead. The case it names: the appointment's time is
+        /// over and the salon has not marked it done, which only the salon can do. Without it the customer met a
+        /// booking with no «ثبت نظر» and no idea why (openspec/changes/_inline/customer-reviews-and-nahal-seed).
+        /// </summary>
+        public string? ReviewBlockedReason() =>
+            Status == BookingStatus.Confirmed && TimeSlot.EndTime <= SalonTime.Now
+                ? ReviewWaitsForTheSalonMessage
+                : null;
+
+        /// <summary>See <see cref="ReviewBlockedReason"/>.</summary>
+        public const string ReviewWaitsForTheSalonMessage =
+            "پس از اینکه سالن این نوبت را «انجام‌شده» ثبت کند، می‌توانید برایش نظر بنویسید.";
+
+        /// <summary>
+        /// Why a review of this booking is refused right now, in words for the customer; null when it can be reviewed.
+        /// The waiting-for-the-salon case says what will unlock it; any other state is named.
+        /// </summary>
+        public string? ReviewRefusal() =>
+            CanBeReviewed()
+                ? null
+                : ReviewBlockedReason()
+                  ?? $"فقط برای نوبت‌های انجام‌شده می‌توانید نظر ثبت کنید؛ وضعیت این نوبت: {BookingStatusLabel.Of(Status)}.";
+
+        /// <summary>
         /// Throws the rule that stops this booking being moved — status/policy first, then the window before the
         /// appointment. Callable ahead of any slot lookup so the customer is told the reason they can act on: the
         /// window checked after slot availability hid behind «slot not available» (QA 2026-09-24).

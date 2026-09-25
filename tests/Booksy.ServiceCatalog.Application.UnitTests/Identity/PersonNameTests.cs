@@ -122,4 +122,18 @@ public class PersonNameTests
         PersonName.RealParts("سارا", "9123135143").Should().Be(("سارا", string.Empty));
         PersonName.RealParts(" سارا ", " احمدی ").Should().Be(("سارا", "احمدی"));
     }
+
+    [Theory]
+    [InlineData("ناصر", "عابدی", "ناصر ع.")]
+    [InlineData(" سارا ", " احمدی ", "سارا ا.")]
+    [InlineData("مریم", null, "مریم")]
+    [InlineData("مریم", "9123135143", "مریم")]
+    [InlineData("مشتری", "9123135143", "مشتری")]
+    [InlineData(null, null, "مشتری")]
+    [InlineData(null, "عابدی", "مشتری")]
+    public void A_public_review_is_signed_with_first_name_and_surname_initial(string? first, string? last, string expected)
+    {
+        PersonName.ForPublicReview(first, last).Should().Be(expected,
+            "enough to read as a person, not enough to find them — never a placeholder, a phone or an id");
+    }
 }

@@ -35,14 +35,16 @@ public sealed class ReportReviewCommandHandler : ICommandHandler<ReportReviewCom
     public async Task<ReportReviewResult> Handle(ReportReviewCommand request, CancellationToken cancellationToken)
     {
         var review = await _read.GetByIdAsync(request.ReviewId, cancellationToken)
-                     ?? throw new NotFoundException($"Review with ID {request.ReviewId} not found");
+                     ?? throw new NotFoundException("این نظر پیدا نشد.");
 
         if (!review.IsPubliclyVisible)
-            throw new InvalidAggregateStateException(typeof(Domain.Aggregates.Review), "Report", review.ModerationStatus.ToString());
+            throw new InvalidAggregateStateException(
+                nameof(Domain.Aggregates.Review), "Report", review.ModerationStatus.ToString(),
+                "فقط نظرهای منتشرشده را می‌توانید گزارش کنید.");
 
         var reporter = UserId.From(request.ReporterId);
         if (await _write.HasReportedAsync(review.Id, reporter, cancellationToken))
-            throw new ConflictException("You have already reported this review");
+            throw new ConflictException("این نظر را قبلاً گزارش کرده‌اید.");
 
         var report = ReviewReport.File(review.Id, reporter, request.Reason ?? string.Empty, DateTime.UtcNow);
         await _write.AddReportAsync(report, cancellationToken);

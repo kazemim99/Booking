@@ -43,6 +43,7 @@ namespace Booksy.ServiceCatalog.Application.DependencyInjection
             services.AddScoped<Services.Notifications.IBookingReminderScheduler, Services.Notifications.BookingReminderScheduler>();
             services.AddScoped<Services.Notifications.IBookingNotificationParameters, Services.Notifications.BookingNotificationParameters>();
             services.AddScoped<Services.IBookingCustomerNames, Services.BookingCustomerNames>();
+            services.AddScoped<Services.IBookingCustomer, Services.BookingCustomer>();
 
             // Register domain event handlers explicitly (NO MediatR!)
             RegisterDomainEventHandlers(services, assembly);

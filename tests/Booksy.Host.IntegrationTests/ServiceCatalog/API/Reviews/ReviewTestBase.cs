@@ -1,6 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.RegularExpressions;
+using Booksy.Core.Application.Services.Notifications;
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.Host.IntegrationTests.Infrastructure.Fakes;
 using Booksy.ServiceCatalog.API.Models.Requests;
 using Booksy.ServiceCatalog.Domain.Aggregates;
 using Booksy.ServiceCatalog.Domain.Aggregates.BookingAggregate;
@@ -31,9 +34,9 @@ public abstract class ReviewTestBase : ServiceCatalogIntegrationTestBase
     /// only way to a completable booking: <c>Complete()</c> is legal only within fifteen minutes of the start and
     /// <c>Confirm()</c> needs two hours' notice.
     /// </summary>
-    protected async Task<Visit> CompletedVisitAsync(Provider? provider = null)
+    protected async Task<Visit> CompletedVisitAsync(Provider? provider = null, Guid? customer = null)
     {
-        var (bookingId, customerId, owner) = await BookingAsync(provider);
+        var (bookingId, customerId, owner) = await BookingAsync(provider, customer: customer);
 
         AuthenticateAsProviderOwner(owner);
         var response = await Client.PostAsJsonAsync(
@@ -52,18 +55,32 @@ public abstract class ReviewTestBase : ServiceCatalogIntegrationTestBase
         return new Visit(bookingId, customerId, owner);
     }
 
-    private async Task<(Guid, Guid, Provider)> BookingAsync(Provider? provider)
+    /// <summary>A confirmed booking still ahead on the salon's clock.</summary>
+    protected async Task<Visit> UpcomingVisitAsync()
+    {
+        var (bookingId, customerId, owner) = await BookingAsync(null, SalonTime.Now.AddDays(2));
+        return new Visit(bookingId, customerId, owner);
+    }
+
+    /// <summary>A confirmed booking whose time is over, which the salon has not marked done.</summary>
+    protected async Task<Visit> PastUncompletedVisitAsync()
+    {
+        var (bookingId, customerId, owner) = await BookingAsync(null, SalonTime.Now.AddHours(-3));
+        return new Visit(bookingId, customerId, owner);
+    }
+
+    private async Task<(Guid, Guid, Provider)> BookingAsync(Provider? provider, DateTime? start = null, Guid? customer = null)
     {
         provider ??= await CreateTestProviderWithServicesAsync();
         var service = (await GetProviderServicesAsync(provider.Id.Value)).First();
-        var customerId = Guid.NewGuid();
+        var customerId = customer ?? Guid.NewGuid();
 
         var booking = Booking.CreateConfirmedByProvider(
             UserId.From(customerId),
             provider.Id,
             service.Id,
             provider.Id.Value,
-            DateTime.UtcNow.AddMinutes(5),
+            start ?? DateTime.UtcNow.AddMinutes(5),
             service.Duration,
             service.BasePrice,
             service.BookingPolicy ?? BookingPolicy.Default,
@@ -71,6 +88,91 @@ public abstract class ReviewTestBase : ServiceCatalogIntegrationTestBase
         await CreateEntityAsync(booking);
         ClearAuthenticationHeader();
         return (booking.Id.Value, customerId, provider);
+    }
+
+    /// <summary>
+    /// A booking the salon entered for a mobile number (a walk-in or phone booking) and marked done. Its
+    /// <c>CustomerId</c> is the salon's owner, as it is for every salon-entered booking; who it is FOR is the entry in
+    /// the salon's client book, found by that number.
+    /// </summary>
+    protected async Task<Visit> SalonEnteredCompletedVisitAsync(string phone)
+    {
+        var provider = await CreateTestProviderWithServicesAsync();
+        var service = (await GetProviderServicesAsync(provider.Id.Value)).First();
+
+        var entry = ProviderCustomer.Create(
+            provider.Id, "مرتضی", "کاظمی", PhoneNumber.From(phone), null, Domain.Enums.CustomerSource.Manual);
+        await CreateEntityAsync(entry);
+
+        var booking = Booking.CreateConfirmedByProvider(
+            provider.OwnerId,
+            provider.Id,
+            service.Id,
+            provider.Id.Value,
+            DateTime.UtcNow.AddMinutes(5),
+            service.Duration,
+            service.BasePrice,
+            service.BookingPolicy ?? BookingPolicy.Default,
+            "salon-entered review test");
+        booking.RecordForProviderCustomer(entry.Id, notifyCustomer: false);
+        await CreateEntityAsync(booking);
+
+        AuthenticateAsProviderOwner(provider);
+        var response = await Client.PostAsJsonAsync(
+            $"/api/v1/bookings/{booking.Id.Value}/complete",
+            new CompleteBookingRequest { CompletionNotes = "انجام شد" });
+        response.StatusCode.Should().Be(HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+        ClearAuthenticationHeader();
+
+        return new Visit(booking.Id.Value, provider.OwnerId.Value, provider);
+    }
+
+    /// <summary>A mobile number no other test uses.</summary>
+    protected static string NewPhone()
+    {
+        var digits = new string(Guid.NewGuid().ToString("N").Where(char.IsDigit).ToArray()).PadRight(7, '0');
+        return "+98912" + digits[..7];
+    }
+
+    /// <summary>Signs a person up the way they really do — an OTP to their mobile — and returns their id.</summary>
+    protected async Task<Guid> SignUpAsync(string phone, string? firstName, string? lastName)
+    {
+        ClearAuthenticationHeader();
+        var send = await Client.PostAsJsonAsync("/api/v1/auth/send-verification-code",
+            new { phoneNumber = phone, countryCode = "+98" });
+        send.StatusCode.Should().Be(HttpStatusCode.OK, await send.Content.ReadAsStringAsync());
+
+        var sms = (FakeSmsNotificationService)Factory.Services.GetRequiredService<ISmsNotificationService>();
+        var message = sms.LastMessageTo(PhoneNumber.From(phone).Value) ?? sms.LastMessageTo(phone);
+        var code = Regex.Match(message!, @"\d{4,8}").Value;
+
+        var complete = await Client.PostAsJsonAsync("/api/v1/auth/customer/complete-authentication",
+            new { phoneNumber = phone, code, firstName, lastName });
+        complete.StatusCode.Should().Be(HttpStatusCode.OK, await complete.Content.ReadAsStringAsync());
+        ClearAuthenticationHeader();
+        return Guid.Parse(JObject.Parse(await complete.Content.ReadAsStringAsync())["data"]!["userId"]!.Value<string>()!);
+    }
+
+    /// <summary>This booking as the signed-in customer's own booking list shows it.</summary>
+    protected async Task<JToken> MyBookingRowAsync(Guid customerId, Guid bookingId)
+    {
+        AsCustomer(customerId);
+        var response = await Client.GetAsync("/api/v1/bookings/my-bookings?pageSize=50");
+        var text = await response.Content.ReadAsStringAsync();
+        response.StatusCode.Should().Be(HttpStatusCode.OK, text);
+        ClearAuthenticationHeader();
+        var data = Data(text);
+        var items = (JArray)(data["items"] ?? data);
+        return items.Single(i => i["bookingId"]!.Value<string>() == bookingId.ToString());
+    }
+
+    /// <summary>This booking's page, as the given person opens it.</summary>
+    protected async Task<HttpResponseMessage> BookingPageAsync(Guid personId, Guid bookingId)
+    {
+        AsCustomer(personId);
+        var response = await Client.GetAsync($"/api/v1/bookings/{bookingId}");
+        ClearAuthenticationHeader();
+        return response;
     }
 
     protected void AsCustomer(Guid customerId) => AuthenticateAsUser(customerId, $"c{customerId:N}@test.com");

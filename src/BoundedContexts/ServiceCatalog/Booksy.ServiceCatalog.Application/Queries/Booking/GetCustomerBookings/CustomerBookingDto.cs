@@ -29,5 +29,12 @@ namespace Booksy.ServiceCatalog.Application.Queries.Booking.GetCustomerBookings
         string? StaffName = null,
         // Why the customer cannot move this booking right now, in Persian; null when they can. Said up front so the
         // apps disable «تغییر زمان» with the reason instead of failing after a slot is chosen.
-        string? RescheduleBlockedReason = null);
+        string? RescheduleBlockedReason = null,
+        // Where the booking's review stands (openspec/changes/_inline/customer-reviews-and-nahal-seed): whether the
+        // customer may write one now; why not yet, in Persian (the salon has not marked the visit done); or the one
+        // they wrote and its moderation state (Pending | Published | Rejected | Hidden).
+        bool CanReview = false,
+        string? ReviewBlockedReason = null,
+        Guid? ReviewId = null,
+        string? ReviewStatus = null);
 }

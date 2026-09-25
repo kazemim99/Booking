@@ -24,11 +24,11 @@ namespace Booksy.ServiceCatalog.Domain.Aggregates
         public static ReviewReport File(Guid reviewId, UserId reportedBy, string reason, DateTime utcNow)
         {
             if (string.IsNullOrWhiteSpace(reason))
-                throw new DomainValidationException(nameof(Reason), "A report needs a reason");
+                throw new DomainValidationException(nameof(Reason), "دلیل گزارش را بنویسید.");
 
             var trimmed = reason.Trim();
             if (trimmed.Length > MaxReasonLength)
-                throw new DomainValidationException(nameof(Reason), $"A report reason cannot exceed {MaxReasonLength} characters");
+                throw new DomainValidationException(nameof(Reason), $"دلیل گزارش حداکثر {MaxReasonLength} نویسه می‌تواند باشد.");
 
             return new ReviewReport
             {

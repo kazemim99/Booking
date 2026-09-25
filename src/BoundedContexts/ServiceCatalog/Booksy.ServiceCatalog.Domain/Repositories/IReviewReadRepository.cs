@@ -83,6 +83,14 @@ public interface IReviewReadRepository : IReadRepository<Review, Guid>
     Task<bool> HasReviewAsync(Guid bookingId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// The review written for each of these bookings, in whatever moderation state. Bookings without a review are
+    /// absent. One query however many bookings — the customer's booking list asks for a page at a time.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, BookingReviewState>> GetStatesByBookingIdsAsync(
+        IReadOnlyCollection<Guid> bookingIds,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// The administrator's moderation queue. <see cref="ReviewModerationFilter.Pending"/> holds every review or
     /// provider reply awaiting a decision, oldest first; <see cref="ReviewModerationFilter.Hidden"/> is where
     /// hidden reviews are found, since they are no longer pending; <see cref="ReviewModerationFilter.Reported"/>
@@ -115,6 +123,9 @@ public interface IReviewReadRepository : IReadRepository<Review, Guid>
         bool verifiedOnly = true,
         CancellationToken cancellationToken = default);
 }
+
+/// <summary>The review a booking has: which one, and where moderation stands on it.</summary>
+public sealed record BookingReviewState(Guid ReviewId, Enums.ReviewModerationStatus ModerationStatus);
 
 /// <summary>What a review is about, by name.</summary>
 public sealed record ReviewContext(string ProviderName, string? ProviderLogoUrl, string? ServiceName);

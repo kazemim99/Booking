@@ -1,5 +1,6 @@
 using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Exceptions;
+using Booksy.ServiceCatalog.Application.Abstractions.Identity;
 using Booksy.ServiceCatalog.Domain.Repositories;
 using Booksy.ServiceCatalog.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
@@ -14,15 +15,18 @@ public sealed class GetProviderReviewsQueryHandler
 {
     private readonly IReviewReadRepository _reviewRepository;
     private readonly IProviderReadRepository _providerRepository;
+    private readonly IPersonDirectory _people;
     private readonly ILogger<GetProviderReviewsQueryHandler> _logger;
 
     public GetProviderReviewsQueryHandler(
         IReviewReadRepository reviewRepository,
         IProviderReadRepository providerRepository,
+        IPersonDirectory people,
         ILogger<GetProviderReviewsQueryHandler> logger)
     {
         _reviewRepository = reviewRepository;
         _providerRepository = providerRepository;
+        _people = people;
         _logger = logger;
     }
 
@@ -71,6 +75,11 @@ public sealed class GetProviderReviewsQueryHandler
                 cancellationToken)
             : new Dictionary<Guid, bool>();
 
+        // Each author's public name, in one lookup for the page.
+        var authors = await _people.FindByIdsAsync(
+            paginatedReviews.Reviews.Select(r => r.CustomerId.Value).Distinct().ToList(),
+            cancellationToken);
+
         _logger.LogInformation(
             "Retrieved {Count} reviews for Provider {ProviderId} (Page {Page}/{TotalPages})",
             paginatedReviews.Reviews.Count,
@@ -78,14 +87,15 @@ public sealed class GetProviderReviewsQueryHandler
             paginatedReviews.PageNumber,
             paginatedReviews.TotalPages);
 
-        return MapToViewModel(request.ProviderId, statistics, paginatedReviews, myVotes);
+        return MapToViewModel(request.ProviderId, statistics, paginatedReviews, myVotes, authors);
     }
 
     private GetProviderReviewsViewModel MapToViewModel(
         Guid providerId,
         Domain.Repositories.ReviewStatistics statistics,
         Domain.Repositories.PaginatedReviews paginatedReviews,
-        IReadOnlyDictionary<Guid, bool> myVotes)
+        IReadOnlyDictionary<Guid, bool> myVotes,
+        IReadOnlyDictionary<Guid, PersonInfo> authors)
     {
         // Calculate percentages for rating distribution
         var totalReviews = statistics.TotalReviews;
@@ -123,7 +133,9 @@ public sealed class GetProviderReviewsQueryHandler
             ReviewId: r.Id,
             ProviderId: r.ProviderId.Value,
             CustomerId: r.CustomerId.Value,
-            CustomerName: GetCustomerDisplayName(r.CustomerId.Value), // Placeholder
+            CustomerName: authors.TryGetValue(r.CustomerId.Value, out var author)
+                ? PersonName.ForPublicReview(author.FirstName, author.LastName)
+                : PersonName.AnonymousReviewer,
             BookingId: r.BookingId,
             Rating: r.RatingValue,
             Comment: r.Comment,
@@ -157,17 +169,5 @@ public sealed class GetProviderReviewsQueryHandler
             ProviderId: providerId,
             Statistics: statisticsViewModel,
             Reviews: reviewsViewModel);
-    }
-
-    /// <summary>
-    /// Gets customer display name (placeholder - in production would call UserManagement API)
-    /// For now, returns anonymous customer identifier
-    /// </summary>
-    private string GetCustomerDisplayName(Guid customerId)
-    {
-        // TODO: Call UserManagement API to get actual customer name
-        // For now, return first 8 chars of customer ID as identifier
-        var shortId = customerId.ToString().Substring(0, 8);
-        return $"Customer {shortId}";
     }
 }

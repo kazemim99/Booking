@@ -48,19 +48,19 @@ public sealed class ManageReplyCommandHandler : ICommandHandler<ManageReplyComma
     public async Task<ManageReplyResult> Handle(ManageReplyCommand request, CancellationToken cancellationToken)
     {
         var review = await _reviews.GetByIdAsync(request.ReviewId, cancellationToken)
-                     ?? throw new NotFoundException($"Review with ID {request.ReviewId} not found");
+                     ?? throw new NotFoundException("این نظر پیدا نشد.");
 
         var mayActForSalon = await _sender.Send(
             new CanManageOrganizationQuery(review.ProviderId.Value, OrganizationPermission.ManageOrganization),
             cancellationToken);
         if (!mayActForSalon)
-            throw new ForbiddenException("Only the reviewed business can reply to this review");
+            throw new ForbiddenException("فقط خود سالن می‌تواند به این نظر پاسخ دهد.");
 
         switch (request.Action)
         {
             case ReplyAction.Add:
                 if (review.ProviderResponse is not null)
-                    throw new ConflictException("This review already has a reply. Edit the existing reply instead.");
+                    throw new ConflictException("این نظر پاسخ دارد؛ همان پاسخ را ویرایش کنید.");
                 review.AddProviderResponse(request.Text ?? string.Empty, request.ActedBy);
                 break;
             case ReplyAction.Edit:

@@ -303,6 +303,23 @@ using (var scope = app.Services.CreateScope())
     await scope.ServiceProvider.InitializeDatabaseAsync(seedDemoData: seed, seedReferenceData: seedReferenceData);
 }
 
+// The demo salon's reviews, by named demo customers (openspec/changes/_inline/customer-reviews-and-nahal-seed). Its own
+// switch, defaulting to SeedOnStartup — so Development gets them and production never does unless someone decides so.
+// Idempotent, and logged rather than rethrown: a demo review is never worth failing startup on a shared box.
+if (builder.Configuration.GetValue("Database:SeedDemoReviews", seed))
+{
+    using var scope = app.Services.CreateScope();
+    try
+    {
+        await DemoSalonReviews.SeedAsync(scope.ServiceProvider);
+    }
+    catch (Exception ex)
+    {
+        scope.ServiceProvider.GetRequiredService<ILogger<Program>>()
+            .LogError(ex, "Seeding the demo salon's reviews failed");
+    }
+}
+
 app.Run();
 
 // Exposed for WebApplicationFactory-based integration tests once they are retargeted.

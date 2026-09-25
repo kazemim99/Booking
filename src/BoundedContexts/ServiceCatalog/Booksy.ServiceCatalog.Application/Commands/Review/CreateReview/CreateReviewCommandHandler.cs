@@ -2,6 +2,7 @@ using Booksy.Core.Application.Abstractions.CQRS;
 using Booksy.Core.Application.Abstractions.Persistence;
 using Booksy.Core.Application.Exceptions;
 using Booksy.Core.Domain.ValueObjects;
+using Booksy.ServiceCatalog.Application.Services;
 using Booksy.ServiceCatalog.Application.Services.Notifications;
 using Booksy.ServiceCatalog.Domain.Enums;
 using Booksy.ServiceCatalog.Domain.Repositories;
@@ -20,6 +21,7 @@ public sealed class CreateReviewCommandHandler : ICommandHandler<CreateReviewCom
     private readonly IBookingReadRepository _bookingRepository;
     private readonly IServiceCatalogUnitOfWork _unitOfWork;
     private readonly INotificationRaiser _notifications;
+    private readonly IBookingCustomer _bookingCustomer;
     private readonly ILogger<CreateReviewCommandHandler> _logger;
 
     /// <summary>
@@ -42,6 +44,7 @@ public sealed class CreateReviewCommandHandler : ICommandHandler<CreateReviewCom
         IBookingReadRepository bookingRepository,
         IServiceCatalogUnitOfWork unitOfWork,
         INotificationRaiser notifications,
+        IBookingCustomer bookingCustomer,
         ILogger<CreateReviewCommandHandler> logger)
     {
         _reviewWriteRepository = reviewWriteRepository;
@@ -49,6 +52,7 @@ public sealed class CreateReviewCommandHandler : ICommandHandler<CreateReviewCom
         _bookingRepository = bookingRepository;
         _unitOfWork = unitOfWork;
         _notifications = notifications;
+        _bookingCustomer = bookingCustomer;
         _logger = logger;
     }
 
@@ -68,22 +72,21 @@ public sealed class CreateReviewCommandHandler : ICommandHandler<CreateReviewCom
 
         if (booking == null)
         {
-            throw new NotFoundException($"Booking with ID {request.BookingId} not found");
+            throw new NotFoundException("این نوبت پیدا نشد.");
         }
 
-        // 2. Verify customer owns the booking
-        if (booking.CustomerId.Value != request.CustomerId)
+        // 2. Only the person the booking is for — its own customer, or for a booking the salon entered, the person
+        // with that client-book entry's verified mobile. Never the salon owner stored as a salon-entered booking's
+        // customer: a salon does not review itself.
+        if (!await _bookingCustomer.IsForAsync(booking, request.CustomerId, cancellationToken))
         {
-            throw new ForbiddenException(
-                "You can only review bookings that you have made");
+            throw new ForbiddenException("فقط برای نوبت‌های خودتان می‌توانید نظر ثبت کنید.");
         }
 
-        // 3. Verify booking is completed
-        if (booking.Status != BookingStatus.Completed)
+        // 3. Verify booking is completed — refused with what the customer can do about it, or the state it is in.
+        if (booking.ReviewRefusal() is { } refusal)
         {
-            throw new ConflictException(
-                $"Cannot review booking with status '{booking.Status}'. " +
-                "Only completed bookings can be reviewed.");
+            throw new ConflictException(refusal);
         }
 
         // 4. Check if review already exists for this booking
@@ -94,8 +97,7 @@ public sealed class CreateReviewCommandHandler : ICommandHandler<CreateReviewCom
         if (existingReview != null)
         {
             throw new ConflictException(
-                "A review already exists for this booking. " +
-                "Please update the existing review instead.");
+                "برای این نوبت قبلاً نظر ثبت کرده‌اید؛ می‌توانید همان را از «نظرهای من» ویرایش کنید.");
         }
 
         // 5. Create the review
