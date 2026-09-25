@@ -12,19 +12,28 @@ namespace AsanRezerve.Core.Application.Abstractions.CQRS
     public interface IQuery<out TResponse> : IRequest<TResponse>
     {
         /// <summary>
-        /// Indicates whether the query result can be cached
+        /// Opts the query into the query cache (<c>CachingBehavior</c>). Only for results that are the same for
+        /// every caller allowed to run the query, and whose changes evict <see cref="CacheTags"/> — otherwise a
+        /// cached result is served stale for its whole lifetime.
         /// </summary>
+        /// <remarks>
+        /// Implement these members with exactly the interface's types (<c>int?</c>, <c>string?</c>, ...): a
+        /// property of another type (<c>int CacheExpirationSeconds</c>) does not implement the interface member and
+        /// is silently ignored.
+        /// </remarks>
         bool IsCacheable => false;
 
         /// <summary>
-        /// Gets the cache key for this query
+        /// Optional key, namespaced by the query type. Leave null to key on every property of the query, which is
+        /// what keeps two queries that differ in one filter apart.
         /// </summary>
         string? CacheKey => null;
 
-        /// <summary>
-        /// Gets the cache expiration in seconds
-        /// </summary>
+        /// <summary>Absolute lifetime in seconds; null for the configured default (<c>Cache:DefaultExpirationMinutes</c>).</summary>
         int? CacheExpirationSeconds => null;
+
+        /// <summary>Tags the cached result is evicted by (for example <c>provider:{id}</c>).</summary>
+        IReadOnlyCollection<string>? CacheTags => null;
     }
 }
 

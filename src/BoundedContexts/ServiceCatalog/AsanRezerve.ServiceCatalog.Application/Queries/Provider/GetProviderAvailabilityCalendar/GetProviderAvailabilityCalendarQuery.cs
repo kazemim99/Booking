@@ -9,17 +9,9 @@ namespace AsanRezerve.ServiceCatalog.Application.Queries.Provider.GetProviderAva
 public sealed record GetProviderAvailabilityCalendarQuery(
     Guid ProviderId,
     DateOnly StartDate,
-    int Days = 7) : IQuery<ProviderAvailabilityCalendarViewModel>
-{
-    // Enable Redis caching for availability data
-    public bool IsCacheable => true;
-
-    // Cache key includes provider, start date, and days for uniqueness
-    public string CacheKey => $"provider-availability-calendar:{ProviderId}:{StartDate:yyyy-MM-dd}:{Days}";
-
-    // Cache for 5 minutes (300 seconds) - balance between freshness and performance
-    public int CacheExpirationSeconds => 300;
-}
+    int Days = 7) : IQuery<ProviderAvailabilityCalendarViewModel>;
+// Not cacheable. It was, for 5 minutes with sliding expiration and nothing evicting it on a booking, so a calendar
+// kept being read kept offering slots that were already booked (add-observability-and-caching).
 
 /// <summary>
 /// View model containing availability calendar data with heatmap information

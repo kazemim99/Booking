@@ -32,6 +32,11 @@ namespace AsanRezerve.Core.Application.CQRS
         /// </summary>
         public virtual int? CacheExpirationSeconds => null;
 
+        /// <summary>
+        /// Tags the cached result is evicted by (override if cacheable)
+        /// </summary>
+        public virtual IReadOnlyCollection<string>? CacheTags => null;
+
         protected PaginatedQueryBase() { }
 
         protected PaginatedQueryBase(PaginationRequest pagination)

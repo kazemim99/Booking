@@ -8,6 +8,7 @@
 using AsanRezerve.Core.Application.Abstractions.CQRS;
 using AsanRezerve.Core.Application.CQRS;
 using AsanRezerve.Core.Application.DTOs;
+using AsanRezerve.ServiceCatalog.Application.Caching;
 using AsanRezerve.ServiceCatalog.Application.DTOs.Provider;
 
 namespace AsanRezerve.ServiceCatalog.Application.Queries.Provider.SearchProviders
@@ -29,6 +30,17 @@ namespace AsanRezerve.ServiceCatalog.Application.Queries.Provider.SearchProvider
         bool SortDescending = true,
         double? UserLatitude = null,
         double? UserLongitude = null,
-        bool IncludeInactive = false) : PaginatedQueryBase<ProviderSearchItem>();
+        bool IncludeInactive = false) : PaginatedQueryBase<ProviderSearchItem>()
+    {
+        /// <summary>
+        /// Cached for a minute, except around the user's position: every user stands somewhere else, so those
+        /// entries would almost never be hit again. Evicted by any provider change.
+        /// </summary>
+        public override bool IsCacheable => UserLatitude is null && UserLongitude is null;
+
+        public override int? CacheExpirationSeconds => 60;
+
+        public override IReadOnlyCollection<string>? CacheTags => [ReadModelCacheTags.ProviderDirectory];
+    }
 }
 

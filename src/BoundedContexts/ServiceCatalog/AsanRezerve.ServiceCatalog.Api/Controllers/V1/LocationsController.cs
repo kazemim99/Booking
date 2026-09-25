@@ -1,6 +1,8 @@
 using AsanRezerve.Core.Domain.Domain.Entities;
+using AsanRezerve.ServiceCatalog.Application.Caching;
 using AsanRezerve.ServiceCatalog.Infrastructure.Persistence.Context;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.EntityFrameworkCore;
 
 namespace AsanRezerve.ServiceCatalog.Api.Controllers.V1
@@ -10,14 +12,30 @@ namespace AsanRezerve.ServiceCatalog.Api.Controllers.V1
     [Microsoft.AspNetCore.Authorization.AllowAnonymous] // Public reference data (provinces/cities/districts) used by anonymous discovery (C1 authz audit)
     public class LocationsController : ControllerBase
     {
+        /// <summary>
+        /// Iran's province/city list is reference data: seeded, then practically never changed. The picker screens
+        /// load it on every visit, so the three list reads are cached for half a day (tag
+        /// <see cref="ReadModelCacheTags.Locations"/>; an admin can purge it from the cache page).
+        /// </summary>
+        private static readonly HybridCacheEntryOptions ReferenceData = new()
+        {
+            Expiration = TimeSpan.FromHours(12),
+            LocalCacheExpiration = TimeSpan.FromHours(1),
+        };
+
+        private static readonly string[] LocationTags = [ReadModelCacheTags.Locations];
+
         private readonly ServiceCatalogDbContext _context;
+        private readonly HybridCache _cache;
         private readonly ILogger<LocationsController> _logger;
 
         public LocationsController(
             ServiceCatalogDbContext context,
+            HybridCache cache,
             ILogger<LocationsController> logger)
         {
             _context = context;
+            _cache = cache;
             _logger = logger;
         }
 
@@ -29,17 +47,23 @@ namespace AsanRezerve.ServiceCatalog.Api.Controllers.V1
         [ProducesResponseType(typeof(IEnumerable<LocationDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<LocationDto>>> GetProvinces()
         {
-            var provinces = await _context.Set<ProvinceCities>()
-                .Where(l => l.Type == "Province")
-                .OrderBy(l => l.Name)
-                .Select(l => new LocationDto
-                {
-                    Id = l.Id,
-                    Name = l.Name,
-                    ProvinceCode = l.ProvinceCode,
-                    Type = l.Type
-                })
-                .ToListAsync();
+            var provinces = await _cache.GetOrCreateAsync(
+                "locations:provinces",
+                async ct => await _context.Set<ProvinceCities>()
+                    .AsNoTracking()
+                    .Where(l => l.Type == "Province")
+                    .OrderBy(l => l.Name)
+                    .Select(l => new LocationDto
+                    {
+                        Id = l.Id,
+                        Name = l.Name,
+                        ProvinceCode = l.ProvinceCode,
+                        Type = l.Type
+                    })
+                    .ToListAsync(ct),
+                ReferenceData,
+                LocationTags,
+                HttpContext.RequestAborted);
 
             return Ok(provinces);
         }
@@ -54,28 +78,41 @@ namespace AsanRezerve.ServiceCatalog.Api.Controllers.V1
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<LocationDto>>> GetCitiesByProvince(int provinceId)
         {
-            // Check if province exists
-            var provinceExists = await _context.Set<ProvinceCities>()
-                .AnyAsync(l => l.Id == provinceId && l.Type == "Province");
+            // null = no such province (cached too, so a bad id costs no query either).
+            var cities = await _cache.GetOrCreateAsync<List<LocationDto>?>(
+                $"locations:province:{provinceId}:cities",
+                async ct =>
+                {
+                    var provinceExists = await _context.Set<ProvinceCities>()
+                        .AnyAsync(l => l.Id == provinceId && l.Type == "Province", ct);
+                    if (!provinceExists)
+                    {
+                        return null;
+                    }
 
-            if (!provinceExists)
+                    return await _context.Set<ProvinceCities>()
+                        .AsNoTracking()
+                        .Where(l => l.ParentId == provinceId && l.Type == "City")
+                        .OrderBy(l => l.Name)
+                        .Select(l => new LocationDto
+                        {
+                            Id = l.Id,
+                            Name = l.Name,
+                            ProvinceCode = l.ProvinceCode,
+                            CityCode = l.CityCode,
+                            ParentId = l.ParentId,
+                            Type = l.Type
+                        })
+                        .ToListAsync(ct);
+                },
+                ReferenceData,
+                LocationTags,
+                HttpContext.RequestAborted);
+
+            if (cities is null)
             {
                 return NotFound(new { message = $"Province with ID {provinceId} not found" });
             }
-
-            var cities = await _context.Set<ProvinceCities>()
-                .Where(l => l.ParentId == provinceId && l.Type == "City")
-                .OrderBy(l => l.Name)
-                .Select(l => new LocationDto
-                {
-                    Id = l.Id,
-                    Name = l.Name,
-                    ProvinceCode = l.ProvinceCode,
-                    CityCode = l.CityCode,
-                    ParentId = l.ParentId,
-                    Type = l.Type
-                })
-                .ToListAsync();
 
             return Ok(cities);
         }
@@ -88,27 +125,36 @@ namespace AsanRezerve.ServiceCatalog.Api.Controllers.V1
         [ProducesResponseType(typeof(IEnumerable<ProvinceHierarchyDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<ProvinceHierarchyDto>>> GetHierarchy()
         {
-            var provinces = await _context.Set<ProvinceCities>()
-                .Include(l => l.Children)
-                .Where(l => l.Type == "Province")
-                .OrderBy(l => l.Name)
-                .ToListAsync();
+            var hierarchy = await _cache.GetOrCreateAsync(
+                "locations:hierarchy",
+                async ct =>
+                {
+                    var provinces = await _context.Set<ProvinceCities>()
+                        .AsNoTracking()
+                        .Include(l => l.Children)
+                        .Where(l => l.Type == "Province")
+                        .OrderBy(l => l.Name)
+                        .ToListAsync(ct);
 
-            var hierarchy = provinces.Select(p => new ProvinceHierarchyDto
-            {
-                Id = p.Id,
-                Name = p.Name,
-                ProvinceCode = p.ProvinceCode,
-                Cities = p.Children
-                    .OrderBy(c => c.Name)
-                    .Select(c => new CityDto
+                    return provinces.Select(p => new ProvinceHierarchyDto
                     {
-                        Id = c.Id,
-                        Name = c.Name,
-                        CityCode = c.CityCode
-                    })
-                    .ToList()
-            });
+                        Id = p.Id,
+                        Name = p.Name,
+                        ProvinceCode = p.ProvinceCode,
+                        Cities = p.Children
+                            .OrderBy(c => c.Name)
+                            .Select(c => new CityDto
+                            {
+                                Id = c.Id,
+                                Name = c.Name,
+                                CityCode = c.CityCode
+                            })
+                            .ToList()
+                    }).ToList();
+                },
+                ReferenceData,
+                LocationTags,
+                HttpContext.RequestAborted);
 
             return Ok(hierarchy);
         }

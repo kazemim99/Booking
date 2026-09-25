@@ -26,6 +26,8 @@
 		-->
 		<ProjectReference Include="..\..\UserManagement\AsanRezerve.UserManagement.API\AsanRezerve.UserManagement.API.csproj" />
 		<ProjectReference Include="..\..\BoundedContexts\ServiceCatalog\AsanRezerve.ServiceCatalog.Api\AsanRezerve.ServiceCatalog.Api.csproj" />
+		<!-- Logging pipeline, log store, runtime log levels, request telemetry and the admin observability API. -->
+		<ProjectReference Include="..\..\Infrastructure\AsanRezerve.Infrastructure.Observability\AsanRezerve.Infrastructure.Observability.csproj" />
 	</ItemGroup>
 
 </Project>

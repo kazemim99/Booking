@@ -110,6 +110,8 @@ namespace AsanRezerve.Core.Domain.Infrastructure.Middleware
                 metadata = _options.IncludeMetadata ? new 
                 {
                     requestId = context.TraceIdentifier,
+                    // The id every log event of this request carries (and X-Trace-Id); what an admin searches by.
+                    traceId = System.Diagnostics.Activity.Current?.TraceId.ToHexString() ?? context.TraceIdentifier,
                     timestamp = DateTimeOffset.UtcNow,
                     duration = elapsedMs,
                     path = context.Request.Path.Value,

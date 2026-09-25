@@ -66,13 +66,8 @@ public sealed record SearchUsersQuery : PaginatedQueryBase<SearchUsersResult>
     /// </summary>
     public bool IncludeAddress { get; init; } = false;
 
-    /// <summary>
-    /// Override caching for search queries
-    /// </summary>
-    public override bool IsCacheable => true;
-    public override int? CacheExpirationSeconds => 60; // 1 minute cache for searches
-    public override string? CacheKey =>
-        $"search_users_{SearchTerm}_{Status}_{Type}_{Role}_{City}_{Country}_{Pagination.PageNumber}_{Pagination.PageSize}";
+    // Not cacheable: an admin editing a user must see the edit in the next search, and the hand-built key this
+    // cache used left out five filters, so different searches shared one entry (add-observability-and-caching).
 
     // Default constructor for model binding
     public SearchUsersQuery() : base() { }

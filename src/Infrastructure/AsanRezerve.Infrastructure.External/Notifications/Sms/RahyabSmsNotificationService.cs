@@ -72,10 +72,15 @@ namespace AsanRezerve.Infrastructure.External.Notifications.Sms
                     // OTP_SANDBOX_CODE pins it, and advertising a fixed code that
                     // verification rejects sends developers and E2E scripts chasing
                     // a phantom "invalid verification code".
+                    //
+                    // The body (and so the OTP) is logged at Debug only: production ran with the sandbox on
+                    // (FOLLOW-UPS #58), which put every login code into its logs. appsettings.Development.json
+                    // raises this category to Debug; elsewhere an admin can, briefly, from the Logs page.
                     _logger.LogWarning(
-                        "🔧 SANDBOX MODE: Skipping real SMS to {PhoneNumber}. Message: {Message}",
+                        "🔧 SANDBOX MODE: Skipping real SMS to {PhoneNumber} ({MessageLength} characters)",
                         phoneNumber,
-                        message);
+                        message.Length);
+                    _logger.LogDebug("🔧 SANDBOX MODE: SMS body for {PhoneNumber}: {SmsBody}", phoneNumber, message);
 
                     // Simulate a small delay like a real API call
                     await Task.Delay(100, cancellationToken);

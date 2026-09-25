@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using AsanRezerve.Infrastructure.Core.Caching;
 using AsanRezerve.ServiceCatalog.Domain.Aggregates;
 using AsanRezerve.ServiceCatalog.Domain.Aggregates.OrganizationMembershipAggregate;
 using AsanRezerve.ServiceCatalog.Infrastructure.Persistence.Context;
@@ -48,12 +47,6 @@ public class StaffAndSalonPhotoUrlsTests : ServiceCatalogIntegrationTestBase
             membership.UpdateStaffDetails(displayName: null, bioOverride: null, photoUrl: staffPhoto);
             await db.SaveChangesAsync();
         }
-
-        // Committed around the unit of work, so no domain event invalidated the provider the fixture already cached
-        // (see MakeBookableAsync); a real upload does.
-        var cache = Scope.ServiceProvider.GetRequiredService<ICacheService>();
-        await cache.RemoveAsync($"Provider:{provider.Id.Value}");
-        await cache.RemoveAsync($"Provider:owner:{provider.OwnerId.Value}");
 
         var service = await GetFirstServiceForProviderAsync(id);
         return new Salon(provider, service.Id.Value, membershipId, staffPhoto, galleryPhoto);

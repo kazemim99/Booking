@@ -105,7 +105,7 @@ echo "verify  tier=$TIER  root=$ROOT"
 # caller vouched for the build, so each step keeps its own incremental build.
 NOBUILD=(); [ $SKIP_BUILD -eq 0 ] && NOBUILD=(--no-build)
 
-for p in tests/AsanRezerve.Core.Domain.UnitTests tests/AsanRezerve.Infrastructure.Core.UnitTests \
+for p in tests/AsanRezerve.Core.Domain.UnitTests tests/AsanRezerve.Infrastructure.Core.UnitTests tests/AsanRezerve.Infrastructure.Observability.UnitTests \
          tests/AsanRezerve.ServiceCatalog.Domain.UnitTests tests/AsanRezerve.ServiceCatalog.Application.UnitTests \
          tests/AsanRezerve.ServiceCatalog.Api.UnitTests tests/AsanRezerve.Infrastructure.External.UnitTests \
          tests/AsanRezerve.ServiceCatalog.Infrastructure.UnitTests \

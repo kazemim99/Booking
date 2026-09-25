@@ -1,5 +1,4 @@
 ﻿using AsanRezerve.Core.Domain.ValueObjects;
-using AsanRezerve.Infrastructure.Core.Caching;
 using AsanRezerve.ServiceCatalog.Application.Services.Interfaces;
 using AsanRezerve.ServiceCatalog.Domain.Aggregates;
 using AsanRezerve.ServiceCatalog.Domain.Aggregates.OrganizationMembershipAggregate;
@@ -637,18 +636,10 @@ public abstract class ServiceCatalogIntegrationTestBase
         await DbContext.SaveChangesAsync();
         DbContext.ChangeTracker.Clear();
 
-        // IProviderReadRepository is decorated by CachedProviderReadRepository, and SyncAsync
-        // READ the provider before it activated the services — so the cache now holds a
-        // provider whose Services are still Draft. In production that entry is invalidated by
-        // ProviderCacheInvalidationEventHandler, but this fixture commits through DbContext
-        // directly rather than the unit of work that dispatches domain events, so nothing
-        // invalidates it here. Without this the salon is bookable in the database and NOT
-        // bookable over HTTP, which is precisely the split that made these failures so hard
-        // to read: the fixture's own assertions pass while every test through the API fails.
-        var cache = Scope.ServiceProvider.GetRequiredService<ICacheService>();
-        await cache.RemoveAsync($"Provider:{provider.Id.Value}");
-        await cache.RemoveAsync($"Provider:owner:{provider.OwnerId.Value}");
-
+        // Committed straight through DbContext rather than the unit of work, so no domain event fires. Cached reads
+        // of this salon are still evicted: invalidation hangs off the save pipeline (the EF interceptor
+        // ReadModelCacheInvalidationInterceptor), not off domain events. It used to hang off events, and this
+        // fixture had to evict by hand — without which the salon was bookable in the database and not over HTTP.
         await AssertSalonIsBookableAsync(provider);
 
         return membership;

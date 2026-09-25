@@ -744,11 +744,10 @@ namespace AsanRezerve.ServiceCatalog.Domain.Aggregates
         /// Updates a gallery image's caption/alt text and raises a domain event for cache invalidation.
         /// </summary>
         /// <remarks>
-        /// Exists so metadata edits go through the aggregate root like every other gallery mutation. The
-        /// read path is decorated by <c>CachedProviderReadRepository</c> and invalidation is driven by
-        /// these events, so editing <c>Profile</c> directly persists the change but leaves the cache
-        /// serving the old caption. Returns false for a no-op edit, in which case no event is raised and
-        /// there is nothing to persist.
+        /// Exists so metadata edits go through the aggregate root like every other gallery mutation, which
+        /// stamps <c>Profile.LastUpdatedAt</c> and raises the event subscribers rely on. (Cached salon reads no
+        /// longer depend on the event: they are evicted by the save pipeline for any provider change.) Returns
+        /// false for a no-op edit, in which case no event is raised and there is nothing to persist.
         /// </remarks>
         public bool UpdateGalleryImageMetadata(Guid imageId, string? caption, string? altText)
         {
