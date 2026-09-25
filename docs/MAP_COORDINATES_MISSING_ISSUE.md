@@ -176,7 +176,7 @@ var address = BusinessAddress.Create(
 **Update the frontend code** to ensure lat/long are sent when updating location:
 
 ```typescript
-// booksy-frontend/src/modules/provider/components/dashboard/ProfileManager.vue
+// asanrezerve-frontend/src/modules/provider/components/dashboard/ProfileManager.vue
 
 const handleLocationSubmit = async () => {
   if (!selectedLocation.value) {
@@ -345,8 +345,8 @@ Or add a background job to geocode existing addresses.
 ## Related Files
 
 ### Frontend (Need to Check/Fix)
-- `booksy-frontend/src/modules/provider/components/dashboard/ProfileManager.vue`
-- `booksy-frontend/src/modules/provider/services/provider.service.ts`
+- `asanrezerve-frontend/src/modules/provider/components/dashboard/ProfileManager.vue`
+- `asanrezerve-frontend/src/modules/provider/services/provider.service.ts`
 - Neshant Map component (location selection)
 
 ### Backend (Already Correct)

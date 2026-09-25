@@ -132,14 +132,14 @@ Each is referenced by two or more changes as "out of scope, tracked elsewhere" �
 | **Duplicate `ApiResponseMiddleware`** (`Core.Domain/Infrastructure/Middleware` **and** `Infrastructure.API/Middleware`) emitting a generic `"Request completed successfully"`, breaking two integration assertions. | both files line ~136/168 | #3 §4.4b ("left for whoever owns that envelope change") |
 | **Booking `DateTime` round-trips through a +3:30 Tehran conversion** between `TimeSlot.Create` and materialization (10:00 reads back as 13:30). | #3 §4 finding | #3 (recorded, not chased) |
 | **Dependency CVEs** — AutoMapper 15.0.1 **HIGH**, System.Security.Cryptography.Xml **HIGH**, System.Formats.Asn1 **HIGH**, Microsoft.Data.SqlClient **HIGH** (transitive, Postgres-only ⇒ likely removable), Azure.Identity + MimeKit moderate. ImageSharp already remediated 3.1.5→3.1.12. | `PRODUCTION_READINESS_AUDIT.md` P0-3; #10 §0.3 | only partially in #10 |
-| **~46 red ServiceCatalog integration tests** + per-service integration projects never retargeted to `Booksy.Host`; `dotnet.yml` runs **no tests at all**. | audit P1-1; `project.md` §Testing; ROADMAP 3.1 | no change owns it |
+| **~46 red ServiceCatalog integration tests** + per-service integration projects never retargeted to `AsanRezerve.Host`; `dotnet.yml` runs **no tests at all**. | audit P1-1; `project.md` §Testing; ROADMAP 3.1 | no change owns it |
 
 ### F6 — Substantial uncommitted work outside any change
 
 The customer app has a **new map-discovery feature** in the tree with no OpenSpec change:
 `map_discovery_page.dart`, `map_discovery_cubit.dart`, `map_clustering.dart`, `map_pin.dart`,
 `map_provider_card.dart`, `category_filter_row.dart`, plus deletions of `area_page.dart`,
-`nearby_page.dart`, `area_search_cubit.dart` and 8 new test files. Also uncommitted: `booksy-admin`
+`nearby_page.dart`, `area_search_cubit.dart` and 8 new test files. Also uncommitted: `asanrezerve-admin`
 test infrastructure (`vitest.config.ts`, 4 new `__tests__` dirs, `utils/date.ts`, locale store rework).
 
 The archived `unify-customer-app-with-provider-design` change named discovery/map/area search as *the gap* —
@@ -166,7 +166,7 @@ whole feature are being built without a live spec.
 
 **Created** 2026-06-19 · `openspec list`: **✓ Complete**
 
-**Verified in tree:** `booksy-frontend/e2e/{fixtures,pages,specs,utils}`, `global-setup.ts`,
+**Verified in tree:** `asanrezerve-frontend/e2e/{fixtures,pages,specs,utils}`, `global-setup.ts`,
 `playwright.config.ts`, 4 spec files, `.github/workflows/frontend-e2e.yml`,
 `src/core/router/__tests__/routes.spec.ts`.
 
@@ -295,7 +295,7 @@ The design refinement here was correct and better than the proposal: a GiST **ex
 **tasks.md understates reality.** §6 is labelled *"MANDATORY acceptance before C1 is closed"* with 6.1–6.3
 unchecked — but ADR-003's close-out section and the repository both say that work is done:
 
-- `src/Infrastructure/Booksy.Infrastructure.Security/Authentication/SignalRAccessTokenExtractor.cs`
+- `src/Infrastructure/AsanRezerve.Infrastructure.Security/Authentication/SignalRAccessTokenExtractor.cs`
 - `tests/…/API/Notifications/SignalRAccessTokenExtractorTests.cs` (4 unit)
 - `tests/…/API/Notifications/NotificationHubAuthTests.cs` (2 real-`HubConnection` E2E: anonymous rejected,
   authenticated connects **and reconnects**)
@@ -336,7 +336,7 @@ duplicate *record*, never a duplicate *gateway charge*.
 2. Mark §1.2 (full intent/outbox phrasing) **superseded** — the change itself argues this, correctly.
 3. Move §4.4/4.5/4.6 (commit-failure-after-gateway-success, ZarinPal duplicate-callback, and the
    "no gateway call inside a DB transaction" architecture test) into the new test-hardening change.
-   The architecture test is worth building for real — `Booksy.ArchitectureTests` is currently an empty stub
+   The architecture test is worth building for real — `AsanRezerve.ArchitectureTests` is currently an empty stub
    with `NetArchTest` referenced and no rule enforced anywhere.
 
 ---
@@ -383,7 +383,7 @@ will otherwise "fix" this later as a bug.
 `flutter analyze` clean) and **T2 — 30/30 assertions twice consecutively** through the real HTTP stack with a
 fake gateway only at the bank boundary (`tests/e2e/deposit-checkout-flow.sh`).
 
-**Verified in tree:** `booksy-customer-app/lib/features/checkout/{data,domain,presentation}`,
+**Verified in tree:** `asanrezerve-customer-app/lib/features/checkout/{data,domain,presentation}`,
 `test/features/checkout/`, `FeatureFlags.checkoutEnabled` (`feature_flags.dart:16`, `defaultValue: false`),
 gated call site at `booking_flow_page.dart:346`; migration
 `20260809135725_AddDepositTypeAndProviderBookingPolicy`.
@@ -400,7 +400,7 @@ Two decisions here are sound and should be recorded rather than revisited:
 - **T3** — `Payment:ZarinPal:MerchantId` is the literal placeholder `"your-zarinpal-merchant-id"`;
   `CallbackUrl` is `https://localhost:7002/api/v1/payments/zarinpal/callback`, unreachable by the gateway
   **and pointing at a path that does not exist** (the real route is `GET /api/v1/Payments/callback`);
-  `Application:ClientUrl` is `https://booksy.com`, so a sandbox payment would redirect the tester to production.
+  `Application:ClientUrl` is `https://asanrezerve.com`, so a sandbox payment would redirect the tester to production.
 - **T4** — no emulator, no `ios/` directory, and `flutter build apk` cannot complete because
   **Google Maven 404s everything** on this machine (Flutter/pub are mirrored to `flutter-io.cn`; Gradle's
   `google()` is not). That is infrastructure, not code.
@@ -620,7 +620,7 @@ archiving — either promote them into the relevant specs or move them into `COM
 
 ### 15. `design-system-convergence` — REVISE (much of it silently landed), then DEFER
 
-**Progress** 11/34 · created 2026-07-15 · scope: `booksy-provider-app` presentation only
+**Progress** 11/34 · created 2026-07-15 · scope: `asanrezerve-provider-app` presentation only
 
 **§1–2 done as recorded.** `AppMotion` and `AppIconSize` exist in `app_tokens.dart`; `AppLoading`,
 `AppEmptyState`, `AppErrorState` exist with tests (`test/core/widgets/feedback_states_test.dart`).
@@ -703,7 +703,7 @@ Then update `IDENTITY_AND_STAFF_ARCHITECTURE.md` to mark `add-provider-hierarchy
 | New change | Contents | Why |
 |---|---|---|
 | `fix-provider-token-refresh-in-process` | Replace `ProvidersController.RefreshProviderToken`'s HTTP self-call with an in-process cross-context seam into UserManagement's `IJwtTokenService` (mirroring `IProviderInfoService` in reverse). Un-skip the gallery e2e. | F5 · blocks freshly-registered providers' dashboards · referenced by 4 documents, owned by none · same seam as #11 §8.8, so **do them together** |
-| `harden-test-suite-and-dependencies` | Triage the ~46 red ServiceCatalog integration tests to green; retarget per-service integration projects to `Booksy.Host` and re-enable the CI step; fix the EF owned-`Money` insert quirk poisoning payment aggregates; bump AutoMapper + the three HIGH transitives; add a CI gate failing on any HIGH advisory; add the real `NetArchTest` rules (starting with "no `IPaymentGateway` call inside a DB transaction") to the empty `Booksy.ArchitectureTests` stub | audit P0-3 + P1-1 · ROADMAP Epic 3.1 · a red suite hides regressions and `dotnet.yml` runs no tests at all |
+| `harden-test-suite-and-dependencies` | Triage the ~46 red ServiceCatalog integration tests to green; retarget per-service integration projects to `AsanRezerve.Host` and re-enable the CI step; fix the EF owned-`Money` insert quirk poisoning payment aggregates; bump AutoMapper + the three HIGH transitives; add a CI gate failing on any HIGH advisory; add the real `NetArchTest` rules (starting with "no `IPaymentGateway` call inside a DB transaction") to the empty `AsanRezerve.ArchitectureTests` stub | audit P0-3 + P1-1 · ROADMAP Epic 3.1 · a red suite hides regressions and `dotnet.yml` runs no tests at all |
 | `fix-api-response-envelope` | Consolidate the duplicate `ApiResponseMiddleware` (Core.Domain vs Infrastructure.API); restore per-action success wording | F5 · #3 §4.4b explicitly hands this off |
 | `financial-reporting-and-clawback-policy` | Refund→commission reversal entry; payout clawback policy decision; ledger-backed finance/admin reporting endpoints | #8's three documented residuals · P1-3 |
 | `checkout-release-gates` *(or a release checklist entry)* | ZarinPal sandbox MerchantId, public HTTPS callback at the **correct** path, `Application:ClientUrl`, T3 run, then flip `CHECKOUT_ENABLED`; remove the dead Vue `getPaymentsByBooking()` call | #9's §6 — credentials and infrastructure, not code |
@@ -774,14 +774,14 @@ Claims above are checkable with these:
 | Structural validity | `openspec validate --all --strict` → 44/44 |
 | Booking indexes still commented | `openspec/../src/…/Persistence/Configurations/BookingConfiguration.cs` (search `//builder.HasIndex`) |
 | SQL-Server bracket syntax in the commented filter | same file, `HasFilter("[Status] IN (...)")` |
-| Dual migration folders | `…/Booksy.ServiceCatalog.Infrastructure/Migrations` (18) vs `…/Persistence/Migrations` (4) |
+| Dual migration folders | `…/AsanRezerve.ServiceCatalog.Infrastructure/Migrations` (18) vs `…/Persistence/Migrations` (4) |
 | Slot / dedup / ledger / idempotency / deposit migrations | `20260728064537`, `20260728074920`, `20260728212431`, `20260730044721`, `20260809135725` |
 | Refresh-token self-call still live | `…/ServiceCatalog.Api/Controllers/V1/ProvidersController.cs:620` |
 | SignalR auth acceptance done | `tests/…/API/Notifications/{SignalRAccessTokenExtractorTests,NotificationHubAuthTests}.cs` |
-| Provider-app design components exist | `booksy-provider-app/lib/core/widgets/` (22 files) + `test/core/widgets/design_system_components_test.dart` |
+| Provider-app design components exist | `asanrezerve-provider-app/lib/core/widgets/` (22 files) + `test/core/widgets/design_system_components_test.dart` |
 | §6.2 guard fails / partly passes | `grep -rc CircularProgressIndicator lib/features` → 8; `BoxShadow` → 0; `showDialog(` → 0 |
 | Customer app superseded #13's premises | no `lib/shared/`; no `pull_to_refresh` in `pubspec.yaml`; 19 files in `lib/core/widgets/` |
 | Checkout built and flag-gated off | `lib/features/checkout/`, `lib/config/feature_flags.dart:16` |
-| E2E harness present | `booksy-frontend/e2e/global-setup.ts`, `playwright.config.ts:22`, `tests/e2e/keystone-booking-flow.sh:63` |
+| E2E harness present | `asanrezerve-frontend/e2e/global-setup.ts`, `playwright.config.ts:22`, `tests/e2e/keystone-booking-flow.sh:63` |
 | Notification change archived complete | `changes/archive/2026-08-19-notification-delivery-reliability/tasks.md` → 14 checked / 0 open |
 | No membership in main specs | `grep -ril membership openspec/specs/` → no matches |

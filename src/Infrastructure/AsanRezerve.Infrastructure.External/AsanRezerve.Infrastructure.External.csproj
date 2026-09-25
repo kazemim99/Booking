@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+
+	<ItemGroup>
+		<!-- SignalR + CORS registration (AddSignalR/AddCors) come from the shared framework.
+		     Was PackageReference Microsoft.AspNetCore.SignalR 1.2.0 + Cors 2.2.0 — ASP.NET Core *1.x/2.x*
+		     packages on a net9.0 project, pulling a stale transitive graph including Newtonsoft.Json. -->
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+
+		<!-- HTTP Client -->
+		<PackageReference Include="Microsoft.Extensions.Http" Version="9.0.19" />
+		<!-- 4.14.0 carries a moderate advisory (GHSA-g7hc-96xr-gvvx). -->
+		<PackageReference Include="MimeKit" Version="4.17.0" />
+		<PackageReference Include="Otp.NET" Version="1.4.0" />
+		<PackageReference Include="Serilog" Version="4.0.0" />
+
+		<!-- Stripe -->
+		<PackageReference Include="Stripe.net" Version="43.12.0" />
+
+		<!-- SendGrid for Email Notifications -->
+		<PackageReference Include="SendGrid" Version="9.29.3" />
+
+		<!-- Azure Storage -->
+		<PackageReference Include="Azure.Storage.Blobs" Version="12.19.1" />
+
+		<!-- Configuration -->
+		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.19" />
+		<PackageReference Include="Microsoft.Extensions.Options" Version="9.0.19" />
+
+		<!-- Logging -->
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.19" />
+	</ItemGroup>
+
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\Core\AsanRezerve.Core.Application\AsanRezerve.Core.Application.csproj" />
+	</ItemGroup>
+
+</Project>

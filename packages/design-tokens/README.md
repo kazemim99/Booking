@@ -1,6 +1,6 @@
-# @booksy/tokens
+# @asanrezerve/tokens
 
-Single source of truth for Booksy's design tokens (the Coliride brand): colors, typography,
+Single source of truth for AsanRezerve's design tokens (the Coliride brand): colors, typography,
 spacing, radii, shadows, z-index, transitions. Plain CSS custom properties in `:root` — framework
 agnostic, consumed by both Vue apps.
 
@@ -13,7 +13,7 @@ Until a workspace install is wired (see below), each app imports the file by rel
 entry `main.ts`, before its own styles:
 
 ```ts
-// booksy-frontend/src/main.ts  and  booksy-admin/src/main.ts
+// asanrezerve-frontend/src/main.ts  and  asanrezerve-admin/src/main.ts
 import '../../packages/design-tokens/tokens.css'
 ```
 
@@ -29,11 +29,11 @@ The admin additionally maps these tokens onto Ant Design via `src/config/antd-th
 ## Promoting to a real workspace dependency (next step)
 1. Add npm/pnpm workspaces to a root `package.json`:
    ```json
-   { "private": true, "workspaces": ["booksy-frontend", "booksy-admin", "packages/*"] }
+   { "private": true, "workspaces": ["asanrezerve-frontend", "asanrezerve-admin", "packages/*"] }
    ```
-2. Add `"@booksy/tokens": "*"` (npm) / `"workspace:*"` (pnpm) to each app's `dependencies`, then
+2. Add `"@asanrezerve/tokens": "*"` (npm) / `"workspace:*"` (pnpm) to each app's `dependencies`, then
    install at the repo root to link it.
-3. Replace the relative imports with `import '@booksy/tokens/tokens.css'` and drop the
+3. Replace the relative imports with `import '@asanrezerve/tokens/tokens.css'` and drop the
    `server.fs.allow` entry.
 
 ## Brand reference

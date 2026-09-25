@@ -1,0 +1,12 @@
+﻿namespace AsanRezerve.ServiceCatalog.API.Models.Responses;
+
+public sealed class ServiceResponse
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+    public DateTime? Timestamp { get; set; }
+}
+

@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Controllers, request-model extensions and specifications exercised directly, with the
+         mediator substituted. No database, no host: this project runs in the FAST tier. It used
+         to live inside AsanRezerve.ServiceCatalog.IntegrationTests "because that is the test project
+         referencing AsanRezerve.ServiceCatalog.Api", which put ~80 pure unit tests behind Docker. -->
+    <ProjectReference Include="..\..\src\BoundedContexts\ServiceCatalog\AsanRezerve.ServiceCatalog.Api\AsanRezerve.ServiceCatalog.Api.csproj" />
+    <!-- ProviderBuilder for the search-specification tests. -->
+    <ProjectReference Include="..\AsanRezerve.Tests.Commons\AsanRezerve.Tests.Commons.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

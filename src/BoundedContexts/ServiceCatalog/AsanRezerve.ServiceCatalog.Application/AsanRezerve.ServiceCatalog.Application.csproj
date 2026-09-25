@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Commands\Provider\RemoveStaff\**" />
+    <Compile Remove="Commands\Provider\SetBusinessHours\**" />
+    <Compile Remove="Commands\Provider\UpdateProviderSettings\**" />
+    <Compile Remove="Queries\Provider\GetPaginatedProviders\**" />
+    <EmbeddedResource Remove="Commands\Provider\RemoveStaff\**" />
+    <EmbeddedResource Remove="Commands\Provider\SetBusinessHours\**" />
+    <EmbeddedResource Remove="Commands\Provider\UpdateProviderSettings\**" />
+    <EmbeddedResource Remove="Queries\Provider\GetPaginatedProviders\**" />
+    <None Remove="Commands\Provider\RemoveStaff\**" />
+    <None Remove="Commands\Provider\SetBusinessHours\**" />
+    <None Remove="Commands\Provider\UpdateProviderSettings\**" />
+    <None Remove="Queries\Provider\GetPaginatedProviders\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Commands\Service\UpdateServicePricing\" />
+    <Folder Include="Queries\Service\GetServicesByCategory\" />
+    <Folder Include="Services\Implementations\" />
+    <Folder Include="Validators\FluentValidation\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="10.0.0" />
+    <!-- 15.0.1 carries a HIGH advisory (GHSA-rvv3-g6hj-g44x); 15.1.3 is the patched same-major release. -->
+    <PackageReference Include="AutoMapper" Version="15.1.3" />
+    <PackageReference Include="FluentValidation" Version="12.0.0" />
+
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Core\AsanRezerve.Core.Application\AsanRezerve.Core.Application.csproj" />
+    <ProjectReference Include="..\..\..\Infrastructure\AsanRezerve.Infrastructure.Core\AsanRezerve.Infrastructure.Core.csproj" />
+    <ProjectReference Include="..\..\..\Infrastructure\AsanRezerve.Infrastructure.External\AsanRezerve.Infrastructure.External.csproj" />
+    <ProjectReference Include="..\AsanRezerve.ServiceCatalog.Domain\AsanRezerve.ServiceCatalog.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

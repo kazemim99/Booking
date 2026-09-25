@@ -1,5 +1,5 @@
 groups:
-  - name: booksy_alerts
+  - name: asan_rezerve_alerts
     interval: 30s
     rules:
       # Service availability alerts

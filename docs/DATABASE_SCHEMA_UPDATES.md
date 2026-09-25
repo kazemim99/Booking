@@ -297,11 +297,11 @@ ORDER BY "CreatedAt" ASC;
 
 ```bash
 # From Infrastructure project
-cd src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure
+cd src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Infrastructure
 
 # Apply all pending migrations
 dotnet ef database update \
-  --startup-project ../Booksy.ServiceCatalog.Api \
+  --startup-project ../AsanRezerve.ServiceCatalog.Api \
   --context ServiceCatalogDbContext
 ```
 
@@ -309,11 +309,11 @@ dotnet ef database update \
 
 ```bash
 # From API project
-cd src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api
+cd src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api
 
 # Create migration
 dotnet ef migrations add MigrationName \
-  --project ../Booksy.ServiceCatalog.Infrastructure \
+  --project ../AsanRezerve.ServiceCatalog.Infrastructure \
   --context ServiceCatalogDbContext \
   --output-dir Migrations
 ```
@@ -323,7 +323,7 @@ dotnet ef migrations add MigrationName \
 ```bash
 # Check migration status
 dotnet ef migrations list \
-  --project ../Booksy.ServiceCatalog.Infrastructure \
+  --project ../AsanRezerve.ServiceCatalog.Infrastructure \
   --context ServiceCatalogDbContext
 ```
 
@@ -332,12 +332,12 @@ dotnet ef migrations list \
 ```bash
 # Rollback to specific migration
 dotnet ef database update PreviousMigrationName \
-  --startup-project ../Booksy.ServiceCatalog.Api \
+  --startup-project ../AsanRezerve.ServiceCatalog.Api \
   --context ServiceCatalogDbContext
 
 # Rollback all migrations
 dotnet ef database update 0 \
-  --startup-project ../Booksy.ServiceCatalog.Api \
+  --startup-project ../AsanRezerve.ServiceCatalog.Api \
   --context ServiceCatalogDbContext
 ```
 

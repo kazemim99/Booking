@@ -1,7 +1,7 @@
 # Role-Based Navigation Implementation Guide
 
 ## Overview
-This document describes the complete implementation of role-based navigation for the Booksy provider dashboard. The system now properly differentiates between **Organizations**, **Staff Members**, and **Independent Individuals**, showing appropriate navigation menus and restricting access based on provider type.
+This document describes the complete implementation of role-based navigation for the AsanRezerve provider dashboard. The system now properly differentiates between **Organizations**, **Staff Members**, and **Independent Individuals**, showing appropriate navigation menus and restricting access based on provider type.
 
 ---
 
@@ -49,7 +49,7 @@ enum HierarchyType {
 ### Frontend Files Created
 
 #### 1. Route Guards
-**File:** `booksy-frontend/src/core/router/guards/hierarchy.guard.ts`
+**File:** `asanrezerve-frontend/src/core/router/guards/hierarchy.guard.ts`
 
 Created three route guards:
 - `organizationOnlyGuard` - Restricts routes to organizations only
@@ -64,22 +64,22 @@ Created three route guards:
 #### 2. Staff Member Views
 Created 4 new views for staff members:
 
-**a) MyBookingsView.vue** (`booksy-frontend/src/modules/provider/views/staff/MyBookingsView.vue`)
+**a) MyBookingsView.vue** (`asanrezerve-frontend/src/modules/provider/views/staff/MyBookingsView.vue`)
 - Shows only bookings assigned to the staff member
 - Placeholder for future booking list implementation
 
-**b) MyEarningsView.vue** (`booksy-frontend/src/modules/provider/views/staff/MyEarningsView.vue`)
+**b) MyEarningsView.vue** (`asanrezerve-frontend/src/modules/provider/views/staff/MyEarningsView.vue`)
 - Shows staff member's personal earnings only
 - Stats cards for earnings overview
 - Placeholder for earnings chart
 
-**c) MyProfileView.vue** (`booksy-frontend/src/modules/provider/views/staff/MyProfileView.vue`)
+**c) MyProfileView.vue** (`asanrezerve-frontend/src/modules/provider/views/staff/MyProfileView.vue`)
 - Staff member's personal profile
 - Displays: Name, Contact, Bio, Specializations
 - Shows parent organization name
 - Read-only initially (edit coming soon)
 
-**d) MyOrganizationView.vue** (`booksy-frontend/src/modules/provider/views/staff/MyOrganizationView.vue`)
+**d) MyOrganizationView.vue** (`asanrezerve-frontend/src/modules/provider/views/staff/MyOrganizationView.vue`)
 - READ-ONLY view of parent organization
 - Shows organization details
 - Lists other staff members
@@ -88,7 +88,7 @@ Created 4 new views for staff members:
 ### Frontend Files Modified
 
 #### 3. Navigation Component
-**File:** `booksy-frontend/src/modules/provider/components/dashboard/DashboardLayout.vue`
+**File:** `asanrezerve-frontend/src/modules/provider/components/dashboard/DashboardLayout.vue`
 
 **Changes:**
 - Added role-based menu computed property
@@ -125,7 +125,7 @@ Created 4 new views for staff members:
 ```
 
 #### 4. Provider Routes
-**File:** `booksy-frontend/src/core/router/routes/provider.routes.ts`
+**File:** `asanrezerve-frontend/src/core/router/routes/provider.routes.ts`
 
 **Changes:**
 - Imported hierarchy guards
@@ -266,7 +266,7 @@ Returns:
 
 ### 1. Frontend Deployment
 ```bash
-cd booksy-frontend
+cd asanrezerve-frontend
 npm install
 npm run build
 ```
@@ -443,8 +443,8 @@ export const organizationOnlyGuard = async (to, _from, next) => {
 
 ### Related Documentation
 - [STAFF_MANAGEMENT_COMPLETE_GUIDE.md](./STAFF_MANAGEMENT_COMPLETE_GUIDE.md) - Staff management features
-- [hierarchy.types.ts](../booksy-frontend/src/modules/provider/types/hierarchy.types.ts) - Type definitions
-- [hierarchy.store.ts](../booksy-frontend/src/modules/provider/stores/hierarchy.store.ts) - State management
+- [hierarchy.types.ts](../asanrezerve-frontend/src/modules/provider/types/hierarchy.types.ts) - Type definitions
+- [hierarchy.store.ts](../asanrezerve-frontend/src/modules/provider/stores/hierarchy.store.ts) - State management
 
 ### Key Concepts
 - **Vue Router Guards** - Navigation protection

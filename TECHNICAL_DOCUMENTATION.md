@@ -1,8 +1,8 @@
-# Booksy Platform - Comprehensive Technical Documentation
+# AsanRezerve Platform - Comprehensive Technical Documentation
 
 > **Living Document**: This documentation consolidates all technical documentation from the project. Last updated: 2025-11-13
 >
-> **Architecture note**: The backend is now a **modular monolith** — a single host (`Booksy.Host` / `booksy-api`, port 5000) composing the UserManagement and ServiceCatalog bounded contexts in-process. The Ocelot gateway and RabbitMQ have been retired; integration events run in-process via CAP. Older dated session entries below predate this migration and are retained as historical record. See [MONOLITH_MIGRATION_PLAN.md](MONOLITH_MIGRATION_PLAN.md).
+> **Architecture note**: The backend is now a **modular monolith** — a single host (`AsanRezerve.Host` / `asanrezerve-api`, port 5000) composing the UserManagement and ServiceCatalog bounded contexts in-process. The Ocelot gateway and RabbitMQ have been retired; integration events run in-process via CAP. Older dated session entries below predate this migration and are retained as historical record. See [MONOLITH_MIGRATION_PLAN.md](MONOLITH_MIGRATION_PLAN.md).
 >
 > **Recent Updates (2025-11-13)**: Added 4 critical bug fixes and optimizations (Issues #11-14): Route conflict resolution, status API optimization, HTTP interceptor error handling, and cache validation. Redesigned provider bookings management page with modern UI/UX.
 
@@ -26,8 +26,8 @@
 
 ## Overview
 
-Booksy is a service booking platform built with:
-- **Backend**: .NET Core 8 modular monolith — a single host (`Booksy.Host`) composing the UserManagement and ServiceCatalog bounded contexts in-process (Clean Architecture, CQRS, DDD)
+AsanRezerve is a service booking platform built with:
+- **Backend**: .NET Core 8 modular monolith — a single host (`AsanRezerve.Host`) composing the UserManagement and ServiceCatalog bounded contexts in-process (Clean Architecture, CQRS, DDD)
 - **Frontend**: Vue 3 + TypeScript (Composition API, Pinia)
 - **Database**: single PostgreSQL database with schema-per-context, accessed via EF Core
 - **Authentication**: JWT with phone verification (OTP)
@@ -59,7 +59,7 @@ Booksy is a service booking platform built with:
 
 **Structure:**
 ```
-booksy-frontend/
+asanrezerve-frontend/
 ├── src/
 │   ├── core/                    # Core infrastructure
 │   │   ├── api/                 # API clients & interceptors
@@ -522,7 +522,7 @@ public async Task HandleAsync(
 
 ```csharp
 // ProviderDraftCreatedEventSubscriber.cs (UserManagement)
-[CapSubscribe("booksy.servicecatalog.providerdraftcreated")]
+[CapSubscribe("asanrezerve.servicecatalog.providerdraftcreated")]
 public async Task HandleAsync(ProviderDraftCreatedIntegrationEvent @event)
 {
     await _unitOfWork.ExecuteInTransactionAsync(async () =>
@@ -544,7 +544,7 @@ public async Task HandleAsync(ProviderDraftCreatedIntegrationEvent @event)
 
 **Key Benefits:**
 - ✅ Bounded contexts remain decoupled (separate schemas in one database)
-- ✅ Each context owns its own schema (`user_management`, `ServiceCatalog`) within the single `booksy` database
+- ✅ Each context owns its own schema (`user_management`, `ServiceCatalog`) within the single `asanrezerve` database
 - ✅ Cross-context updates flow through CAP integration events
 - ✅ Failure handling isolated per subscriber via CAP retry/outbox
 
@@ -562,24 +562,24 @@ public async Task HandleAsync(ProviderDraftCreatedIntegrationEvent @event)
 
 **Connection String Format:**
 
-The host uses a single `DefaultConnection` to the `booksy` database; each bounded context maps its tables into its own schema (`user_management`, `ServiceCatalog`), and CAP uses the `cap` schema.
+The host uses a single `DefaultConnection` to the `asanrezerve` database; each bounded context maps its tables into its own schema (`user_management`, `ServiceCatalog`), and CAP uses the `cap` schema.
 
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5432;Database=booksy;Username=postgres;Password=postgres;Include Error Detail=true"
+    "DefaultConnection": "Host=localhost;Port=5432;Database=asanrezerve;Username=postgres;Password=postgres;Include Error Detail=true"
   }
 }
 ```
 
 **❌ WRONG (SQL Server format):**
 ```
-"Server=localhost;Database=booksy;..."
+"Server=localhost;Database=asanrezerve;..."
 ```
 
 **✅ CORRECT (PostgreSQL format):**
 ```
-"Host=localhost;Port=5432;Database=booksy;..."
+"Host=localhost;Port=5432;Database=asanrezerve;..."
 ```
 
 ### EF Core 9 Owned Entity Configuration
@@ -706,17 +706,17 @@ public DbSet<Service> Services => Set<Service>();
 
 **Creating Migrations:**
 ```bash
-cd src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure
+cd src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Infrastructure
 
 dotnet ef migrations add MigrationName \
-  --startup-project ../../Apps/Booksy.ServiceCatalog.Api/Booksy.ServiceCatalog.Api.csproj \
+  --startup-project ../../Apps/AsanRezerve.ServiceCatalog.Api/AsanRezerve.ServiceCatalog.Api.csproj \
   --context ServiceCatalogDbContext
 ```
 
 **Applying Migrations:**
 ```bash
 dotnet ef database update \
-  --startup-project ../../Apps/Booksy.ServiceCatalog.Api/Booksy.ServiceCatalog.Api.csproj \
+  --startup-project ../../Apps/AsanRezerve.ServiceCatalog.Api/AsanRezerve.ServiceCatalog.Api.csproj \
   --context ServiceCatalogDbContext
 ```
 
@@ -1153,7 +1153,7 @@ const saveGallery = async (providerId: string) => {
 ```
 
 **Files Changed:**
-- `booksy-frontend/src/modules/provider/composables/useProviderRegistration.ts:500-554`
+- `asanrezerve-frontend/src/modules/provider/composables/useProviderRegistration.ts:500-554`
 
 ### Issue 9: CompletionStep UI Distortion (Fixed 2025-11-11)
 
@@ -1188,7 +1188,7 @@ Completely rewrote the component using semantic scoped CSS instead of Tailwind u
 ```
 
 **Files Changed:**
-- `booksy-frontend/src/modules/provider/components/registration/steps/CompletionStep.vue`
+- `asanrezerve-frontend/src/modules/provider/components/registration/steps/CompletionStep.vue`
 
 **Related Fix:**
 Same issue and solution applied to `OptionalFeedbackStep.vue` (Commit: `d7b8a79`)
@@ -1266,8 +1266,8 @@ if (!response.hasDraft && response.providerId) {
 ```
 
 **Files Changed:**
-- `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Queries/Provider/GetRegistrationProgress/GetRegistrationProgressQueryHandler.cs`
-- `booksy-frontend/src/modules/provider/composables/useProviderRegistration.ts:700-713`
+- `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Queries/Provider/GetRegistrationProgress/GetRegistrationProgressQueryHandler.cs`
+- `asanrezerve-frontend/src/modules/provider/composables/useProviderRegistration.ts:700-713`
 
 **Impact:**
 This fix ensures that:
@@ -1322,7 +1322,7 @@ Changed the customer bookings route to a distinct path:
 - Provider bookings: `/bookings` → `ProviderBookingsView.vue`
 
 **Files Changed:**
-- `booksy-frontend/src/core/router/routes/booking.routes.ts`
+- `asanrezerve-frontend/src/core/router/routes/booking.routes.ts`
 
 ### Issue 12: Redundant Status API Calls in Registration Flow (Fixed 2025-11-13)
 
@@ -1382,9 +1382,9 @@ onMounted(async () => {
 - Cleaner code with single responsibility
 
 **Files Changed:**
-- `booksy-frontend/src/modules/auth/views/VerificationView.vue`
-- `booksy-frontend/src/modules/provider/views/registration/ProviderRegistrationFlow.vue`
-- `booksy-frontend/src/core/router/routes/provider.routes.ts`
+- `asanrezerve-frontend/src/modules/auth/views/VerificationView.vue`
+- `asanrezerve-frontend/src/modules/provider/views/registration/ProviderRegistrationFlow.vue`
+- `asanrezerve-frontend/src/core/router/routes/provider.routes.ts`
 
 ### Issue 13: TypeError in HTTP Interceptors - toUpperCase() on Undefined (Fixed 2025-11-13)
 
@@ -1448,10 +1448,10 @@ return Object.keys(obj).reduce((result, key) => {
 ```
 
 **Files Changed:**
-- `booksy-frontend/src/core/api/interceptors/logging.interceptor.ts`
-- `booksy-frontend/src/core/api/interceptors/request-cache.ts`
-- `booksy-frontend/src/core/api/interceptors/retry-handler.ts`
-- `booksy-frontend/src/core/api/interceptors/transform.interceptor.ts`
+- `asanrezerve-frontend/src/core/api/interceptors/logging.interceptor.ts`
+- `asanrezerve-frontend/src/core/api/interceptors/request-cache.ts`
+- `asanrezerve-frontend/src/core/api/interceptors/retry-handler.ts`
+- `asanrezerve-frontend/src/core/api/interceptors/transform.interceptor.ts`
 
 ### Issue 14: Cache Returning Malformed Responses (Fixed 2025-11-13)
 
@@ -1520,7 +1520,7 @@ set(config: InternalAxiosRequestConfig, response: AxiosResponse, ttl: number): v
 ```
 
 **Files Changed:**
-- `booksy-frontend/src/core/api/interceptors/request-cache.ts`
+- `asanrezerve-frontend/src/core/api/interceptors/request-cache.ts`
 
 **Impact:**
 - Prevents malformed cached responses from causing runtime errors
@@ -1578,7 +1578,7 @@ Completely redesigned the provider bookings management page (`ProviderBookingsVi
    - Sample data for demonstration
 
 **Files Changed:**
-- `booksy-frontend/src/modules/provider/views/ProviderBookingsView.vue`
+- `asanrezerve-frontend/src/modules/provider/views/ProviderBookingsView.vue`
 
 **Route:**
 - Path: `/bookings`
@@ -1593,7 +1593,7 @@ reschedule affordance exists depends on how the user navigated to their bookings
 like a bug to the user and repeatedly costs investigation time during booking-UI work.
 
 **Root Cause:**
-`booksy-frontend` ships two independent customer bookings surfaces backed by the same data source
+`asanrezerve-frontend` ships two independent customer bookings surfaces backed by the same data source
 (`bookingService.getMyBookings()`), with different capabilities:
 
 | Surface | Entry point | Capabilities |

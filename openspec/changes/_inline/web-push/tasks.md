@@ -8,7 +8,7 @@ salon confirms. Push was a deliberate no-op on web. User decision: web push NOW.
 ## Findings (measured, before any code)
 - Backend sends through FCM HTTP v1 via FirebaseAdmin 3.1.0 (`FirebaseMessagingGateway`). Credential:
   `Notifications:Firebase:CredentialsJson` or `...:CredentialsPath` (service-account JSON). Neither appears
-  in docker-compose.prod.yml; the API reads `/opt/booksy/.env` (env_file), which is not in the repo.
+  in docker-compose.prod.yml; the API reads `/opt/asanrezerve/.env` (env_file), which is not in the repo.
 - `DeviceToken.Platform` exists (`Unknown|Android|Ios|Web`, stored as a string) and the API binds it from a
   string. Nothing about web needed a schema change.
 - The gateway built `Message { Token, Notification, Data }` only — no `webpush` block, so a browser would
@@ -87,9 +87,9 @@ salon confirms. Push was a deliberate no-op on web. User decision: web push NOW.
   exists in the Flutter apps; it also guards the tap-message literal shared with Dart.
 ## Log
 - 2026-09-23 STOPPED(blocked): everything that needs no credential is done. Remaining: the user creates the Firebase
-  Web app + VAPID key and sets five GitHub variables, puts the service-account JSON in /opt/booksy/.env, and checks
+  Web app + VAPID key and sets five GitHub variables, puts the service-account JSON in /opt/asanrezerve/.env, and checks
   from the box that oauth2/fcm.googleapis.com answer (runbook › Web push). Then: a real phone, both directions.
-- 2026-09-23 Verified: backend Booksy.sln builds (0 errors); Infrastructure.UnitTests 23/23 (9 new, incl. Firebase's
+- 2026-09-23 Verified: backend AsanRezerve.sln builds (0 errors); Infrastructure.UnitTests 23/23 (9 new, incl. Firebase's
   own pre-send validation on every message shape). Customer app: analyze clean, 719 tests; provider app: analyze
   clean, 683 (+1 pre-existing skip); service worker 8/8 in Node, each app. `flutter build web --release` of both
   apps outside the repo, with and without the defines: config compiled in only when given. Real Chrome (headless,

@@ -1,6 +1,6 @@
 # Knowledge Contract
 
-Where Booksy's knowledge lives, and which copy wins when two disagree.
+Where AsanRezerve's knowledge lives, and which copy wins when two disagree.
 
 This file is tool-neutral on purpose. It assumes nothing beyond a filesystem, git, and markdown.
 Any agent — or any human — can be oriented by reading this page and the files it points at.
@@ -9,7 +9,7 @@ Any agent — or any human — can be oriented by reading this page and the file
 
 | Kind | Lives in | Versioned |
 |---|---|---|
-| **Source code / tests** | `src/`, `tests/`, `booksy-*/` | git |
+| **Source code / tests** | `src/`, `tests/`, `asanrezerve-*/` | git |
 | **Project knowledge** — what the system *is*, and what it currently does | [`../openspec/project.md`](../openspec/project.md) (system shape) and `../openspec/specs/<capability>/spec.md` (per-capability behavior) | git |
 | **Authoritative decisions** — what we chose and why | [`../ARCHITECTURAL_DECISIONS.md`](../ARCHITECTURAL_DECISIONS.md) | git |
 | **Work in flight** — proposals, tasks, delta specs | `../openspec/changes/**`, archived under `../openspec/changes/archive/` | git |

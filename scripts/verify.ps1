@@ -3,7 +3,7 @@
   The checkable definition of done. Runs the verification tier and records the result.
 
 .DESCRIPTION
-  FAST  build Booksy.sln + every unit/architecture test project. No Docker.
+  FAST  build AsanRezerve.sln + every unit/architecture test project. No Docker.
   FULL  FAST + Host composition + both integration suites (Testcontainers Postgres, needs
         Docker) + type-check/lint in each touched Vue app + analyze/test in each touched
         Flutter app.
@@ -187,7 +187,7 @@ if (-not $SkipBuild) {
     if ($running.Count) {
         Write-Host ("   NOTE: {0} testhost process(es) running (PIDs {1}, oldest started {2:HH:mm}). If this build fails with MSB3027 'file is locked by testhost', another session is testing: wait for it or ask it — do not kill it." -f $running.Count, ($running.Id -join ', '), ($running | Sort-Object StartTime | Select-Object -First 1).StartTime) -ForegroundColor Yellow
     }
-    Invoke-Step -Name 'build' -Dir $root -Command 'dotnet build Booksy.sln --nologo -v q' -ShowPattern $buildShow -NoTail
+    Invoke-Step -Name 'build' -Dir $root -Command 'dotnet build AsanRezerve.sln --nologo -v q' -ShowPattern $buildShow -NoTail
 }
 
 # The solution was just built (or the caller vouched for it with -SkipBuild, in which case the
@@ -197,15 +197,15 @@ if (-not $SkipBuild) {
 $noBuild = if ($SkipBuild) { '' } else { '--no-build' }
 
 $unitProjects = @(
-    'tests/Booksy.Core.Domain.UnitTests',
-    'tests/Booksy.Infrastructure.Core.UnitTests',
-    'tests/Booksy.ServiceCatalog.Domain.UnitTests',
-    'tests/Booksy.ServiceCatalog.Application.UnitTests',
-    'tests/Booksy.ServiceCatalog.Api.UnitTests',
-    'tests/Booksy.ServiceCatalog.Infrastructure.UnitTests',
-    'tests/Booksy.Infrastructure.External.UnitTests',
-    'tests/Booksy.UserManagement.Application.UnitTests',
-    'tests/Booksy.ArchitectureTests'
+    'tests/AsanRezerve.Core.Domain.UnitTests',
+    'tests/AsanRezerve.Infrastructure.Core.UnitTests',
+    'tests/AsanRezerve.ServiceCatalog.Domain.UnitTests',
+    'tests/AsanRezerve.ServiceCatalog.Application.UnitTests',
+    'tests/AsanRezerve.ServiceCatalog.Api.UnitTests',
+    'tests/AsanRezerve.ServiceCatalog.Infrastructure.UnitTests',
+    'tests/AsanRezerve.Infrastructure.External.UnitTests',
+    'tests/AsanRezerve.UserManagement.Application.UnitTests',
+    'tests/AsanRezerve.ArchitectureTests'
 )
 foreach ($p in $unitProjects) {
     $name = Split-Path $p -Leaf
@@ -220,7 +220,7 @@ if ($Tier -eq 'full') {
     # One project since docs/TEST_ARCHITECTURE_AUDIT.md Phase 2 slice 4 (was three: SC, UM and
     # Composition each booted their own host).
     $dbProjects = @(
-        'tests/Booksy.Host.IntegrationTests'
+        'tests/AsanRezerve.Host.IntegrationTests'
     )
     # Per-test timings go to a trx per project so the slowest tests of every run are visible
     # (.verify/slowest.txt below); --blame-hang-timeout turns a hung concurrency test into a dump
@@ -246,15 +246,15 @@ if ($Tier -eq 'full') {
     $touched = Get-TouchedPaths
     function Touched($prefix) { $All -or (($touched | Where-Object { $_ -like "$prefix/*" }).Count -gt 0) }
 
-    foreach ($app in @('booksy-frontend', 'booksy-admin')) {
+    foreach ($app in @('asan-rezerve-frontend', 'asan-rezerve-admin')) {
         if (-not (Touched $app)) { continue }
         if (-not (Test-Path (Join-Path $root "$app/node_modules"))) { Add-Blocked "vue:$app" "no node_modules; run 'npm ci' in $app"; continue }
         Invoke-Step -Name "vue:${app}:type-check" -Dir (Join-Path $root $app) -Command 'npm run --silent type-check' -ShowPattern @('error TS', 'Found [0-9]+ error')
-        if ($app -eq 'booksy-admin') {
-            # booksy-admin had 54 vitest tests that no gate ran. Same defect as the frontend's, fixed the same way.
+        if ($app -eq 'asan-rezerve-admin') {
+            # asan-rezerve-admin had 54 vitest tests that no gate ran. Same defect as the frontend's, fixed the same way.
             Invoke-Step -Name "vue:${app}:unit" -Dir (Join-Path $root $app) -Command 'npx vitest run' -ShowPattern @('Test Files', 'Tests ', 'FAIL')
         }
-        if ($app -eq 'booksy-frontend') {
+        if ($app -eq 'asan-rezerve-frontend') {
             Invoke-Step -Name "vue:${app}:lint" -Dir (Join-Path $root $app) -Command 'npm run --silent lint:check' -ShowPattern @('error', 'problems')
             # Unit tests, which this gate did not run at all until add-notification-clients: type-check and
             # lint passed while vitest was never invoked, so a broken component test protected nothing.
@@ -265,7 +265,7 @@ if ($Tier -eq 'full') {
         }
     }
 
-    foreach ($app in @('booksy-customer-app', 'booksy-provider-app')) {
+    foreach ($app in @('asan-rezerve-customer-app', 'asan-rezerve-provider-app')) {
         if (-not (Touched $app)) { continue }
         if (-not (Get-Command flutter -ErrorAction SilentlyContinue)) { Add-Blocked "flutter:$app" 'flutter not on PATH'; continue }
         Invoke-Step -Name "flutter:${app}:analyze" -Dir (Join-Path $root $app) -Command 'flutter analyze --no-pub --no-fatal-warnings --no-fatal-infos' -ShowPattern @('error •', 'No issues found', 'issues found')

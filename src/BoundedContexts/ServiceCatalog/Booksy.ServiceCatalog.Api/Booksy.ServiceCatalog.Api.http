@@ -1,6 +1,0 @@
-@Booksy.ServiceCatalog.Api_HostAddress = http://localhost:5010
-
-GET {{Booksy.ServiceCatalog.Api_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

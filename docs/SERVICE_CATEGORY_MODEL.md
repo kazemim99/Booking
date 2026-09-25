@@ -1,6 +1,6 @@
 # Service Category Model
 
-How Booksy categorises providers and services, end to end: the enum, the database columns, the
+How AsanRezerve categorises providers and services, end to end: the enum, the database columns, the
 API contract, and the frontend mapping.
 
 Supersedes the older `ProviderType` enum and the `ServiceCategory` value object, both removed by
@@ -16,7 +16,7 @@ barber had no clear representation.
 
 ## The enum
 
-`Booksy.ServiceCatalog.Domain.Enums.ServiceCategory`
+`AsanRezerve.ServiceCatalog.Domain.Enums.ServiceCategory`
 
 | Id | Member | Persian | Slug |
 |----|--------|---------|------|
@@ -63,7 +63,7 @@ category with no metadata is a data defect, and failing loudly beats rendering a
 Use `IsDefinedCategory()` to test a value before trusting it.
 
 The frontend keeps a parallel table in
-[`booksy-frontend/src/core/constants/provider-categories.ts`](../booksy-frontend/src/core/constants/provider-categories.ts).
+[`asanrezerve-frontend/src/core/constants/provider-categories.ts`](../asanrezerve-frontend/src/core/constants/provider-categories.ts).
 **The two must be kept in sync by hand.** Both sides have tests that pin the ids and the
 spot-checked names.
 

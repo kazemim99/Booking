@@ -7,7 +7,7 @@ services:
   # Prometheus - Metrics collection
   prometheus:
     image: prom/prometheus:latest
-    container_name: booksy-prometheus
+    container_name: asan-rezerve-prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -21,7 +21,7 @@ services:
       - ./deployment/monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml
       - prometheus_data:/prometheus
     networks:
-      - booksy-network
+      - asan-rezerve-network
     restart: unless-stopped
     deploy:
       resources:
@@ -32,7 +32,7 @@ services:
   # Grafana - Visualization and dashboards
   grafana:
     image: grafana/grafana:latest
-    container_name: booksy-grafana
+    container_name: asan-rezerve-grafana
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
@@ -46,7 +46,7 @@ services:
     depends_on:
       - prometheus
     networks:
-      - booksy-network
+      - asan-rezerve-network
     restart: unless-stopped
     deploy:
       resources:
@@ -57,7 +57,7 @@ services:
   # Alertmanager - Alert routing and management
   alertmanager:
     image: prom/alertmanager:latest
-    container_name: booksy-alertmanager
+    container_name: asan-rezerve-alertmanager
     command:
       - '--config.file=/etc/alertmanager/config.yml'
       - '--storage.path=/alertmanager'
@@ -67,7 +67,7 @@ services:
       - ./deployment/monitoring/alertmanager/config.yml:/etc/alertmanager/config.yml
       - alertmanager_data:/alertmanager
     networks:
-      - booksy-network
+      - asan-rezerve-network
     restart: unless-stopped
     deploy:
       resources:
@@ -78,7 +78,7 @@ services:
   # Node Exporter - System metrics
   node-exporter:
     image: prom/node-exporter:latest
-    container_name: booksy-node-exporter
+    container_name: asan-rezerve-node-exporter
     command:
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
@@ -90,7 +90,7 @@ services:
       - /sys:/host/sys:ro
       - /:/rootfs:ro
     networks:
-      - booksy-network
+      - asan-rezerve-network
     restart: unless-stopped
     deploy:
       resources:
@@ -101,7 +101,7 @@ services:
   # Postgres Exporter - Database metrics
   postgres-exporter:
     image: prometheuscommunity/postgres-exporter:latest
-    container_name: booksy-postgres-exporter
+    container_name: asan-rezerve-postgres-exporter
     environment:
       - DATA_SOURCE_NAME=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
     ports:
@@ -109,7 +109,7 @@ services:
     depends_on:
       - postgres
     networks:
-      - booksy-network
+      - asan-rezerve-network
     restart: unless-stopped
     deploy:
       resources:
@@ -120,7 +120,7 @@ services:
   # Redis Exporter - Cache metrics
   redis-exporter:
     image: oliver006/redis_exporter:latest
-    container_name: booksy-redis-exporter
+    container_name: asan-rezerve-redis-exporter
     environment:
       - REDIS_ADDR=redis:6379
       - REDIS_PASSWORD=${REDIS_PASSWORD}
@@ -129,7 +129,7 @@ services:
     depends_on:
       - redis
     networks:
-      - booksy-network
+      - asan-rezerve-network
     restart: unless-stopped
     deploy:
       resources:
@@ -146,5 +146,5 @@ volumes:
     driver: local
 
 networks:
-  booksy-network:
+  asan-rezerve-network:
     external: true

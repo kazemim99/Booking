@@ -1,8 +1,8 @@
 {
-  "name": "@booksy/tokens",
+  "name": "@asanrezerve/tokens",
   "version": "0.1.0",
   "private": true,
-  "description": "Shared Booksy design tokens (Coliride brand) — single source of truth for both the client and admin Vue apps.",
+  "description": "Shared AsanRezerve design tokens (Coliride brand) — single source of truth for both the client and admin Vue apps.",
   "type": "module",
   "exports": {
     "./tokens.css": "./tokens.css"

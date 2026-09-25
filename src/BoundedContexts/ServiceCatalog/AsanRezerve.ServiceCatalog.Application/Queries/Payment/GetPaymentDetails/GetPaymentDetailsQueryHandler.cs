@@ -1,0 +1,75 @@
+// ========================================
+// AsanRezerve.ServiceCatalog.Application/Queries/Payment/GetPaymentDetails/GetPaymentDetailsQueryHandler.cs
+// ========================================
+using AsanRezerve.Core.Application.Abstractions.CQRS;
+using AsanRezerve.ServiceCatalog.Domain.Repositories;
+using AsanRezerve.ServiceCatalog.Domain.ValueObjects;
+
+namespace AsanRezerve.ServiceCatalog.Application.Queries.Payment.GetPaymentDetails
+{
+    public sealed class GetPaymentDetailsQueryHandler : IQueryHandler<GetPaymentDetailsQuery, PaymentDetailsViewModel?>
+    {
+        private readonly IPaymentReadRepository _paymentRepository;
+
+        public GetPaymentDetailsQueryHandler(IPaymentReadRepository paymentRepository)
+        {
+            _paymentRepository = paymentRepository ?? throw new ArgumentNullException(nameof(paymentRepository));
+        }
+
+        public async Task<PaymentDetailsViewModel?> Handle(GetPaymentDetailsQuery request, CancellationToken cancellationToken)
+        {
+            var paymentId = PaymentId.From(request.PaymentId);
+            var payment = await _paymentRepository.GetByIdAsync(paymentId, cancellationToken);
+
+            if (payment == null)
+                return null;
+
+            var transactions = payment.Transactions
+                .Select(t => new TransactionDto(
+                    t.Id,
+                    t.Type.ToString(),
+                    t.Amount.Amount,
+                    t.Amount.Currency,
+                    t.ExternalTransactionId,
+                    t.Reference,
+                    t.Status,
+                    t.StatusReason,
+                    t.ProcessedAt,
+                    t.CompletedAt))
+                .ToList();
+
+            // Convert metadata from Dictionary<string, object> to Dictionary<string, string>
+            var metadata = payment.Metadata.ToDictionary(
+                kvp => kvp.Key,
+                kvp => kvp.Value?.ToString() ?? string.Empty);
+
+            return new PaymentDetailsViewModel(
+                payment.Id.Value,
+                payment.BookingId?.Value,
+                payment.CustomerId.Value,
+                payment.ProviderId.Value,
+                payment.Amount.Amount,
+                payment.Amount.Currency,
+                payment.PaidAmount.Amount,
+                payment.RefundedAmount.Amount,
+                payment.Status.ToString(),
+                payment.Method.ToString(),
+                payment.PaymentIntentId,
+                payment.PaymentMethodId,
+                payment.Description,
+                payment.FailureReason,
+                metadata,
+                transactions,
+                payment.CreatedAt,
+                payment.AuthorizedAt,
+                payment.CapturedAt,
+                payment.RefundedAt,
+                payment.FailedAt,
+                payment.Authority,
+                payment.RefNumber,
+                payment.CardPan,
+                payment.Fee?.Amount,
+                payment.PaymentUrl);
+        }
+    }
+}

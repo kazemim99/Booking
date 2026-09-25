@@ -1,0 +1,1002 @@
+using System.Security.Claims;
+using AsanRezerve.API.Extensions;
+using AsanRezerve.Core.Domain.Exceptions;
+using AsanRezerve.ServiceCatalog.Api.Models.Requests;
+using AsanRezerve.ServiceCatalog.Application.Commands.Provider.AddException;
+using AsanRezerve.ServiceCatalog.Application.Commands.Provider.UpdateBookingPreferences;
+using AsanRezerve.ServiceCatalog.Application.Commands.Provider.AddHoliday;
+using AsanRezerve.ServiceCatalog.Application.Commands.Provider.DeleteException;
+using AsanRezerve.ServiceCatalog.Application.Commands.Provider.DeleteHoliday;
+using AsanRezerve.ServiceCatalog.Application.Commands.Provider.Registration;
+using AsanRezerve.ServiceCatalog.Application.Commands.Provider.UpdateBusinessHours;
+using AsanRezerve.ServiceCatalog.Application.Commands.Provider.UpdateBusinessProfile;
+using AsanRezerve.ServiceCatalog.Application.Commands.Provider.UpdateLocation;
+using AsanRezerve.ServiceCatalog.Application.Commands.Provider.UpdateWorkingHours;
+using AsanRezerve.ServiceCatalog.Application.Commands.Service.AddProviderService;
+using AsanRezerve.ServiceCatalog.Application.Commands.Service.DeleteProviderService;
+using AsanRezerve.ServiceCatalog.Application.Commands.Service.UpdateProviderService;
+using AsanRezerve.ServiceCatalog.Application.Queries.Provider.GetAvailability;
+using AsanRezerve.ServiceCatalog.Application.Queries.Provider.GetBusinessHours;
+using AsanRezerve.ServiceCatalog.Application.Queries.Provider.GetExceptions;
+using AsanRezerve.ServiceCatalog.Application.Queries.Provider.GetHolidays;
+using AsanRezerve.ServiceCatalog.Application.Queries.Provider.GetProviderById;
+using AsanRezerve.ServiceCatalog.Domain.Repositories;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using BreakTimeDto = AsanRezerve.ServiceCatalog.Application.Commands.Provider.Registration.BreakTimeDto;
+using TimeSlotDto = AsanRezerve.ServiceCatalog.Application.Commands.Provider.Registration.TimeSlotDto;
+using AsanRezerve.Core.Domain.ValueObjects;
+
+namespace AsanRezerve.ServiceCatalog.API.Controllers.V1;
+
+/// <summary>
+/// Provider settings management - allows providers to update their profile sections independently
+/// </summary>
+[ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/providers")]
+[Produces("application/json")]
+[Authorize]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+public class ProviderSettingsController : ControllerBase
+{
+    private readonly ISender _mediator;
+    private readonly IServiceReadRepository _serviceReadRepository;
+    private readonly ILogger<ProviderSettingsController> _logger;
+
+    public ProviderSettingsController(
+        ISender mediator,
+        IServiceReadRepository serviceReadRepository,
+        ILogger<ProviderSettingsController> logger)
+    {
+        _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
+        _serviceReadRepository = serviceReadRepository ?? throw new ArgumentNullException(nameof(serviceReadRepository));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    }
+
+    #region Business Info
+
+
+    /// <summary>
+    /// Get provider business information
+    /// </summary>
+    [HttpGet("{id:guid}/business-info")]
+    [ProducesResponseType(typeof(BusinessInfoResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetBusinessInfo(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        // Every other action in this controller calls CanManageProvider(id) here; this one had
+        // just the comment with no call ever written, so any authenticated user — including a
+        // different provider — could read any other provider's business-info (BusinessName,
+        // Description, phone, email, website). Confirmed IDOR: GetBusinessInfo_AsNonOwner_Should-
+        // Return403Forbidden expected 403 and got 200. Same check, same idiom as every sibling
+        // action in this file.
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
+        var query = new GetProviderByIdQuery(id, false, false);
+        var provider = await _mediator.Send(query, cancellationToken);
+
+        if (provider == null)
+        {
+            return NotFound();
+        }
+
+        var response = new BusinessInfoResponse
+        {
+            BusinessName = provider.BusinessName ?? "",
+            Description = provider.Description ?? "",
+            PhoneNumber = provider.ContactInfo?.Phone ?? "",
+            Email = provider.ContactInfo?.Email ?? "",
+            Website = provider.ContactInfo?.Website
+        };
+
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Update provider business information
+    /// </summary>
+    [HttpPut("{id:guid}/business-info")]
+    [ProducesResponseType(typeof(BusinessInfoResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> UpdateBusinessInfo(
+        [FromRoute] Guid id,
+        [FromBody] UpdateBusinessInfoRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
+       
+        var command = new UpdateBusinessProfileCommand(
+            id,
+            request.BusinessName,
+            request.Description);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Business info updated for provider {ProviderId}", id);
+
+        var response = new BusinessInfoResponse
+        {
+
+            BusinessName = result.BusinessName,
+            Description = request.Description,
+        };
+
+        return Ok(response);
+    }
+
+    #endregion
+
+    #region Location
+
+    /// <summary>
+    /// Get provider location information
+    /// </summary>
+    [HttpGet("{id:guid}/location")]
+    [ProducesResponseType(typeof(LocationResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetLocation(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        // Same gap as GetBusinessInfo: the auth check was never written. Confirmed by
+        // GetLocation_AsNonOwner_ShouldReturn403Forbidden (expected 403, got 200).
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
+        var query = new GetProviderByIdQuery(id, false, false);
+        var provider = await _mediator.Send(query, cancellationToken);
+
+        if (provider == null)
+        {
+            return NotFound();
+        }
+
+        var response = new LocationResponse
+        {
+            AddressLine1 = provider.Address?.Street ?? "",
+            Street = provider.Address?.Street ?? "",
+            City = provider.Address?.City ?? "",
+            State = provider.Address?.State,
+            PostalCode = provider.Address?.PostalCode ?? "",
+            Country = provider.Address?.Country ?? "Iran",
+            Latitude = provider.Address?.Latitude,
+            Longitude = provider.Address?.Longitude
+        };
+
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Update provider location
+    /// </summary>
+    [HttpPut("{id:guid}/location")]
+    [ProducesResponseType(typeof(LocationResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> UpdateLocation(
+        [FromRoute] Guid id,
+        [FromBody] UpdateLocationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
+
+
+        var command = new UpdateLocationCommand(
+            id,
+            request.FormattedAddress,
+            request.AddressLine1,
+            request.City,
+            request.PostalCode,
+            request.Country,
+            request.ProvinceId,
+            request.CityId,
+            request.Latitude,
+            request.Longitude);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Location updated for provider {ProviderId}", id);
+
+        var response = new LocationResponse
+        {
+            // Was result.FormattedAddress — a field named AddressLine1 returning the full
+            // formatted string ("456 New Street, Suite 100, Tehran") instead of just the address
+            // line ("456 New Street"). UpdateLocationResult.AddressLine1 exists and is the correct
+            // source; confirmed by UpdateLocation_WithValidRequest_ShouldReturn200OK, which failed
+            // with the two strings diverging exactly at the length of the address line.
+            AddressLine1 = result.AddressLine1,
+            Street = result.FormattedAddress,
+            City = result.City ?? "",
+            State = "",
+            Country = result.Country,
+            PostalCode = result.PostalCode ?? "",
+            Latitude = result.Latitude,
+            Longitude = result.Longitude
+        };
+
+        return Ok(response);
+    }
+
+    #endregion
+
+    #region Working Hours
+
+    /// <summary>
+    /// Get provider working hours
+    /// </summary>
+    [HttpGet("{id:guid}/working-hours")]
+    [ProducesResponseType(typeof(WorkingHoursResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetWorkingHours(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        // This action was commented out in its entirety — the PUT sibling below stayed live, so
+        // working hours could be written but never read back through this controller. It also
+        // predates a shape change: GetProviderByIdQuery.BusinessHours is a List<BusinessHoursData>
+        // (int DayOfWeek, IsOpen, OpenTimeHours/Minutes, CloseTimeHours/Minutes, Breaks) today, not
+        // the Dictionary<DayOfWeek, ...> the old code assumed — restoring it verbatim would not
+        // have compiled. Rewritten against the current shape; the response DTO itself
+        // (WorkingHoursResponse / BusinessHoursDetailResponse) is unchanged.
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
+        var query = new GetProviderByIdQuery(id, false, false);
+        var provider = await _mediator.Send(query, cancellationToken);
+
+        if (provider == null)
+        {
+            return NotFound();
+        }
+
+        var response = new WorkingHoursResponse
+        {
+            BusinessHours = provider.BusinessHours?.ToDictionary(
+                bh => bh.DayOfWeek.ToString(),
+                bh => new BusinessHoursDetailResponse
+                {
+                    DayOfWeek = bh.DayOfWeek,
+                    IsOpen = bh.IsOpen,
+                    OpenTime = bh.OpenTimeHours.HasValue
+                        ? $"{bh.OpenTimeHours:D2}:{bh.OpenTimeMinutes ?? 0:D2}"
+                        : "",
+                    CloseTime = bh.CloseTimeHours.HasValue
+                        ? $"{bh.CloseTimeHours:D2}:{bh.CloseTimeMinutes ?? 0:D2}"
+                        : ""
+                }) ?? []
+        };
+
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Update provider working hours
+    /// </summary>
+    [HttpPut("{id:guid}/working-hours")]
+    [ProducesResponseType(typeof(WorkingHoursResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> UpdateWorkingHours(
+        [FromRoute] Guid id,
+        [FromBody] UpdateWorkingHoursRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
+ 
+        // Map request to command DTOs
+        var businessHours = new Dictionary<string, DayHoursDto?>();
+        foreach (var (dayOfWeek, hours) in request.BusinessHours)
+        {
+            if (hours == null || !hours.IsOpen)
+            {
+                businessHours[dayOfWeek] = null;
+                continue;
+            }
+
+            businessHours[dayOfWeek] = new DayHoursDto(
+                hours.DayOfWeek,
+                hours.IsOpen,
+                hours.OpenTime != null ? new TimeSlotDto(hours.OpenTime.Hours, hours.OpenTime.Minutes) : null,
+                hours.CloseTime != null ? new TimeSlotDto(hours.CloseTime.Hours, hours.CloseTime.Minutes) : null,
+                hours.Breaks.Select(b => new BreakTimeDto(
+                    new TimeSlotDto(b.Start.Hours, b.Start.Minutes),
+                    new TimeSlotDto(b.End.Hours, b.End.Minutes))).ToList());
+        }
+
+        var command = new UpdateWorkingHoursCommand(id, businessHours);
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Working hours updated for provider {ProviderId}. Working days: {WorkingDaysCount}",
+            id, result.WorkingDaysCount);
+
+        return Ok(new UpdateWorkingHours
+        { WorkingDaysCount = result.WorkingDaysCount, UpdatedAt = result.UpdatedAt,
+            BusinessHours = request.BusinessHours });
+    }
+
+    #endregion
+
+    #region Business Hours (New API with Breaks Support)
+
+    /// <summary>
+    /// Get provider business hours with breaks
+    /// </summary>
+    [HttpGet("{id:guid}/business-hours")]
+    [Authorize]
+    [ProducesResponseType(typeof(Application.Queries.Provider.GetBusinessHours.BusinessHoursViewModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetBusinessHours(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        // Same gap as GetBusinessInfo/GetLocation/GetServices in this file: [Authorize] requires
+        // *a* signed-in user, but nothing checked it was this provider's own owner, so any
+        // authenticated customer or a different provider could read it.
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
+        var query = new GetBusinessHoursQuery(id);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Update provider business hours with breaks
+    /// </summary>
+    [HttpPut("{id:guid}/business-hours")]
+    [Authorize]
+    [ProducesResponseType(typeof(UpdateBusinessHoursResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> UpdateBusinessHours(
+        [FromRoute] Guid id,
+        [FromBody] UpdateBusinessHoursRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
+        // A body that fails to bind arrives here as null, and dereferencing it turned a
+        // malformed request into a 500 with "Object reference not set to an instance of an
+        // object" — which tells the caller nothing about what was wrong with their payload.
+        // Times are sent as { hours, minutes } (TimeSlotDto), so a client sending "09:00"
+        // hits exactly this path.
+        if (request?.BusinessHours is null or { Count: 0 })
+        {
+            return BadRequest(new
+            {
+                error = "businessHours is required and must contain at least one day. " +
+                        "Times are objects: \"openTime\": { \"hours\": 9, \"minutes\": 0 }."
+            });
+        }
+
+        var command = new UpdateBusinessHoursCommand(id, request.BusinessHours);
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Business hours updated for provider {ProviderId}", id);
+
+        return Ok(result);
+    }
+
+    #endregion
+
+    #region Holidays
+
+    /// <summary>
+    /// Get all holidays for provider
+    /// </summary>
+    [HttpGet("{id:guid}/holidays")]
+    [Authorize]
+    [ProducesResponseType(typeof(HolidaysViewModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetHolidays(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        // Same gap as GetBusinessInfo/GetLocation/GetServices in this file.
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
+        var query = new GetHolidaysQuery(id);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Add a holiday
+    /// </summary>
+    [HttpPost("{id:guid}/holidays")]
+    [Authorize]
+    [ProducesResponseType(typeof(AddHolidayResult), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> AddHoliday(
+        [FromRoute] Guid id,
+        [FromBody] AddHolidayRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
+     
+
+        var command = new AddHolidayCommand(
+            id,
+            request.Date,
+            request.Reason,
+            request.IsRecurring,
+            request.Pattern);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Holiday added for provider {ProviderId}: {Date} - {Reason}",
+            id, request.Date, request.Reason);
+
+        return CreatedAtAction(nameof(GetHolidays), new { id }, result);
+    }
+
+    /// <summary>
+    /// Delete a holiday
+    /// </summary>
+    [HttpDelete("{id:guid}/holidays/{holidayId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> DeleteHoliday(
+        [FromRoute] Guid id,
+        [FromRoute] Guid holidayId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
+       
+
+        var command = new DeleteHolidayCommand(id, holidayId);
+        await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Holiday {HolidayId} deleted from provider {ProviderId}", holidayId, id);
+
+        return NoContent();
+    }
+
+    #endregion
+
+    #region Exceptions
+
+    /// <summary>
+    /// Get all exception schedules for provider
+    /// </summary>
+    [HttpGet("{id:guid}/exceptions")]
+    [Authorize]
+    [ProducesResponseType(typeof(ExceptionsViewModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetExceptions(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        // Same gap as GetBusinessInfo/GetLocation/GetServices in this file.
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
+        var query = new GetExceptionsQuery(id);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Add an exception schedule
+    /// </summary>
+    [HttpPost("{id:guid}/exceptions")]
+    [Authorize]
+    [ProducesResponseType(typeof(AddExceptionResult), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> AddException(
+        [FromRoute] Guid id,
+        [FromBody] AddExceptionRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
+     
+
+        var command = new AddExceptionCommand(
+            id,
+            request.Date,
+            request.OpenTime,
+            request.CloseTime,
+            request.Reason);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Exception added for provider {ProviderId}: {Date} - {Reason}",
+            id, request.Date, request.Reason);
+
+        return CreatedAtAction(nameof(GetExceptions), new { id }, result);
+    }
+
+    /// <summary>
+    /// Delete an exception schedule
+    /// </summary>
+    [HttpDelete("{id:guid}/exceptions/{exceptionId:guid}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> DeleteException(
+        [FromRoute] Guid id,
+        [FromRoute] Guid exceptionId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
+       
+
+        var command = new DeleteExceptionCommand(id, exceptionId);
+        await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Exception {ExceptionId} deleted from provider {ProviderId}", exceptionId, id);
+
+        return NoContent();
+    }
+
+    #endregion
+
+    #region Availability
+
+    /// <summary>
+    /// Get provider availability for a specific date
+    /// </summary>
+    [HttpGet("{id:guid}/availability")]
+    [ProducesResponseType(typeof(AvailabilityViewModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetAvailability(
+        [FromRoute] Guid id,
+        [FromQuery] string date,
+        CancellationToken cancellationToken = default)
+    {
+       
+
+        if (!DateOnly.TryParse(date, out var dateOnly))
+        {
+            throw new DomainValidationException("date", "Date must be in yyyy-MM-dd format");
+        }
+
+        var query = new GetAvailabilityQuery(id, dateOnly);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        return Ok(result);
+    }
+
+    #endregion
+
+    #region Services
+
+    /// <summary>
+    /// Get all services for a provider
+    /// </summary>
+    [HttpGet("{id:guid}/services")]
+    [ProducesResponseType(typeof(List<ServiceDetailResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetServices(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        // Same gap as GetBusinessInfo: the auth check was never written. Confirmed by
+        // GetServices_AsNonOwner_ShouldReturn403Forbidden (expected 403, got 200).
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
+        var providerId = ServiceCatalog.Domain.ValueObjects.ProviderId.From(id);
+        var services = await _serviceReadRepository.GetByProviderIdAsync(providerId, cancellationToken);
+
+        var response = services.Select(s => new ServiceDetailResponse
+        {
+            Id = s.Id.Value,
+            Name = s.Name,
+            Description = s.Description,
+            DurationMinutes = s.Duration.Value,
+            Price = s.BasePrice.Amount,
+            Currency = s.BasePrice.Currency,
+            Category = s.Category.ToString(),
+            Type = s.Type.ToString(),
+            Status = s.Status.ToString()
+        }).ToList();
+
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Add a new service to provider
+    /// </summary>
+    [HttpPost("{id:guid}/services")]
+    [ProducesResponseType(typeof(ServiceDetailResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> AddService(
+        [FromRoute] Guid id,
+        [FromBody] AddServiceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
+     
+
+        var command = new AddProviderServiceCommand(
+            id,
+            request.ServiceName,
+            request.Description,
+            request.DurationHours,
+            request.DurationMinutes,
+            request.Price,
+            request.Currency ?? PlatformCurrency.Code,
+            request.Category,
+            request.IsMobileService);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Service {ServiceId} added to provider {ProviderId}", result.ServiceId, id);
+
+        var response = new ServiceDetailResponse
+        {
+            Id = result.ServiceId,
+            Name = result.ServiceName,
+            DurationMinutes = result.TotalDurationMinutes,
+            Price = result.Price,
+            Currency = result.Currency
+        };
+
+        return CreatedAtAction(nameof(GetServices), new { id }, response);
+    }
+
+    /// <summary>
+    /// Update an existing service
+    /// </summary>
+    [HttpPut("{id:guid}/services/{serviceId:guid}")]
+    [ProducesResponseType(typeof(ServiceDetailResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> UpdateService(
+        [FromRoute] Guid id,
+        [FromRoute] Guid serviceId,
+        [FromBody] UpdateProviderServiceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
+       
+
+        var command = new UpdateProviderServiceCommand(
+            serviceId,
+            id,
+            request.ServiceName,
+            request.Description,
+            request.DurationHours,
+            request.DurationMinutes,
+            request.Price,
+            request.Currency ?? PlatformCurrency.Code,
+            request.Category,
+            request.IsMobileService);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Service {ServiceId} updated for provider {ProviderId}", serviceId, id);
+
+        var response = new ServiceDetailResponse
+        {
+            Id = result.ServiceId,
+            Name = result.ServiceName,
+            DurationMinutes = result.TotalDurationMinutes,
+            Price = result.Price
+        };
+
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Delete a service
+    /// </summary>
+    [HttpDelete("{id:guid}/services/{serviceId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> DeleteService(
+        [FromRoute] Guid id,
+        [FromRoute] Guid serviceId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await CanManageProvider(id))
+        {
+            return Forbid();
+        }
+
+       
+        var command = new DeleteProviderServiceCommand(serviceId, id);
+        await _mediator.Send(command, cancellationToken);
+
+        _logger.LogInformation("Service {ServiceId} deleted from provider {ProviderId}", serviceId, id);
+
+        return NoContent();
+    }
+
+    #endregion
+
+    #region Private Helper Methods
+
+    private async Task<bool> CanManageProvider(Guid providerId)
+    {
+        // NOTE: no early user-id short-circuit — this controller reads raw
+        // sub/userId claims which inbound claim mapping may rename; the
+        // claim check and ownership fallback below are authoritative.
+
+        // Admins can manage any provider
+        if (User.IsInRole("Admin") || User.IsInRole("SysAdmin") || User.IsInRole("Administrator"))
+            return true;
+
+        // Provider owners can manage their own provider — via the providerId
+        // claim (present after a post-registration token refresh)...
+        var claimProviderId = GetCurrentUserProviderId();
+        if (!string.IsNullOrEmpty(claimProviderId) && claimProviderId == providerId.ToString())
+            return true;
+
+        // ...otherwise the caller's membership of this salon decides. These are the
+        // business's own settings, so Owner/Manager — a stylist working here does not
+        // get to rewrite the salon's hours.
+        return await _mediator.Send(
+            new AsanRezerve.ServiceCatalog.Application.Queries.Membership.CanManageOrganization
+                .CanManageOrganizationQuery(
+                    providerId,
+                    AsanRezerve.ServiceCatalog.Application.Queries.Membership.CanManageOrganization
+                        .OrganizationPermission.ManageOrganization));
+    }
+
+    #region Booking preferences (deposit policy)
+
+    /// <summary>
+    /// Sets the provider's default booking policy, including whether a deposit is required before a booking can be
+    /// confirmed and how that deposit is calculated (percentage of the total, or a flat amount).
+    /// </summary>
+    /// <remarks>
+    /// This is the write path that makes the deposit capability real: booking creation resolves the effective policy
+    /// as service override → provider default → platform default, and each booking snapshots it. Changing the policy
+    /// therefore affects <b>future bookings only</b> — existing bookings keep the terms their customer agreed to.
+    ///
+    /// Exposed on two paths: the canonical <c>providers</c> prefix used by this controller, and the
+    /// <c>provider-settings</c> prefix the existing provider settings UI already calls.
+    /// </remarks>
+    /// <response code="200">Policy updated; the stored policy is returned.</response>
+    /// <response code="400">Invalid policy (e.g. a required deposit with a zero amount).</response>
+    /// <response code="403">Caller does not own this provider.</response>
+    [HttpPut("{id:guid}/booking-preferences")]
+    [HttpPut("~/api/v{version:apiVersion}/provider-settings/{id:guid}/booking-preferences")]
+    [ProducesResponseType(typeof(UpdateBookingPreferencesResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> UpdateBookingPreferences(
+        Guid id,
+        [FromBody] UpdateBookingPreferencesRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        // Use the shared claims extension rather than this controller's local GetCurrentUserId(): the JWT does not
+        // carry a "sub"/"userId" claim, so the local helper returns null for a perfectly valid provider token.
+        var actingUserId = User.GetUserId();
+        if (actingUserId == Guid.Empty)
+            return Unauthorized();
+
+        // ActingUserId is server-derived from the JWT; ownership is enforced by the authorization pipeline so a
+        // provider can never change another business's deposit terms.
+        var command = new UpdateBookingPreferencesCommand(
+            ProviderId: id,
+            RequireDeposit: request.RequiresDeposit,
+            DepositType: request.ResolveDepositType(),
+            DepositPercentage: request.DepositPercentage,
+            DepositFixedAmount: request.DepositFixedAmount,
+            MinAdvanceBookingHours: request.MinAdvanceBookingHours,
+            MaxAdvanceBookingDays: request.MaxAdvanceBookingDays,
+            CancellationWindowHours: request.CancellationWindowHours,
+            CancellationFeePercentage: request.CancellationFeePercentage,
+            AllowRescheduling: request.AllowRescheduling,
+            RescheduleWindowHours: request.RescheduleWindowHours,
+            ActingUserId: actingUserId);
+
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
+    #endregion
+
+    private string? GetCurrentUserId()
+    {
+        // The production JWT carries the identity as the standard nameidentifier claim (ASP.NET
+        // maps "sub" onto it), so reading "sub"/"userId" alone found nothing and every caller was
+        // treated as somebody else — a person could not even edit their own profile.
+        return User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirst("sub")?.Value
+            ?? User.FindFirst("userId")?.Value;
+    }
+
+    private string? GetCurrentUserProviderId()
+    {
+        return User.FindFirst("providerId")?.Value;
+    }
+
+
+    #endregion
+}
+
+#region Response Models
+
+public sealed class BusinessInfoResponse
+{
+    public string BusinessName { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string PhoneNumber { get; set; } = string.Empty;
+    public string? Email { get; set; }
+    public string? Website { get; set; }
+}
+
+public sealed class LocationResponse
+{
+    public string AddressLine1 { get; set; } = string.Empty;
+    public string? AddressLine2 { get; set; }
+    public string City { get; set; } = string.Empty;
+    public string? State { get; set; }
+    public string PostalCode { get; set; } = string.Empty;
+    public string Country { get; set; } = "Iran";
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+    public string Street { get; set; }
+}
+
+public sealed class WorkingHoursResponse
+{
+    public Dictionary<string, BusinessHoursDetailResponse?> BusinessHours { get; set; } = new();
+    //public Dictionary<string, DayScheduleRequest> WorkingHours { get; set; }
+}
+
+public sealed class BusinessHoursDetailResponse
+{
+    public int DayOfWeek { get; set; }
+    public bool IsOpen { get; set; }
+    public string OpenTime { get; set; } = string.Empty;
+    public string CloseTime { get; set; } = string.Empty;
+}
+
+public sealed class ServiceDetailResponse
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public int DurationMinutes { get; set; }
+    public decimal Price { get; set; }
+    public string Currency { get; set; } = PlatformCurrency.Code;
+    public string? Category { get; set; }
+    public string? Type { get; set; }
+    public string? Status { get; set; }
+}
+
+#endregion
+
+#region Request Models for Provider Settings
+
+public sealed class AddServiceRequest
+{
+    public string ServiceName { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public int DurationHours { get; set; }
+    public int DurationMinutes { get; set; }
+    public decimal Price { get; set; }
+    public string? Currency { get; set; }
+    public string? Category { get; set; }
+    public bool IsMobileService { get; set; }
+
+    // Aliases for backward compatibility
+    public int Duration { get => DurationMinutes; set => DurationMinutes = value; }
+    public decimal BasePrice { get => Price; set => Price = value; }
+}
+
+public sealed class UpdateProviderServiceRequest
+{
+    public string ServiceName { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public int DurationHours { get; set; }
+    public int DurationMinutes { get; set; }
+    public decimal Price { get; set; }
+    public string? Currency { get; set; }
+    public string? Category { get; set; }
+    public bool IsMobileService { get; set; }
+}
+
+/// <summary>
+/// Request to update business hours with breaks
+/// </summary>
+public sealed class UpdateBusinessHoursRequestDto
+{
+    public List<DayHoursDto> BusinessHours { get; set; } = new();
+}
+
+/// <summary>
+/// Request to add a holiday
+/// </summary>
+public sealed class AddHolidayRequestDto
+{
+    public DateOnly Date { get; set; }
+    public string Reason { get; set; } = string.Empty;
+    public bool IsRecurring { get; set; }
+    public string? Pattern { get; set; }
+}
+
+/// <summary>
+/// Request to add an exception schedule
+/// </summary>
+public sealed class AddExceptionRequestDto
+{
+    public DateOnly Date { get; set; }
+    public TimeOnly? OpenTime { get; set; }
+    public TimeOnly? CloseTime { get; set; }
+    public string Reason { get; set; } = string.Empty;
+}
+
+#endregion

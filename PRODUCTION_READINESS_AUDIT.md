@@ -1,4 +1,4 @@
-# Booksy — Independent Production Readiness Audit (GO / NO-GO)
+# AsanRezerve — Independent Production Readiness Audit (GO / NO-GO)
 
 **Date:** 2026-07-30 · **Scope:** whole platform — backend (modular monolith), Flutter customer/provider apps, Vue admin/frontend, payments, notifications, booking, financial flows, security, performance, migrations, infrastructure, testing.
 **Stance:** reviewed as an independent senior architect. Nothing is assumed correct because it was built here; claims below are backed by code, tests, or `dotnet` tooling output. Where something could not be verified end-to-end, it is marked as such.
@@ -100,7 +100,7 @@ invalidation handler.
 - **B4 — web return pages: DONE + VERIFIED (2026-08-09).** The backend callback already redirected to
   `{ClientUrl}/payment/success|failure`, but **no such routes existed** — a paying web customer landed on a 404, so
   the *existing* web flow was broken independently of mobile. Added `payment.routes.ts` (public, so a returning
-  customer is never bounced to login) plus `PaymentSuccessView`/`PaymentFailureView` in `booksy-frontend`. The
+  customer is never bounced to login) plus `PaymentSuccessView`/`PaymentFailureView` in `asanrezerve-frontend`. The
   success page **never treats the URL as proof of payment**: it re-reads server state (`getPaymentById`, or the
   idempotent verify-by-authority) and only then announces success; when it cannot confirm it shows a neutral
   "couldn't confirm yet" state that explicitly discourages paying twice. **10 vitest tests, 0 TS errors repo-wide.**

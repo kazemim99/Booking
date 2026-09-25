@@ -1,0 +1,110 @@
+﻿// ========================================
+// AsanRezerve.ServiceCatalog.Application/Commands/Payment/CapturePayment/CapturePaymentCommandHandler.cs
+// ========================================
+using AsanRezerve.ServiceCatalog.Application.Services.Notifications;
+using AsanRezerve.Core.Application.Abstractions;
+using AsanRezerve.Core.Application.Exceptions;
+using AsanRezerve.Core.Domain.Exceptions;
+using AsanRezerve.ServiceCatalog.Application.Abstractions.Persistence;
+using AsanRezerve.ServiceCatalog.Domain.Repositories;
+using AsanRezerve.ServiceCatalog.Domain.ValueObjects;
+using Microsoft.Extensions.Logging;
+
+namespace AsanRezerve.ServiceCatalog.Application.Commands.Payment.CapturePayment
+{
+    /// <summary>
+    /// Handler for capturing previously authorized payments
+    /// </summary>
+    public sealed class CapturePaymentCommandHandler : ICommandHandler<CapturePaymentCommand, CapturePaymentResult>
+    {
+        private readonly IPaymentWriteRepository _paymentRepository;
+        private readonly IServiceCatalogUnitOfWork _unitOfWork;
+        private readonly INotificationRaiser _notifications;
+        private readonly ILogger<CapturePaymentCommandHandler> _logger;
+
+        public CapturePaymentCommandHandler(
+            IPaymentWriteRepository paymentRepository,
+            IServiceCatalogUnitOfWork unitOfWork,
+            INotificationRaiser notifications,
+            ILogger<CapturePaymentCommandHandler> logger)
+        {
+            _paymentRepository = paymentRepository ?? throw new ArgumentNullException(nameof(paymentRepository));
+            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            _notifications = notifications;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        public async Task<CapturePaymentResult> Handle(CapturePaymentCommand request, CancellationToken cancellationToken)
+        {
+            _logger.LogInformation("Capturing payment {PaymentId}, amount: {Amount}",
+                request.PaymentId, request.AmountToCapture?.ToString() ?? "full");
+
+            // Load payment
+            var paymentId = PaymentId.From(request.PaymentId);
+            var payment = await _paymentRepository.GetByIdAsync(paymentId, cancellationToken);
+
+            // These three are answers to the caller, not server faults: InvalidOperationException is
+            // unmapped by ExceptionHandlingMiddleware, so capturing an unknown payment used to answer
+            // 500 instead of 404, and capturing one twice 500 instead of 400.
+            if (payment == null)
+            {
+                throw new NotFoundException("Payment", request.PaymentId);
+            }
+
+            // Validate payment state
+            if (payment.AuthorizedAt == null)
+            {
+                throw new DomainValidationException(
+                    nameof(request.PaymentId), $"Payment {request.PaymentId} has not been authorized");
+            }
+
+            if (payment.CapturedAt != null)
+            {
+                throw new DomainValidationException(
+                    nameof(request.PaymentId), $"Payment {request.PaymentId} has already been captured");
+            }
+
+            // Capture the payment in domain
+            // Note: Stripe payment intents are captured automatically when created with Confirm=true
+            // This handler is for manual capture scenarios or when authorization was done separately
+            payment.Capture(payment.PaymentIntentId);
+
+            // Persist. This command is INonTransactionalCommand (money-moving): commit our own single, retry-safe
+            // unit so the capture is never re-executed by a transient-fault retry.
+            await _paymentRepository.UpdateAsync(payment, cancellationToken);
+
+            // The customer is entitled to the record of money leaving their account. Recorded before the
+            // commit so the same CommitAsync writes both.
+            await _notifications.RaiseAsync(
+                Domain.Enums.NotificationEventCode.PaymentReceived,
+                payment.CustomerId.Value,
+                dedupKey: payment.Id.Value,
+                parameters: new Dictionary<string, string>
+                {
+                    [NotificationParameter.Amount] = payment.PaidAmount.Amount.ToString("N0"),
+                },
+                subjectType: "Payment",
+                subjectId: payment.Id.Value,
+                cancellationToken: cancellationToken);
+            await _unitOfWork.CommitAsync(cancellationToken);
+
+            _logger.LogInformation("Payment {PaymentId} captured successfully, status: {Status}",
+                payment.Id.Value, payment.Status);
+
+            return new CapturePaymentResult(
+                payment.Id.Value,
+                payment.BookingId?.Value ?? Guid.Empty,
+                payment.CustomerId.Value,
+                payment.ProviderId.Value,
+                payment.Amount.Amount,
+                payment.Amount.Currency,
+                payment.Status.ToString(),
+                payment.Method.ToString(),
+                payment.PaymentIntentId,
+                payment.CapturedAt!.Value,
+                payment.CreatedAt,
+                true,
+                null);
+        }
+    }
+}

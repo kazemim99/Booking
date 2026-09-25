@@ -1,0 +1,440 @@
+import 'package:asan_rezerve_provider_app/features/notifications/presentation/inbox_cubit.dart';
+import 'package:bloc_test/bloc_test.dart';
+import 'package:asan_rezerve_provider_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_provider_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_provider_app/features/auth/domain/entities/provider_session.dart';
+import 'package:asan_rezerve_provider_app/features/auth/domain/entities/provider_status.dart';
+import 'package:asan_rezerve_provider_app/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:asan_rezerve_provider_app/features/auth/presentation/bloc/auth_event.dart';
+import 'package:asan_rezerve_provider_app/features/auth/presentation/bloc/auth_state.dart';
+import 'package:asan_rezerve_provider_app/features/home/domain/entities/home_booking.dart';
+import 'package:asan_rezerve_provider_app/features/home/domain/entities/home_context.dart';
+import 'package:asan_rezerve_provider_app/features/home/domain/entities/home_enums.dart';
+import 'package:asan_rezerve_provider_app/features/home/domain/entities/home_snapshot.dart';
+import 'package:asan_rezerve_provider_app/features/home/presentation/cubit/home_cubit.dart';
+import 'package:asan_rezerve_provider_app/features/home/presentation/pages/home_page.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+class _MockHomeCubit extends MockCubit<HomeContext> implements HomeCubit {}
+
+class _MockAuthBloc extends MockBloc<AuthEvent, AuthState>
+    implements AuthBloc {}
+
+/// Builds a [HomeContext] directly (the resolver is unit-tested separately —
+/// widget tests drive the view with explicit contexts).
+HomeContext ctx({
+  SystemState system = SystemState.ok,
+  bool pending = false,
+  HomeBookingMode mode = HomeBookingMode.request,
+  HomeAvailability availability = HomeAvailability.open,
+  HomeMaturity maturity = HomeMaturity.operational,
+  HomeDayContext day = HomeDayContext.active,
+  List<HomeBannerKind> banners = const [],
+  bool isStale = false,
+  List<HomeBooking> bookings = const [],
+  HomeIdentity identity = const HomeIdentity(),
+  int tomorrow = 0,
+  bool allCompleted = false,
+  bool hasUpcoming = true,
+  int completenessPct = 70,
+}) {
+  return HomeContext(
+    system: system,
+    pendingVerification: pending,
+    bookingMode: mode,
+    availability: availability,
+    maturity: maturity,
+    day: day,
+    banners: banners,
+    isStale: isStale,
+    pendingRequestCount:
+        bookings.where((b) => b.status == HomeBookingStatus.pending).length,
+    exceptionCount: 0,
+    alertCount: 0,
+    todayApptCount: bookings.length,
+    allCompleted: allCompleted,
+    hasUpcomingToday: hasUpcoming,
+    hasNudge: false,
+    completenessPct: completenessPct,
+    identity: identity,
+    todayBookings: bookings,
+    tomorrowApptCount: tomorrow,
+  );
+}
+
+HomeBooking booking(
+  String id, {
+  HomeBookingStatus status = HomeBookingStatus.confirmed,
+  // Offset from NOW, not a wall-clock hour: a fixed hour flips from future
+  // to past as the real day advances, making NowNext's اکنون/بعدی label
+  // time-of-day dependent (flaked at 23:00+).
+  Duration fromNow = const Duration(hours: 2),
+}) {
+  return HomeBooking(
+    id: id,
+    start: DateTime.now().add(fromNow),
+    clientName: 'سارا محمدی',
+    clientPhone: '09121112233',
+    serviceName: 'اصلاح مو',
+    status: status,
+  );
+}
+
+ProviderSession get _session => ProviderSession(
+      accessToken: 'a',
+      refreshToken: 'r',
+      expiresIn: 900,
+      user: const ProviderUser(
+        id: 'u-1',
+        phoneNumber: '09121234567',
+        fullName: 'سالن رُز',
+      ),
+      providerId: 'p-1',
+      providerStatus: ProviderStatus.active,
+      isNewProvider: false,
+      requiresOnboarding: false,
+    );
+
+class _MockInboxCubit extends MockCubit<InboxState> implements InboxCubit {}
+
+void main() {
+  late _MockHomeCubit cubit;
+  late _MockAuthBloc authBloc;
+  late _MockInboxCubit inbox;
+
+  setUp(() {
+    cubit = _MockHomeCubit();
+    authBloc = _MockAuthBloc();
+    inbox = _MockInboxCubit();
+    whenListen(inbox, const Stream<InboxState>.empty(), initialState: const InboxState());
+    when(() => inbox.refreshCount()).thenAnswer((_) async {});
+    whenListen(
+      authBloc,
+      const Stream<AuthState>.empty(),
+      initialState: Authenticated(_session),
+    );
+    when(() => cubit.refresh()).thenAnswer((_) async {});
+    when(() => cubit.confirmBooking(any())).thenAnswer((_) async => null);
+    when(() => cubit.declineBooking(any(), reason: any(named: 'reason')))
+        .thenAnswer((_) async => null);
+    when(() => cubit.completeBooking(any())).thenAnswer((_) async => null);
+    when(() => cubit.markNoShow(any())).thenAnswer((_) async => null);
+  });
+
+  Future<void> pump(WidgetTester tester, HomeContext state, {Widget? trailing, Widget? leading}) async {
+    whenListen(cubit, const Stream<HomeContext>.empty(), initialState: state);
+    await tester.pumpWidget(
+      MaterialApp(
+        // The REAL theme: guards the infinite-width button footgun — themed
+        // buttons inside Rows must be width-constrained or layout throws.
+        theme: AppTheme.light,
+        builder: (context, child) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: child ?? const SizedBox.shrink(),
+        ),
+        home: MultiBlocProvider(
+          providers: [
+            BlocProvider<HomeCubit>.value(value: cubit),
+            BlocProvider<AuthBloc>.value(value: authBloc),
+            // HomeView's header now carries the inbox bell, which reads its count from this cubit.
+            BlocProvider<InboxCubit>.value(value: inbox),
+          ],
+          child: HomeView(trailing: trailing, leading: leading),
+        ),
+      ),
+    );
+  }
+
+  group('the reviews card slot (provider-reviews-and-ratings)', () {
+    testWidgets('a working Home shows it after the zones', (tester) async {
+      await pump(tester, ctx(), trailing: const SizedBox(key: Key('trailing-probe'), height: 10));
+      expect(find.byKey(const Key('trailing-probe')), findsOneWidget);
+    });
+
+    testWidgets('a failed Home does not', (tester) async {
+      await pump(tester, ctx(system: SystemState.error),
+          trailing: const SizedBox(key: Key('trailing-probe'), height: 10));
+      expect(find.byKey(const Key('trailing-probe')), findsNothing);
+    });
+  });
+
+  // The one-time notifications card (web push, QA 2026-09-23) rides here: above the zones, where it is seen.
+  group('the leading slot', () {
+    testWidgets('a working Home shows it before the zones', (tester) async {
+      await pump(tester, ctx(), leading: const SizedBox(key: Key('leading-probe'), height: 10));
+
+      final list = tester.widget<ListView>(find.byKey(const Key('home-zone-list')));
+      final children = (list.childrenDelegate as SliverChildListDelegate).children;
+      expect(children.first.key, const Key('leading-probe'));
+    });
+
+    testWidgets('a failed Home does not', (tester) async {
+      await pump(tester, ctx(system: SystemState.error),
+          leading: const SizedBox(key: Key('leading-probe'), height: 10));
+      expect(find.byKey(const Key('leading-probe')), findsNothing);
+    });
+  });
+
+  group('system chrome', () {
+    testWidgets('LOADING renders the skeleton, no zone list', (tester) async {
+      await pump(tester, ctx(system: SystemState.loading));
+      expect(find.byKey(const Key('home-skeleton')), findsOneWidget);
+      expect(find.byKey(const Key('home-zone-list')), findsNothing);
+    });
+
+    testWidgets('ERROR renders centered retry that calls refresh',
+        (tester) async {
+      await pump(tester, ctx(system: SystemState.error));
+      expect(find.text(AppStrings.homeLoadError), findsOneWidget);
+      await tester.tap(find.byKey(const Key('app-error-retry')));
+      verify(() => cubit.refresh()).called(1);
+    });
+  });
+
+  group('Setup composition (first login)', () {
+    testWidgets('pending banner + checklist hero + inviting empty agenda',
+        (tester) async {
+      await pump(
+        tester,
+        ctx(
+          pending: true,
+          maturity: HomeMaturity.setup,
+          day: HomeDayContext.noAppts,
+          banners: const [HomeBannerKind.pending],
+          hasUpcoming: false,
+        ),
+      );
+
+      // Banner (priority 10) above the checklist hero (20) — both on screen.
+      expect(find.byKey(const Key('home-banner-pending')), findsOneWidget);
+      expect(find.text(AppStrings.homeChecklistTitle), findsOneWidget);
+      final bannerY =
+          tester.getTopLeft(find.byKey(const Key('home-banner-pending'))).dy;
+      final checklistY =
+          tester.getTopLeft(find.text(AppStrings.homeChecklistTitle)).dy;
+      expect(bannerY, lessThan(checklistY));
+      // The muted empty agenda sits below the fold (priority 60) — scroll to
+      // it (zone ORDER itself is covered by the registry unit tests).
+      await tester.scrollUntilVisible(
+        find.text(AppStrings.homeAgendaEmptyTitle),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text(AppStrings.homeAgendaEmptyTitle), findsOneWidget);
+      // Create action is present.
+      expect(find.byKey(const Key('home-create-action')), findsOneWidget);
+    });
+  });
+
+  group('Growth composition', () {
+    testWidgets('GetDiscovered hero with share CTA and completeness',
+        (tester) async {
+      await pump(
+        tester,
+        ctx(
+          maturity: HomeMaturity.growth,
+          day: HomeDayContext.noAppts,
+          hasUpcoming: false,
+        ),
+      );
+      expect(find.text(AppStrings.homeDiscoverTitle), findsOneWidget);
+      expect(find.byKey(const Key('home-share-link')), findsOneWidget);
+      expect(find.text(AppStrings.homeChecklistTitle), findsNothing);
+    });
+
+    testWidgets(
+        'pending verification: hero swaps to pending copy and the share '
+        'CTA is disabled (an unapproved business is not bookable)',
+        (tester) async {
+      await pump(
+        tester,
+        ctx(
+          maturity: HomeMaturity.growth,
+          day: HomeDayContext.noAppts,
+          hasUpcoming: false,
+          pending: true,
+          banners: const [HomeBannerKind.pending],
+        ),
+      );
+      // Copy must not claim readiness while the pending banner is shown.
+      expect(find.text(AppStrings.homeDiscoverPendingTitle), findsOneWidget);
+      expect(find.text(AppStrings.homeDiscoverTitle), findsNothing);
+      final share = tester.widget<FilledButton>(find.descendant(
+        of: find.byKey(const Key('home-share-link')),
+        matching: find.byType(FilledButton),
+      ));
+      expect(share.onPressed, isNull);
+    });
+  });
+
+  group('Operational active day', () {
+    final bookings = [
+      booking('b1', status: HomeBookingStatus.completed, fromNow: const Duration(hours: -2)),
+      booking('b2', status: HomeBookingStatus.pending, fromNow: const Duration(hours: 2)),
+      booking('b3', fromNow: const Duration(hours: 2)),
+    ];
+
+    testWidgets(
+        'REQUEST mode: queue above now/next above agenda; real theme lays out '
+        'without the infinite-width crash', (tester) async {
+      await pump(tester, ctx(bookings: bookings));
+
+      // No layout exception with the real theme (footgun guard).
+      expect(tester.takeException(), isNull);
+
+      expect(find.text(AppStrings.homeRequestsTitle), findsOneWidget);
+      final queueY =
+          tester.getTopLeft(find.text(AppStrings.homeRequestsTitle)).dy;
+      final nowNextY = tester.getTopLeft(find.text(AppStrings.homeNextLabel)).dy;
+      final agendaY =
+          tester.getTopLeft(find.text(AppStrings.homeAgendaTitle)).dy;
+      expect(queueY, lessThan(nowNextY));
+      expect(nowNextY, lessThan(agendaY));
+    });
+
+    testWidgets('INSTANT mode: now/next leads and the queue is absent',
+        (tester) async {
+      await pump(
+        tester,
+        ctx(mode: HomeBookingMode.instant, bookings: bookings),
+      );
+      // Exceptions are zero → the queue hides entirely in instant mode.
+      expect(find.text(AppStrings.homeRequestsTitle), findsNothing);
+      expect(find.text(AppStrings.homeNextLabel), findsOneWidget);
+    });
+
+    testWidgets('confirming a request routes to the cubit and reports success',
+        (tester) async {
+      await pump(tester, ctx(bookings: bookings));
+      await tester.ensureVisible(find.byKey(const Key('confirm-b2')));
+      await tester.tap(find.byKey(const Key('confirm-b2')));
+      await tester.pump();
+      verify(() => cubit.confirmBooking('b2')).called(1);
+      await tester.pump();
+      expect(find.text(AppStrings.homeConfirmed), findsOneWidget);
+    });
+
+    testWidgets('end-of-day summary replaces now/next when all completed',
+        (tester) async {
+      await pump(
+        tester,
+        ctx(
+          bookings: [
+            booking('b1', status: HomeBookingStatus.completed, fromNow: const Duration(hours: -2)),
+          ],
+          allCompleted: true,
+          hasUpcoming: false,
+        ),
+      );
+      expect(find.byKey(const Key('home-end-of-day')), findsOneWidget);
+      expect(find.text(AppStrings.homeNextLabel), findsNothing);
+    });
+  });
+
+  group('offline', () {
+    testWidgets('offline banner pins while cached agenda stays visible',
+        (tester) async {
+      await pump(
+        tester,
+        ctx(
+          system: SystemState.offline,
+          banners: const [HomeBannerKind.offline],
+          isStale: true,
+          bookings: [booking('b1', fromNow: const Duration(hours: 2))],
+        ),
+      );
+      expect(find.byKey(const Key('home-banner-offline')), findsOneWidget);
+      expect(find.text(AppStrings.homeAgendaTitle), findsOneWidget);
+    });
+  });
+
+  group('accessibility & RTL', () {
+    testWidgets('operational layout survives 1.3× font scale without '
+        'overflow exceptions', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+      await pump(
+        tester,
+        ctx(bookings: [
+          booking('b1', status: HomeBookingStatus.pending, fromNow: const Duration(hours: 2)),
+          booking('b2', fromNow: const Duration(hours: 2)),
+        ]),
+      );
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('chrome identity (masthead)', () {
+    testWidgets('shows the BUSINESS name from identity, greeting beneath',
+        (tester) async {
+      await pump(
+        tester,
+        ctx(identity: const HomeIdentity(businessName: 'سالن رُز تهران')),
+      );
+      expect(find.text('سالن رُز تهران'), findsOneWidget);
+      // The account holder's name must not headline the masthead.
+      expect(find.textContaining('صبح بخیر، سالن رُز'), findsNothing);
+    });
+
+    testWidgets('falls back to the account display name without identity',
+        (tester) async {
+      await pump(tester, ctx());
+      // Session fullName from the harness.
+      expect(find.text('سالن رُز'), findsOneWidget);
+    });
+  });
+
+  group('activation checklist done-flags', () {
+    testWidgets('reflect live identity signals instead of hardcoded values',
+        (tester) async {
+      await pump(
+        tester,
+        ctx(
+          maturity: HomeMaturity.setup,
+          day: HomeDayContext.noAppts,
+          hasUpcoming: false,
+          identity: const HomeIdentity(
+            hasServices: true,
+            hasStaff: true,
+            hasGallery: false,
+          ),
+        ),
+      );
+      // 2 of 4 done (services + staff; gallery false, share unobservable).
+      expect(find.text(AppStrings.homeChecklistProgress(2, 4)),
+          findsOneWidget);
+    });
+  });
+
+  // Production QA 2026-09-23: the salon app showed «09123135143» as the owner's name.
+  group('never a phone number as the name', () {
+    ProviderSession placeholder(String fullName) => ProviderSession(
+          accessToken: 'a',
+          refreshToken: 'r',
+          expiresIn: 900,
+          user: ProviderUser(id: 'u-1', phoneNumber: '09123135143', fullName: fullName),
+          providerId: 'p-1',
+          providerStatus: ProviderStatus.active,
+          isNewProvider: false,
+          requiresOnboarding: false,
+        );
+
+    for (final fullName in ['', 'ارائه‌دهنده 9123135143']) {
+      testWidgets('masthead and account sheet — name "$fullName"', (tester) async {
+        whenListen(authBloc, const Stream<AuthState>.empty(),
+            initialState: Authenticated(placeholder(fullName)));
+        await pump(tester, ctx());
+
+        expect(find.textContaining('9123135143'), findsNothing, reason: 'the masthead');
+
+        await tester.tap(find.byKey(const Key('home-avatar')));
+        await tester.pumpAndSettle();
+        expect(find.text(AppStrings.ownNameMissing), findsOneWidget);
+        expect(find.textContaining('9123135143'), findsNothing, reason: 'the account sheet');
+      });
+    }
+  });
+}

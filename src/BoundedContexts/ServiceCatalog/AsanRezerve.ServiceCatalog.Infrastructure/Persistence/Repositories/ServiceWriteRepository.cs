@@ -1,0 +1,52 @@
+﻿using AsanRezerve.Infrastructure.Core.Persistence.Base;
+using AsanRezerve.ServiceCatalog.Domain.Aggregates;
+using AsanRezerve.ServiceCatalog.Domain.Repositories;
+using AsanRezerve.ServiceCatalog.Domain.ValueObjects;
+using AsanRezerve.ServiceCatalog.Infrastructure.Persistence.Context;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+namespace AsanRezerve.ServiceCatalog.Infrastructure.Persistence.Repositories
+{
+    public sealed class ServiceWriteRepository : EfWriteRepositoryBase<Service, ServiceId, ServiceCatalogDbContext>, IServiceWriteRepository
+    {
+        public ServiceWriteRepository(
+            ServiceCatalogDbContext context,
+            ILogger<ServiceWriteRepository> logger)
+            : base(context)
+        {
+        }
+
+        public async Task<Service?> GetByIdAsync(ServiceId id, CancellationToken cancellationToken = default)
+        {
+            return await DbSet
+                .Include(s => s.Options)
+                .Include(s => s.PriceTiers)
+                .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+        }
+
+        public async Task<IReadOnlyList<Service>> GetServicesByProviderIdAsync(ProviderId providerId, CancellationToken cancellationToken = default)
+        {
+            return await DbSet
+                .Include(s => s.Options)
+                .Include(s => s.PriceTiers)
+                .Where(s => s.ProviderId == providerId)
+                .ToListAsync(cancellationToken);
+        }
+
+        public async Task SaveServiceAsync(Service service, CancellationToken cancellationToken = default)
+        {
+            await SaveAsync(service, cancellationToken);
+        }
+
+        public async Task UpdateServiceAsync(Service service, CancellationToken cancellationToken = default)
+        {
+            await UpdateAsync(service, cancellationToken);
+        }
+
+        public async Task DeleteServiceAsync(Service service, CancellationToken cancellationToken = default)
+        {
+            await RemoveAsync(service, cancellationToken);
+        }
+    }
+}

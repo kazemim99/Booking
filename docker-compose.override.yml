@@ -1,12 +1,12 @@
 
 
 # services:
-#   # booksy.usermanagement.api:
+#   # AsanRezerve.usermanagement.api:
 #   #   environment:
 #   #     - ASPNETCORE_ENVIRONMENT=Development
 #   #     - ASPNETCORE_HTTP_PORTS=8080
 #   #     - ASPNETCORE_HTTPS_PORTS=8081
-#   #     - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=booksy_user_management;Username=booksy_user;Password=Booksy@2024!
+#   #     - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=asan_rezerve_user_management;Username=asan_rezerve_user;Password=AsanRezerve@2024!
 #   #     - ConnectionStrings__RedisConnection=redis:6379,password=Redis@2024!
 #   #   ports:
 #   #     - "5001:8080"
@@ -20,14 +20,14 @@
 #   #     - postgres
 #   #     - redis
 
-#   # booksy.booking.api:
+#   # AsanRezerve.booking.api:
 #   #   environment:
 #   #     - ASPNETCORE_ENVIRONMENT=Development
 #   #     - ASPNETCORE_HTTP_PORTS=8080
 #   #     - ASPNETCORE_HTTPS_PORTS=8081
-#   #     - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=booksy_booking;Username=booksy_user;Password=Booksy@2024!
+#   #     - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=asan_rezerve_booking;Username=asan_rezerve_user;Password=AsanRezerve@2024!
 #   #     - ConnectionStrings__RedisConnection=redis:6379,password=Redis@2024!
-#   #     - UserManagement__BaseUrl=http://booksy.usermanagement.api:8080
+#   #     - UserManagement__BaseUrl=http://AsanRezerve.usermanagement.api:8080
 #   #   ports:
 #   #     - "5003:8080"
 #   #     - "5004:8081"
@@ -39,17 +39,17 @@
 #   #   depends_on:
 #   #     - postgres
 #   #     - redis
-#   #     - booksy.usermanagement.api
+#   #     - AsanRezerve.usermanagement.api
 
-#   # booksy.serviceprovider.api:
+#   # AsanRezerve.serviceprovider.api:
 #   #   environment:
 #   #     - ASPNETCORE_ENVIRONMENT=Development
 #   #     - ASPNETCORE_HTTP_PORTS=8080
 #   #     - ASPNETCORE_HTTPS_PORTS=8081
-#   #     - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=booksy_service_provider;Username=booksy_user;Password=Booksy@2024!
+#   #     - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=asan_rezerve_service_provider;Username=asan_rezerve_user;Password=AsanRezerve@2024!
 #   #     - ConnectionStrings__RedisConnection=redis:6379,password=Redis@2024!
-#   #     - UserManagement__BaseUrl=http://booksy.usermanagement.api:8080
-#   #     - Booking__BaseUrl=http://booksy.booking.api:8080
+#   #     - UserManagement__BaseUrl=http://AsanRezerve.usermanagement.api:8080
+#   #     - Booking__BaseUrl=http://AsanRezerve.booking.api:8080
 #   #   ports:
 #   #     - "5005:8080"
 #   #     - "5006:8081"
@@ -61,13 +61,13 @@
 #   #   depends_on:
 #   #     - postgres
 #   #     - redis
-#   #     - booksy.usermanagement.api
+#   #     - AsanRezerve.usermanagement.api
 
 #   postgres:
 #     environment:
-#       - POSTGRES_USER=booksy_user
-#       - POSTGRES_PASSWORD=Booksy@2024!
-#       - POSTGRES_DB=booksy_main
+#       - POSTGRES_USER=asan_rezerve_user
+#       - POSTGRES_PASSWORD=AsanRezerve@2024!
+#       - POSTGRES_DB=asan_rezerve_main
 #     ports:
 #       - "5432:5432"
 #     volumes:
@@ -77,14 +77,14 @@
 #   pgadmin:
 #     image: dpage/pgadmin4
 #     environment:
-#       - PGADMIN_DEFAULT_EMAIL=admin@booksy.com
+#       - PGADMIN_DEFAULT_EMAIL=admin@AsanRezerve.com
 #       - PGADMIN_DEFAULT_PASSWORD=admin
 #     ports:
 #       - "5050:80"
 #     depends_on:
 #       - postgres
 #     networks:
-#       - booksy-network
+#       - asan-rezerve-network
 
 #   redis:
 #     command: redis-server --requirepass Redis@2024!

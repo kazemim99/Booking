@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NetArchTest.Rules" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The assemblies under test. Infrastructure is needed for the EF model conventions
+         (ADR-005); Application for the money-command rule (ADR-006). -->
+    <ProjectReference Include="..\..\src\BoundedContexts\ServiceCatalog\AsanRezerve.ServiceCatalog.Application\AsanRezerve.ServiceCatalog.Application.csproj" />
+    <ProjectReference Include="..\..\src\BoundedContexts\ServiceCatalog\AsanRezerve.ServiceCatalog.Infrastructure\AsanRezerve.ServiceCatalog.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Core\AsanRezerve.Core.Application\AsanRezerve.Core.Application.csproj" />
+    <ProjectReference Include="..\..\src\Core\AsanRezerve.Core.Domain\AsanRezerve.Core.Domain.csproj" />
+    <!-- Bounded-context isolation: UserManagement reaches ServiceCatalog only through its own ports. -->
+    <ProjectReference Include="..\..\src\UserManagement\AsanRezerve.UserManagement.Application\AsanRezerve.UserManagement.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

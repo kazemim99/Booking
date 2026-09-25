@@ -1,7 +1,7 @@
 # Remove Staff Member - Complete Implementation Guide
 
 ## Overview
-This guide explains how to remove a staff member from an organization in the Booksy application.
+This guide explains how to remove a staff member from an organization in the AsanRezerve application.
 
 ## Architecture Flow
 

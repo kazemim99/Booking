@@ -1,6 +1,6 @@
-# Booksy DTO Mapping Reference
+# AsanRezerve DTO Mapping Reference
 
-This document maps Data Transfer Objects (DTOs) across all three layers of the Booksy platform:
+This document maps Data Transfer Objects (DTOs) across all three layers of the AsanRezerve platform:
 - **Backend (C#)**: ASP.NET Core API request/response models
 - **Frontend Vue**: TypeScript interfaces/types
 - **Flutter App**: Dart models with JSON serialization
@@ -819,7 +819,7 @@ count). Always read them together — `totalReviews === 0` is "no reviews yet".
 |------------|--------------|----------------|-------|
 | `PagedResult<T>` | `PaginatedBookingsResponse` | `IPaginatedResponse<T>` | Generic pagination |
 
-**Backend** (`src/Infrastructure/Booksy.Core.Application/DTOs/PagedResult.cs`):
+**Backend** (`src/Infrastructure/AsanRezerve.Core.Application/DTOs/PagedResult.cs`):
 ```csharp
 public class PagedResult<T> {
     public IReadOnlyList<T> Items { get; init; }

@@ -6,7 +6,7 @@ The `BookingCalendar.vue` component provides a full-featured Persian/Jalali cale
 
 ## Location
 
-`booksy-frontend/src/modules/provider/components/calendar/BookingCalendar.vue`
+`asanrezerve-frontend/src/modules/provider/components/calendar/BookingCalendar.vue`
 
 ## Features
 

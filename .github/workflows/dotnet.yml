@@ -9,7 +9,7 @@ on:
 
 env:
   DOTNET_VERSION: '9.0.x'
-  SOLUTION_PATH: './Booksy.sln'
+  SOLUTION_PATH: './AsanRezerve.sln'
 
 jobs:
   # Job 1: Build + unit tests.
@@ -47,7 +47,7 @@ jobs:
 
     # The filter selects by namespace: every unit project's tests live under *.UnitTests.*, the
     # architecture rules under *.ArchitectureTests.*. Two projects joined this tier in 2026-09
-    # (Booksy.ServiceCatalog.Api.UnitTests, Booksy.Infrastructure.External.UnitTests) — ~105 tests
+    # (AsanRezerve.ServiceCatalog.Api.UnitTests, AsanRezerve.Infrastructure.External.UnitTests) — ~105 tests
     # that used to sit inside the Docker-gated integration project and so never ran here.
     - name: Run unit tests
       run: >-
@@ -108,7 +108,7 @@ jobs:
   #
   # The comment that stood here said the suite "does not currently pass" because it was written against
   # the retired per-service hosts. That was true when it was written and is not true now: the
-  # ServiceCatalog suite was retargeted at Booksy.Host in August, tests/known-failures.txt is empty, and
+  # ServiceCatalog suite was retargeted at AsanRezerve.Host in August, tests/known-failures.txt is empty, and
   # the last three FULL verifies were green at 513 + 42 + 21 tests. The strongest gate the project has
   # was running on developer machines only.
   #
@@ -153,7 +153,7 @@ jobs:
     # now one host, one project.
     - name: Host integration tests
       run: >-
-        dotnet test tests/Booksy.Host.IntegrationTests
+        dotnet test tests/AsanRezerve.Host.IntegrationTests
         --configuration Release --no-build
         --logger "trx;LogFileName=host-integration-tests.trx"
         --results-directory ./TestResults

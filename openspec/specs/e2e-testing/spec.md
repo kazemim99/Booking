@@ -5,10 +5,10 @@ TBD - created by archiving change add-playwright-e2e. Update Purpose after archi
 ## Requirements
 ### Requirement: Playwright E2E harness
 
-The system SHALL provide a Playwright (TypeScript) end-to-end test harness in `booksy-frontend/` that drives the real Vue application in a Chromium browser against a running monolith stack.
+The system SHALL provide a Playwright (TypeScript) end-to-end test harness in `asanrezerve-frontend/` that drives the real Vue application in a Chromium browser against a running monolith stack.
 
 #### Scenario: Suite is runnable locally
-- **WHEN** a developer runs `npm run test:e2e` in `booksy-frontend/` with the backend stack up and the sandbox toggles set
+- **WHEN** a developer runs `npm run test:e2e` in `asanrezerve-frontend/` with the backend stack up and the sandbox toggles set
 - **THEN** Playwright launches Chromium, auto-starts the frontend dev server via the `webServer` config, executes the specs, and produces an HTML report
 
 #### Scenario: Failure diagnostics are captured
@@ -76,7 +76,7 @@ The system SHALL provide a CI job that runs the Playwright suite headless agains
 The E2E suite SHALL verify the environment is reachable and correctly configured before Playwright launches any browser test, and SHALL fail fast with a clear diagnostic message rather than letting individual specs time out against a down or misconfigured stack.
 
 #### Scenario: Environment is down
-- **WHEN** `npm run e2e:pw` is invoked and the Booksy host is not reachable (or does not accept the sandbox OTP flow)
+- **WHEN** `npm run e2e:pw` is invoked and the AsanRezerve host is not reachable (or does not accept the sandbox OTP flow)
 - **THEN** the run fails within seconds during global setup with a message identifying which check failed (host unreachable vs. auth not validating), before any Playwright test or browser starts
 
 #### Scenario: Environment is healthy

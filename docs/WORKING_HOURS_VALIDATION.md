@@ -350,7 +350,7 @@ const timeToMinutes = (time: { hours: number, minutes: number }): number => {
 ## Components Involved
 
 ### 1. WorkingHoursStepNew.vue
-**Location**: `booksy-frontend/src/modules/provider/components/registration/steps/WorkingHoursStepNew.vue`
+**Location**: `asanrezerve-frontend/src/modules/provider/components/registration/steps/WorkingHoursStepNew.vue`
 
 **Validates**:
 - At least one day open
@@ -363,7 +363,7 @@ const timeToMinutes = (time: { hours: number, minutes: number }): number => {
 ---
 
 ### 2. DayScheduleModal.vue
-**Location**: `booksy-frontend/src/shared/components/schedule/DayScheduleModal.vue`
+**Location**: `asanrezerve-frontend/src/shared/components/schedule/DayScheduleModal.vue`
 
 **Validates**:
 - End time > start time

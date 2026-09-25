@@ -1,0 +1,61 @@
+using AsanRezerve.Core.Application.Abstractions.CQRS;
+using AsanRezerve.Core.Application.Exceptions;
+using AsanRezerve.Core.Domain.Exceptions;
+using AsanRezerve.ServiceCatalog.Domain.Enums;
+using AsanRezerve.ServiceCatalog.Domain.Repositories;
+using AsanRezerve.ServiceCatalog.Domain.ValueObjects;
+using Microsoft.Extensions.Logging;
+
+namespace AsanRezerve.ServiceCatalog.Application.Queries.ProviderHierarchy.GetPendingInvitations
+{
+    public sealed class GetPendingInvitationsQueryHandler : IQueryHandler<GetPendingInvitationsQuery, GetPendingInvitationsResult>
+    {
+        private readonly IProviderReadRepository _providerRepository;
+        private readonly IProviderInvitationReadRepository _invitationRepository;
+        private readonly ILogger<GetPendingInvitationsQueryHandler> _logger;
+
+        public GetPendingInvitationsQueryHandler(
+            IProviderReadRepository providerRepository,
+            IProviderInvitationReadRepository invitationRepository,
+            ILogger<GetPendingInvitationsQueryHandler> logger)
+        {
+            _providerRepository = providerRepository;
+            _invitationRepository = invitationRepository;
+            _logger = logger;
+        }
+
+        public async Task<GetPendingInvitationsResult> Handle(GetPendingInvitationsQuery request, CancellationToken cancellationToken)
+        {
+            _logger.LogDebug("Getting pending invitations for organization {OrganizationId}", request.OrganizationId);
+
+            var organizationId = ProviderId.From(request.OrganizationId);
+
+            // Validate organization
+            var organization = await _providerRepository.GetByIdAsync(organizationId, cancellationToken);
+            if (organization == null)
+                throw new NotFoundException($"Organization with ID {request.OrganizationId} not found");
+
+            // Get pending invitations
+            var invitations = await _invitationRepository.GetByOrganizationIdAndStatusAsync(
+                organizationId, InvitationStatus.Pending, cancellationToken);
+
+            // Status stays 'Pending' until something touches the invitation, so a
+            // lapsed one would otherwise linger in the owner's list forever. The
+            // aggregate decides validity (pending AND not past expiry).
+            var invitationDtos = invitations
+                .Where(i => i.IsValid())
+                .Select(i => new InvitationDto(
+                InvitationId: i.Id,
+                PhoneNumber: i.PhoneNumber.Value,
+                InviteeName: i.InviteeName,
+                Message: i.Message,
+                Status: i.Status.ToString(),
+                CreatedAt: i.CreatedAt,
+                ExpiresAt: i.ExpiresAt)).ToList();
+
+            return new GetPendingInvitationsResult(
+                OrganizationId: organizationId.Value,
+                Invitations: invitationDtos);
+        }
+    }
+}

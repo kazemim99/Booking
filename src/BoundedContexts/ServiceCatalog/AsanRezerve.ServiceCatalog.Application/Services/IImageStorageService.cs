@@ -1,0 +1,12 @@
+using Microsoft.AspNetCore.Http;
+
+namespace AsanRezerve.ServiceCatalog.Application.Services;
+
+public interface IImageStorageService
+{
+    Task<string> SaveProfileImageAsync(Guid providerId, IFormFile image);
+    Task<string> SaveBusinessLogoAsync(Guid providerId, IFormFile image);
+    Task DeleteImageAsync(string imageUrl);
+    bool IsValidImageType(IFormFile file);
+    Task<string?> MoveImageToProviderAsync(string currentImageUrl, Guid newProviderId);
+}

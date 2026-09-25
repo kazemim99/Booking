@@ -80,7 +80,7 @@ Examples:
 - State machine transitions.
 - Notification triggering.
 
-In this repository, acceptance scenarios for ServiceCatalog behavior are xUnit integration tests under `tests/Booksy.Host.IntegrationTests/ServiceCatalog/` — one test class per business area, named for the scenario it proves. Reqnroll/Gherkin BDD was retired 2026-09-11: 95% of its scenarios had never run (unbound steps), and the rest were duplicated by, or ported into, xUnit tests — see `openspec/changes/_inline/retire-reqnroll/tasks.md`.
+In this repository, acceptance scenarios for ServiceCatalog behavior are xUnit integration tests under `tests/AsanRezerve.Host.IntegrationTests/ServiceCatalog/` — one test class per business area, named for the scenario it proves. Reqnroll/Gherkin BDD was retired 2026-09-11: 95% of its scenarios had never run (unbound steps), and the rest were duplicated by, or ported into, xUnit tests — see `openspec/changes/_inline/retire-reqnroll/tasks.md`.
 
 #### Unit Tests are preferred for:
 
@@ -215,7 +215,7 @@ Ask these three questions in order. The first "yes" is the level.
    `DbContext`, it is not a unit test — and if it does not, it does not belong in an integration project.*
 2. **Does correctness depend on something only the real stack provides** — EF mapping and conventions,
    SQL constraints, transactions and concurrency, the CAP outbox, middleware and the response envelope,
-   auth policy, the composed DI graph, the HTTP contract? → **integration test against `Booksy.Host`**.
+   auth policy, the composed DI graph, the HTTP contract? → **integration test against `AsanRezerve.Host`**.
    Write **one per endpoint per outcome class** (success, unauthenticated, forbidden, not found, one
    representative 400) plus one per business scenario that genuinely spans components. Validation
    permutations are unit tests of the validator, not fifteen HTTP round-trips.
@@ -288,7 +288,7 @@ Avoid: flaky tests, arbitrary sleeps/delays (await deterministic conditions inst
 
 Target meaningful coverage that protects business behavior — never write tests just to raise a percentage. Expected minimums: business logic and core services 90%+, state management (blocs/cubits) 90%+, repositories 80%+, critical user flows 100% via integration and/or E2E tests. Coverage numbers alone never indicate quality.
 
-### Mobile App Testing (`booksy-customer-app`)
+### Mobile App Testing (`asanrezerve-customer-app`)
 
 Run with `flutter analyze` (must be error-free) and `flutter test`. In addition to the general policy, validate whenever the change touches them:
 
@@ -410,7 +410,7 @@ an explicit `Status: DONE` or `Status: STOPPED(...)`.
 
 ### Verification tiers
 
-- **FAST** (after each task): `dotnet build Booksy.sln` + every unit and architecture test
+- **FAST** (after each task): `dotnet build AsanRezerve.sln` + every unit and architecture test
   project. No Docker required. Plus the affected integration test class(es) when the task
   touched persistence, API, or events. The build runs once; every `dotnet test` after it passes
   `--no-build` (re-evaluating the project graph per project cost ~135 s of every FULL run).

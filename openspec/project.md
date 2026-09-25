@@ -13,9 +13,9 @@
 
 ## Purpose
 
-Booksy is a **modular monolith** service-booking and catalog platform. Service providers
+AsanRezerve is a **modular monolith** service-booking and catalog platform. Service providers
 register a business, manage services, staff, working hours, and bookings; customers discover
-providers and book services. A single ASP.NET Core process (`Booksy.Host`) composes every
+providers and book services. A single ASP.NET Core process (`AsanRezerve.Host`) composes every
 bounded context in-process — there are no per-service hosts and no API gateway.
 
 ## Tech Stack
@@ -24,11 +24,11 @@ bounded context in-process — there are no per-service hosts and no API gateway
 
 **Runtime & host**
 - **C# / .NET 9.0** — `<TargetFramework>net9.0</TargetFramework>` in all 29 `.csproj` under `src/` and `tests/`
-- **ASP.NET Core**, single entry point: `src/Host/Booksy.Host/Program.cs` (`Microsoft.NET.Sdk.Web`)
+- **ASP.NET Core**, single entry point: `src/Host/AsanRezerve.Host/Program.cs` (`Microsoft.NET.Sdk.Web`)
 - Controllers are discovered from **two** bounded-context API assemblies via explicit
-  `AddApplicationPart(...)` calls — `Booksy.UserManagement.API` and `Booksy.ServiceCatalog.Api`
+  `AddApplicationPart(...)` calls — `AsanRezerve.UserManagement.API` and `AsanRezerve.ServiceCatalog.Api`
   (`Program.cs`). Those assemblies' own `Program` types are inert; only the Host's runs
-  (`Booksy.Host.csproj` comment + `ProjectReference` block).
+  (`AsanRezerve.Host.csproj` comment + `ProjectReference` block).
 
 **Persistence**
 - **PostgreSQL** via `Npgsql.EntityFrameworkCore.PostgreSQL 9.0.4` on **EF Core 9.0.4**
@@ -42,7 +42,7 @@ bounded context in-process — there are no per-service hosts and no API gateway
 - Migration counts: ServiceCatalog **17**, UserManagement **3**
 - Timestamps: every timestamp column is `timestamp with time zone`, and every `DateTime` is a UTC
   instant. Npgsql runs with its modern timestamp behaviour; both DbContexts apply
-  `UtcDateTimeConverter` (`Booksy.Infrastructure.Core/Persistence/Converters`) so an unmarked
+  `UtcDateTimeConverter` (`AsanRezerve.Infrastructure.Core/Persistence/Converters`) so an unmarked
   (`Kind=Unspecified`) value is read as UTC. The legacy switch was removed 2026-09-11 (FOLLOW-UPS #48)
   — do not reintroduce it: it reads every value back as `Kind=Local`
 
@@ -52,7 +52,7 @@ bounded context in-process — there are no per-service hosts and no API gateway
   — `CapEventBusExtensions.cs:49-65`
 - CAP is registered **once per process**, guarded by an `ICapPublisher` presence check, because
   every context's `AddXInfrastructure()` calls `AddCapEventBus` (`CapEventBusExtensions.cs:41-47`)
-- Single consumer group `booksy`, `ConsumerThreadCount = 1`, retry 3× at 60s, CAP dashboard enabled
+- Single consumer group `asanrezerve`, `ConsumerThreadCount = 1`, retry 3× at 60s, CAP dashboard enabled
 - **There is no message broker.** See "Explicitly not present" below.
 
 **Application layer**
@@ -84,13 +84,13 @@ bounded context in-process — there are no per-service hosts and no API gateway
 - Policy-based authorization: `AddSecurity()` + `AddPolicyAuthorization()` (`Program.cs`)
 
 **Logging**
-- **Serilog** → **Console + rolling daily file** (`logs/booksy-host-.txt`), configured inline in
+- **Serilog** → **Console + rolling daily file** (`logs/asanrezerve-host-.txt`), configured inline in
   `Program.cs` via `UseSerilog(...)` plus `ReadFrom.Configuration`
 - `Serilog.Sinks.Seq` is referenced and an `Observability:Seq` config block exists in
   `appsettings.json`, but **no Serilog sink configuration section exists** in
   `appsettings.json` or `appsettings.Development.json` — the Seq sink is **not wired** in the Host today.
 
-**Third-party integrations** (configured in `src/Host/Booksy.Host/appsettings.json`)
+**Third-party integrations** (configured in `src/Host/AsanRezerve.Host/appsettings.json`)
 - Payments: **ZarinPal** (`Payment:DefaultProvider`), IDPay, Behpardakht enabled; Parsian, Saman disabled.
   `Stripe.net 43.12.0` is referenced.
 - Email: `SendGrid 9.29.3`, `MimeKit 4.14.0`
@@ -104,35 +104,35 @@ These were previously asserted in project documentation and are **false**. Verif
 | Claim | Reality |
 |---|---|
 | RabbitMQ message broker | **No** `DotNetCore.CAP.RabbitMQ` package; no broker service in any `docker-compose*.yml`. Transport is `UseInMemoryMessageQueue()`. |
-| API Gateway (`Booksy.Gateway` / Ocelot) | **No such project** in `Booksy.sln`; no Ocelot package. The only mention is a historical comment in `Program.cs`. |
+| API Gateway (`AsanRezerve.Gateway` / Ocelot) | **No such project** in `AsanRezerve.sln`; no Ocelot package. The only mention is a historical comment in `Program.cs`. |
 | Autofac as DI container | `Autofac.Extensions.DependencyInjection` is referenced, but the container is never swapped. The only `Autofac` usage in `src/` is a stray `using Autofac.Core;` in `ServiceQueryRepository.cs`. |
 | snake_case DB naming via EFCore.NamingConventions | Package referenced by 2 projects, but **`UseSnakeCaseNamingConvention` is never called**. Schema names are inconsistent by hand (`user_management` vs `ServiceCatalog`). |
-| Architecture tests enforcing layer rules | `NetArchTest.Rules 1.3.2` is referenced, but `tests/Booksy.ArchitectureTests/` contains **only an empty template test** (`UnitTest1.Test1()` with no body). No architecture rule is enforced anywhere. |
-| OpenTelemetry / Jaeger / Prometheus / Sentry / App Insights in the running system | All wiring lives in `src/Infrastructure/Booksy.Infrastructure.Monitoring`, which **no project references** (`grep` for `ProjectReference.*Monitoring` returns nothing). It is dead code in the solution. `Program.cs` wires no telemetry. |
+| Architecture tests enforcing layer rules | `NetArchTest.Rules 1.3.2` is referenced, but `tests/AsanRezerve.ArchitectureTests/` contains **only an empty template test** (`UnitTest1.Test1()` with no body). No architecture rule is enforced anywhere. |
+| OpenTelemetry / Jaeger / Prometheus / Sentry / App Insights in the running system | All wiring lives in `src/Infrastructure/AsanRezerve.Infrastructure.Monitoring`, which **no project references** (`grep` for `ProjectReference.*Monitoring` returns nothing). It is dead code in the solution. `Program.cs` wires no telemetry. |
 | Separate per-context databases | One database, three schemas, one connection string. |
 
 ### Frontend
 
-Four client applications live in this repo. **Only `booksy-frontend` is containerized** —
-`booksy-admin` and both Flutter apps appear in no `docker-compose*.yml`.
+Four client applications live in this repo. **Only `asanrezerve-frontend` is containerized** —
+`asanrezerve-admin` and both Flutter apps appear in no `docker-compose*.yml`.
 
-**`booksy-frontend/`** — customer/provider web app (the deployed one)
+**`asanrezerve-frontend/`** — customer/provider web app (the deployed one)
 - Vue **3.5.22**, Pinia **3.0.3**, vue-router **4.5.1**, vue-i18n **10.0.8**, TypeScript, Vite
 - Maps: `@neshan-maps-platform/ol` + `vue3-openlayers`; Persian calendar: `jalaali-js`,
   `vue3-persian-datetime-picker`, `@persian-tools/persian-tools`; charts: `echarts` + `vue-echarts`
 - Tooling: ESLint + Prettier + `vue-tsc`
 - Tests: Vitest (unit/integration), **Cypress** and **Playwright** (`@playwright/test`) for E2E
 
-**`booksy-admin/`** — admin dashboard
+**`asanrezerve-admin/`** — admin dashboard
 - Vue **3.5.24**, **ant-design-vue 4.2.6**, Pinia **3.0.4**, vue-i18n, echarts, axios, dayjs
-- Tests: Vitest only. **No ESLint or Prettier** configured (unlike `booksy-frontend`).
+- Tests: Vitest only. **No ESLint or Prettier** configured (unlike `asanrezerve-frontend`).
 
-**`booksy-customer-app/`** — Flutter (Dart SDK `>=3.0.0 <4.0.0`)
+**`asanrezerve-customer-app/`** — Flutter (Dart SDK `>=3.0.0 <4.0.0`)
 - `flutter_bloc 8.1.3`, `dio`, `go_router 13`, `get_it 7.6.7`, `dartz`, `equatable`
 - `retrofit` + `json_annotation` present (codegen), `flutter_map` + `google_maps_flutter`,
   `geolocator`, `flutter_secure_storage`, `shamsi_date`, `pinput`
 
-**`booksy-provider-app/`** — Flutter
+**`asanrezerve-provider-app/`** — Flutter
 - `flutter_bloc 8.1.6`, `dio`, `go_router 13`, `get_it 7.6.7`, `dartz`, `flutter_map 8.1.1`, `pinput`
 
 ### DevOps & Infrastructure
@@ -145,10 +145,10 @@ Four client applications live in this repo. **Only `booksy-frontend` is containe
 | `redis` | `redis:7-alpine` | 6379 |
 | `seq` | `datalust/seq:latest` | 5341 |
 | `pgadmin` | `dpage/pgadmin4` | 5050 |
-| `booksy-api` | built from `src/Host/Booksy.Host/Dockerfile` | dev `5000:8080`, prod `5000:80` |
-| `booksy-frontend` | built from `booksy-frontend/Dockerfile` | 80/443 |
+| `asanrezerve-api` | built from `src/Host/AsanRezerve.Host/Dockerfile` | dev `5000:8080`, prod `5000:80` |
+| `asanrezerve-frontend` | built from `asanrezerve-frontend/Dockerfile` | 80/443 |
 
-Network: `booksy-network`. Note the internal API port **differs between dev (8080) and prod (80)** —
+Network: `asanrezerve-network`. Note the internal API port **differs between dev (8080) and prod (80)** —
 set by `ASPNETCORE_URLS` in each compose file.
 
 **CI/CD** — GitHub Actions, 5 workflows in `.github/workflows/`:
@@ -168,7 +168,7 @@ set by `ASPNETCORE_URLS` in each compose file.
 **Backend (C#)**
 - **Nullable reference types: enabled** in 18 of the `src/` projects (not globally enforced —
   there is no `Directory.Build.props`)
-- **`TreatWarningsAsErrors` is set in exactly one project**: `Booksy.Core.Domain`. It is *not*
+- **`TreatWarningsAsErrors` is set in exactly one project**: `AsanRezerve.Core.Domain`. It is *not*
   solution-wide.
 - `GenerateDocumentationFile` in 3 projects; `.editorconfig` contains a single rule
   (`dotnet_diagnostic.CS1591.severity = none`)
@@ -178,7 +178,7 @@ set by `ASPNETCORE_URLS` in each compose file.
 
 **Frontend (TypeScript/Vue)**
 - Composition API with `<script setup>`; feature-based module folders (views, components, stores, types)
-- ESLint + Prettier in `booksy-frontend` only
+- ESLint + Prettier in `asanrezerve-frontend` only
 
 ### Architecture Patterns
 
@@ -215,13 +215,13 @@ Infrastructure. Background work uses `BackgroundService` — **there is no Hangf
   ported to xUnit first. See `openspec/changes/_inline/retire-reqnroll/tasks.md`
 - Unit test projects by size: ServiceCatalog.Domain (25 files), ServiceCatalog.Application (17),
   UserManagement.Application (6), Host.CompositionTests (2), Core.Domain (1), Infrastructure.Core (1)
-- `Booksy.ArchitectureTests` exists but is an **empty stub** — see "Explicitly not present"
+- `AsanRezerve.ArchitectureTests` exists but is an **empty stub** — see "Explicitly not present"
 
 **API-level smoke** — `tests/e2e/keystone-booking-flow.sh` (dependency-free curl script covering
 provider → staff → customer → booking) and `tests/e2e/deposit-checkout-flow.sh`. The keystone
 script is a **deploy gate** in `deploy.yml`.
 
-**Frontend** — Vitest (unit/integration), Playwright (`booksy-frontend/e2e/`), Cypress.
+**Frontend** — Vitest (unit/integration), Playwright (`asanrezerve-frontend/e2e/`), Cypress.
 
 **Current gap to be aware of**: the general CI workflow runs no tests; only `deploy.yml` gates on
 unit tests + the keystone script. Integration tests do not run in CI.
@@ -272,7 +272,7 @@ Bookings are an aggregate inside ServiceCatalog.
   data access goes through repositories
 - Ledger entries are append-only; corrections are compensating transactions, never edits
 - Warnings-as-errors is **not** solution-wide today — do not assume the compiler will catch
-  what only `Booksy.Core.Domain` enforces
+  what only `AsanRezerve.Core.Domain` enforces
 
 ## External Dependencies
 
@@ -281,4 +281,4 @@ Bookings are an aggregate inside ServiceCatalog.
 **Third-party services** — ZarinPal / IDPay / Behpardakht (payment gateways, Iranian market),
 Rahyab (SMS), SendGrid (email), Neshan Maps (web maps), Google Maps + OpenStreetMap via
 `flutter_map` (mobile), Azure Blob Storage (optional image storage),
-Azure Key Vault (optional secrets, `Booksy.Configuration.KeyVault`).
+Azure Key Vault (optional secrets, `AsanRezerve.Configuration.KeyVault`).

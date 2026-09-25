@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- ASP.NET Core types (Microsoft.AspNetCore.Mvc) come from the shared framework.
+         Was PackageReference Microsoft.AspNetCore.Mvc.Core 2.3.0 — an ASP.NET Core *2.x* package on a
+         net9.0 project, which dragged in Microsoft.Extensions.DependencyModel 2.1.0 -> Newtonsoft.Json 9.0.1
+         (HIGH advisory). The shared framework supplies the same types at 9.0 with no transitive baggage. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="MediatR" Version="13.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="9.0.19" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.19" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AsanRezerve.Core.Domain\AsanRezerve.Core.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

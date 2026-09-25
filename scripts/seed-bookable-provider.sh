@@ -17,15 +17,15 @@
 # old script now fails outright against a migrated database — and, more to the
 # point, it seeded a shape the booking engine no longer resolves.
 #
-# Prereqs: the Postgres dev container (booksy-pg-dev) is running and migrated.
+# Prereqs: the Postgres dev container (asanrezerve-pg-dev) is running and migrated.
 # Usage:   bash scripts/seed-bookable-provider.sh
 # Re-runnable: each run creates a fresh member + service and prints their IDs.
 # =============================================================================
 set -euo pipefail
 
-PG="${PG_CONTAINER:-booksy-pg-dev}"
-DB="${PG_DB:-booksy}"
-USER="${PG_USER:-booksy_admin}"
+PG="${PG_CONTAINER:-asanrezerve-pg-dev}"
+DB="${PG_DB:-asanrezerve}"
+USER="${PG_USER:-asanrezerve_admin}"
 SC='"ServiceCatalog"'
 
 psql() { docker exec -i "$PG" psql -U "$USER" -d "$DB" "$@"; }

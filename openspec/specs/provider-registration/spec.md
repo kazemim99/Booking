@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This specification defines the provider registration flow for the Booksy platform. The registration process guides new service providers through a comprehensive 9-step onboarding experience, collecting all necessary business information to create a complete provider profile.
+This specification defines the provider registration flow for the AsanRezerve platform. The registration process guides new service providers through a comprehensive 9-step onboarding experience, collecting all necessary business information to create a complete provider profile.
 
 **Status**: ✅ Production Ready (as of 2025-11-11)
 

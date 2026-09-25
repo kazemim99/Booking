@@ -1,12 +1,12 @@
-# Booksy - Stop All Dev Services
+# AsanRezerve - Stop All Dev Services
 # Kills the process trees for windows started by run-all.ps1: the backend
-# (Booksy.Host), the two Flutter web apps, the admin panel, and the legacy
+# (AsanRezerve.Host), the two Flutter web apps, the admin panel, and the legacy
 # customer web frontend. Matches on the launcher's own command line rather
 # than bare process names, since dotnet.exe/node.exe/flutter are ambiguous
 # on their own.
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  Booksy - Stopping Dev Services" -ForegroundColor Cyan
+Write-Host "  AsanRezerve - Stopping Dev Services" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -20,11 +20,11 @@ function Stop-ProcessTree {
 }
 
 $patterns = @(
-    @{ Name = "Backend (Booksy.Host)";     Regex = 'Booksy\.Host\.csproj' },
-    @{ Name = "Customer App (Flutter)";    Regex = '[\\/]booksy-customer-app' },
-    @{ Name = "Provider App (Flutter)";    Regex = '[\\/]booksy-provider-app' },
-    @{ Name = "Admin Panel (Vite)";        Regex = '[\\/]booksy-admin' },
-    @{ Name = "Customer Web (Vite)";       Regex = '[\\/]booksy-frontend' }
+    @{ Name = "Backend (AsanRezerve.Host)";     Regex = 'AsanRezerve\.Host\.csproj' },
+    @{ Name = "Customer App (Flutter)";    Regex = '[\\/]asanrezerve-customer-app' },
+    @{ Name = "Provider App (Flutter)";    Regex = '[\\/]asanrezerve-provider-app' },
+    @{ Name = "Admin Panel (Vite)";        Regex = '[\\/]asanrezerve-admin' },
+    @{ Name = "Customer Web (Vite)";       Regex = '[\\/]asanrezerve-frontend' }
 )
 
 $shells = Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction SilentlyContinue

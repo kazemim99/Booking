@@ -1,0 +1,179 @@
+﻿// ========================================
+// AsanRezerve.UserManagement.Infrastructure/Persistence/Seeders/UserManagementDatabaseSeeder.cs
+// ========================================
+using Microsoft.EntityFrameworkCore;
+using AsanRezerve.Core.Application.Abstractions.Persistence;
+using AsanRezerve.UserManagement.Domain.Repositories;
+using AsanRezerve.UserManagement.Domain.Services;
+using AsanRezerve.UserManagement.Infrastructure.Persistence.Seeders;
+using AsanRezerve.UserManagement.Infrastructure.Services.Domain;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using AsanRezerve.UserManagement.Infrastructure.Persistence.Context;
+using AsanRezerve.UserManagement.Infrastructure.Persistence.Repositories;
+using AsanRezerve.UserManagement.Infrastructure.Services.Security;
+using AsanRezerve.UserManagement.Infrastructure.Services.External;
+using AsanRezerve.Infrastructure.Core.Persistence.Base;
+using Microsoft.Extensions.Logging;
+using AsanRezerve.UserManagement.Application.Abstractions.Queries;
+using AsanRezerve.UserManagement.Infrastructure.Queries;
+using AsanRezerve.Infrastructure.Core.DependencyInjection;
+using AsanRezerve.Infrastructure.Core.EventBus;
+using AsanRezerve.Infrastructure.External.Notifications;
+using AsanRezerve.Infrastructure.External.Notifications.Sms;
+using AsanRezerve.Infrastructure.Core.EventBus.Abstractions;
+using AsanRezerve.UserManagement.Application.Services.Interfaces;
+using AsanRezerve.UserManagement.Infrastructure.Services.Application;
+
+namespace AsanRezerve.UserManagement.Infrastructure.DependencyInjection
+{
+    public static class UserManagementInfrastructureExtensions
+    {
+        public static IServiceCollection AddUserManagementInfrastructure(
+            this IServiceCollection services,
+            IConfiguration configuration)
+        {
+
+            // Add DbContext
+            services.AddDbContext<UserManagementDbContext>(options =>
+            {
+                var connectionString = configuration.GetConnectionString("UserManagement")
+                    ?? configuration.GetConnectionString("DefaultConnection");
+
+                // Provider, migrations and warning configuration live in one place so the
+                // integration tests build their contexts identically.
+                UserManagementDbContextOptions.Configure(options, connectionString!);
+
+                // Enable logging in development
+                if (configuration.GetValue<bool>("DatabaseSettings:EnableSensitiveDataLogging"))
+                {
+                    options.EnableSensitiveDataLogging();
+                    options.EnableDetailedErrors();
+                    options.LogTo(Console.WriteLine, LogLevel.Information);
+
+                }
+            });
+
+            services.AddScoped<DbContext>(provider => provider.GetRequiredService<UserManagementDbContext>());
+
+
+            // Register Unit of Work
+            //services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<UserManagementDbContext>());
+            services.AddScoped<IUnitOfWork>(provider =>
+            {
+                var context = provider.GetRequiredService<UserManagementDbContext>();
+                var eventDispatcher = provider.GetRequiredService<IDomainEventDispatcher>();
+                var logger = provider.GetRequiredService<ILogger<EfCoreUnitOfWork<UserManagementDbContext>>>();
+
+                return new EfCoreUnitOfWork<UserManagementDbContext>(context, logger, eventDispatcher);
+            });
+
+            services.AddScoped<IUnitOfWork, EfCoreUnitOfWork<UserManagementDbContext>>();
+
+            // Context-scoped Unit of Work (monolith): handlers inject this marker so they
+            // always commit against the UserManagement DbContext, never another context's.
+            services.AddScoped<AsanRezerve.UserManagement.Application.Abstractions.Persistence.IUserManagementUnitOfWork, UserManagementUnitOfWork>();
+
+
+            // Register Repositories
+
+            services.AddScoped<UserManagementDatabaseSeeder>();
+            services.AddScoped<ISeeder>(sp => sp.GetRequiredService<UserManagementDatabaseSeeder>());
+            
+
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IUserQueryRepository, UserQueryRepository>();
+            services.AddScoped<IPhoneVerificationRepository, PhoneVerificationRepository>();
+            services.AddScoped<ICustomerRepository, CustomerRepository>();
+            services.AddScoped<ICustomerBookingHistoryReadRepository, CustomerBookingHistoryReadRepository>();
+
+            services.AddExternalServices(configuration);
+
+            // Register the single, process-wide SMS gateway. UserManagement used to own a byte-for-byte
+            // copy of the Rahyab sender bound to its own copy of ISmsNotificationService; in the monolith
+            // that meant two typed HttpClients and two registrations racing for the same abstraction.
+            // AddSmsNotificationService is idempotent, so whichever context composes first wins and the
+            // rest are no-ops.
+            services.AddSmsNotificationService(configuration);
+
+            // Register context-specific infrastructure
+            //services.AddScoped<IUnitOfWork, UserManagementUnitOfWork>();
+            //services.AddScoped(typeof(IOutboxProcessor<>), typeof(UserManagementOutboxProcessor));
+
+
+
+            // Add cached repository decorator if caching is enabled
+            if (configuration.GetValue<bool>("CacheSettings:Enabled"))
+            {
+                services.AddScoped<IUserRepository, CachedUserRepository>();
+            }
+
+            // Register Security Services
+            services.AddSingleton<IPasswordHasher, PasswordHasher>();
+            services.AddScoped<IJwtTokenService, JwtTokenService>();
+            services.AddScoped<TwoFactorAuthenticationService>();
+
+
+            // Register Domain Services
+            services.AddScoped<IUserValidationService, UserValidationService>();
+            // The single guarded path for phone → Person (one Person per phone number).
+            services.AddScoped<IPersonProvisioningService, PersonProvisioningService>();
+            services.AddScoped<IReferralService, ReferralService>();
+            services.AddScoped<IPasswordPolicy, PasswordPolicyService>();
+            services.AddScoped<IReferralDomainService, ReferralDomainService>();
+
+            // Register Application Services
+            services.AddScoped<IAuditUserService, AuditUserService>();
+            services.AddScoped<IUserPreferencesService, UserPreferencesService>();
+            services.AddScoped<IUserRegistrationService, UserManagement.Application.Services.Implementations.UserRegistrationService>();
+
+            // Register Database Seeder
+            services.AddScoped<UserManagementDatabaseSeeder>();
+
+            // HTTP Client for ServiceCatalog API
+            services.AddHttpClient("ServiceCatalogAPI", client =>
+            {
+                var baseUrl = configuration["Services:ServiceCatalog:BaseUrl"]
+                    ?? "https://localhost:7002/api";
+                client.BaseAddress = new Uri(baseUrl);
+                client.DefaultRequestHeaders.Add("Accept", "application/json");
+
+                var apiKey = configuration["Services:ServiceCatalog:ApiKey"];
+                if (!string.IsNullOrEmpty(apiKey))
+                {
+                    client.DefaultRequestHeaders.Add("X-API-Key", apiKey);
+                }
+            });
+
+            // Register External Services
+            services.AddScoped<IProviderInfoService, ProviderInfoService>();
+            services.AddScoped<IMembershipInfoService, MembershipInfoService>();
+
+            // Add distributed caching
+            var cacheProvider = configuration.GetValue<string>("CacheSettings:Provider");
+            switch (cacheProvider?.ToLower())
+            {
+                case "redis":
+                    services.AddStackExchangeRedisCache(options =>
+                    {
+                        options.Configuration = configuration.GetConnectionString("Redis");
+                        options.InstanceName = "AsanRezerve:UserManagement:";
+                    });
+                    break;
+                default:
+                    services.AddDistributedMemoryCache();
+                    break;
+            }
+
+            // Add memory cache for local caching
+            services.AddMemoryCache();
+
+            // CAP Event Bus with Outbox Pattern
+            services.AddCapEventBus<UserManagementDbContext>(configuration, "UserManagement");
+
+            return services;
+        }
+    }
+}
+

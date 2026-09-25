@@ -3,7 +3,7 @@
 #
 #   scripts/verify.sh [fast|full] [--filter <dotnet test filter>] [--all] [--skip-build]
 #
-# FAST  build Booksy.sln + every unit/architecture test project. No Docker.
+# FAST  build AsanRezerve.sln + every unit/architecture test project. No Docker.
 # FULL  FAST + Host composition + both integration suites (Testcontainers Postgres) +
 #       type-check/lint in touched Vue apps + analyze/test in touched Flutter apps.
 # Writes .verify/status.json; `tree` is a hash of the working tree so later edits make it stale.
@@ -98,19 +98,19 @@ slowest() { # trxdir outfile — the 20 slowest tests of this run; a class's fir
 }
 
 echo "verify  tier=$TIER  root=$ROOT"
-[ $SKIP_BUILD -eq 0 ] && step build "$ROOT" dotnet build Booksy.sln --nologo -v q
+[ $SKIP_BUILD -eq 0 ] && step build "$ROOT" dotnet build AsanRezerve.sln --nologo -v q
 
 # The solution was just built; without --no-build every `dotnet test` re-evaluates the project graph
 # (5-16 s per unit project, ~30 s per integration project, ~135 s per FULL run). With --skip-build the
 # caller vouched for the build, so each step keeps its own incremental build.
 NOBUILD=(); [ $SKIP_BUILD -eq 0 ] && NOBUILD=(--no-build)
 
-for p in tests/Booksy.Core.Domain.UnitTests tests/Booksy.Infrastructure.Core.UnitTests \
-         tests/Booksy.ServiceCatalog.Domain.UnitTests tests/Booksy.ServiceCatalog.Application.UnitTests \
-         tests/Booksy.ServiceCatalog.Api.UnitTests tests/Booksy.Infrastructure.External.UnitTests \
-         tests/Booksy.ServiceCatalog.Infrastructure.UnitTests \
-         tests/Booksy.UserManagement.Application.UnitTests \
-         tests/Booksy.ArchitectureTests; do
+for p in tests/AsanRezerve.Core.Domain.UnitTests tests/AsanRezerve.Infrastructure.Core.UnitTests \
+         tests/AsanRezerve.ServiceCatalog.Domain.UnitTests tests/AsanRezerve.ServiceCatalog.Application.UnitTests \
+         tests/AsanRezerve.ServiceCatalog.Api.UnitTests tests/AsanRezerve.Infrastructure.External.UnitTests \
+         tests/AsanRezerve.ServiceCatalog.Infrastructure.UnitTests \
+         tests/AsanRezerve.UserManagement.Application.UnitTests \
+         tests/AsanRezerve.ArchitectureTests; do
   step "unit:$(basename "$p")" "$ROOT" dotnet test "$p" ${NOBUILD[@]+"${NOBUILD[@]}"} --nologo -v q
 done
 
@@ -120,7 +120,7 @@ if [ "$TIER" = full ]; then
   TRX_DIR="$VERIFY_DIR/trx"; mkdir -p "$TRX_DIR"; rm -rf "${TRX_DIR:?}"/*
   # One project since docs/TEST_ARCHITECTURE_AUDIT.md Phase 2 slice 4 (was three: SC, UM and
   # Composition each booted their own host).
-  for p in tests/Booksy.Host.IntegrationTests; do
+  for p in tests/AsanRezerve.Host.IntegrationTests; do
     n="db:$(basename "$p")"
     if [ $DOCKER -eq 0 ]; then blocked "$n" "Docker is not running; Testcontainers cannot start Postgres"; continue; fi
     clauses=""
@@ -132,17 +132,17 @@ if [ "$TIER" = full ]; then
     else step "$n" "$ROOT" dotnet test "$p" ${NOBUILD[@]+"${NOBUILD[@]}"} --nologo -v q "${logger[@]}"; fi
   done
   slowest "$TRX_DIR" "$VERIFY_DIR/slowest.txt"
-  for app in booksy-frontend booksy-admin; do
+  for app in asan-rezerve-frontend asan-rezerve-admin; do
     touched "$app" || continue
     [ -d "$app/node_modules" ] || { blocked "vue:$app" "no node_modules; run 'npm ci' in $app"; continue; }
     step "vue:$app:type-check" "$ROOT/$app" npm run --silent type-check
-    # booksy-admin's vitest suite was never run by any gate — see verify.ps1.
-    [ "$app" = booksy-admin ] && step "vue:$app:unit" "$ROOT/$app" npx vitest run
-    [ "$app" = booksy-frontend ] && step "vue:$app:lint" "$ROOT/$app" npm run --silent lint:check
+    # asan-rezerve-admin's vitest suite was never run by any gate — see verify.ps1.
+    [ "$app" = asan-rezerve-admin ] && step "vue:$app:unit" "$ROOT/$app" npx vitest run
+    [ "$app" = asan-rezerve-frontend ] && step "vue:$app:lint" "$ROOT/$app" npm run --silent lint:check
     # Unit tests — see verify.ps1 for why, and for the two excluded EMPTY placeholder specs.
-    [ "$app" = booksy-frontend ] && step "vue:$app:unit" "$ROOT/$app" npx vitest run src --exclude src/modules/auth/__tests__/auth.api.spec.ts --exclude src/modules/auth/__tests__/LoginForm.spec.ts
+    [ "$app" = asan-rezerve-frontend ] && step "vue:$app:unit" "$ROOT/$app" npx vitest run src --exclude src/modules/auth/__tests__/auth.api.spec.ts --exclude src/modules/auth/__tests__/LoginForm.spec.ts
   done
-  for app in booksy-customer-app booksy-provider-app; do
+  for app in asan-rezerve-customer-app asan-rezerve-provider-app; do
     touched "$app" || continue
     command -v flutter >/dev/null || { blocked "flutter:$app" "flutter not on PATH"; continue; }
     step "flutter:$app:analyze" "$ROOT/$app" flutter analyze --no-pub --no-fatal-warnings --no-fatal-infos

@@ -1,6 +1,6 @@
 # Migration Plan: Microservices → Modular Monolith (MVP)
 
-> Status: In progress. Generated 2026-06-13. This migrates the Booksy backend from
+> Status: In progress. Generated 2026-06-13. This migrates the AsanRezerve backend from
 > per-service hosts + Ocelot gateway + RabbitMQ to a single ASP.NET Core host,
 > one Postgres database (schema-per-context), and CAP running on its in-memory
 > transport in-process. Bounded-context project structure is preserved (modular
@@ -8,15 +8,15 @@
 
 ## Target shape
 
-One deployable host (`Booksy.Host`, :5000) referencing every context's
+One deployable host (`AsanRezerve.Host`, :5000) referencing every context's
 Application + Infrastructure + Api (controllers), one Postgres DB with
 schema-per-context, CAP in-memory transport in-process, no Ocelot gateway.
 
 ```
-Booksy.Host (NEW single host, :5000)
+AsanRezerve.Host (NEW single host, :5000)
 ├─ refs UserManagement.{Api*,Application,Infrastructure}
 ├─ refs ServiceCatalog.{Api*,Application,Infrastructure}
-├─ refs Core.*, Infrastructure.{Core,External,Monitoring,Security}, Booksy.API (middleware lib)
+├─ refs Core.*, Infrastructure.{Core,External,Monitoring,Security}, AsanRezerve.API (middleware lib)
 └─ one Program.cs, one DbContext-per-context → one DB (schemas: user_management, ServiceCatalog, cap)
 ```
 
@@ -31,7 +31,7 @@ controllers auto-discovered.
    schema, in-memory transport). `[CapSubscribe]` handlers are discovered across all
    referenced assemblies and keep working.
 2. **Two bootstrap styles → one Program.cs** — UserManagement = minimal hosting;
-   ServiceCatalog = legacy `Startup.cs` + `namespace Booksy.API { class Program }`
+   ServiceCatalog = legacy `Startup.cs` + `namespace AsanRezerve.API { class Program }`
    (name collision). New single minimal-hosting `Program.cs`; delete both old entry
    points. Register both contexts' Application + Infrastructure.
 3. **One DB, schema-per-context** — already: UM `user_management`, SC `ServiceCatalog`,
@@ -48,17 +48,17 @@ controllers auto-discovered.
 ## Deployment changes
 
 - `docker-compose.prod.yml`: replace `usermanagement-api` + `servicecatalog-api` +
-  `gateway` with one `booksy-api` on :5000. RabbitMQ optional (CAP in-memory).
+  `gateway` with one `asanrezerve-api` on :5000. RabbitMQ optional (CAP in-memory).
 - `build-and-push.yml`: 3 image builds → 1. One Dockerfile (keep `curl`).
 
 ## Execution order
 
-1. Create `Booksy.Host` + add to sln; reference Core/Infra/Security/Monitoring/External + Booksy.API.
+1. Create `AsanRezerve.Host` + add to sln; reference Core/Infra/Security/Monitoring/External + AsanRezerve.API.
 2. Unify CAP into a single host-level registration. Build.
 3. Demote `*.Api` → libraries, write merged `Program.cs`. Build + run + Swagger.
 4. Single connection string + per-context migration history; verify both schemas migrate into one DB.
 5. Merge configs.
-6. Update frontend base URL; retire `Booksy.Gateway`.
+6. Update frontend base URL; retire `AsanRezerve.Gateway`.
 7. Update docker-compose + CI + Dockerfile; smoke-test.
 8. Update `CLAUDE.md` / `API_ENDPOINTS.md`.
 

@@ -1,0 +1,224 @@
+import 'package:asan_rezerve_provider_app/config/theme/app_theme.dart';
+import 'package:asan_rezerve_provider_app/core/constants/app_strings.dart';
+import 'package:asan_rezerve_provider_app/core/errors/failures.dart';
+import 'package:asan_rezerve_provider_app/core/network/connectivity_service.dart';
+import 'package:asan_rezerve_provider_app/features/home/domain/entities/home_booking.dart';
+import 'package:asan_rezerve_provider_app/features/home/domain/repositories/home_repository.dart';
+import 'package:asan_rezerve_provider_app/features/home/presentation/cubit/calendar_cubit.dart';
+import 'package:asan_rezerve_provider_app/features/home/presentation/pages/calendar_page.dart';
+import 'package:dartz/dartz.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+class MockHomeRepository extends Mock implements HomeRepository {}
+
+class MockConnectivityService extends Mock implements ConnectivityService {}
+
+void main() {
+  late MockHomeRepository repository;
+  late MockConnectivityService connectivity;
+
+  // Wednesday 2026-07-15; Iranian week starts Saturday 2026-07-11.
+  final now = DateTime(2026, 7, 15, 8);
+
+  HomeBooking booking(String id, DateTime start,
+          [HomeBookingStatus status = HomeBookingStatus.pending]) =>
+      HomeBooking(
+        id: id,
+        start: start,
+        clientName: 'سارا محمدی',
+        clientPhone: '0912',
+        serviceName: 'اصلاح مو',
+        status: status,
+      );
+
+  setUp(() {
+    repository = MockHomeRepository();
+    connectivity = MockConnectivityService();
+    when(() => connectivity.isOnline).thenAnswer((_) async => true);
+    when(() => repository.fetchBookings(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+        )).thenAnswer((_) async => Right([
+          booking('b1', DateTime(2026, 7, 15, 10)),
+          booking('b2', DateTime(2026, 7, 15, 14),
+              HomeBookingStatus.confirmed),
+          booking('b3', DateTime(2026, 7, 16, 11),
+              HomeBookingStatus.confirmed),
+        ]));
+    when(() => repository.confirmBooking(any()))
+        .thenAnswer((_) async => const Right(null));
+  });
+
+  Future<CalendarCubit> pump(WidgetTester tester) async {
+    final cubit = CalendarCubit(repository, connectivity, now: () => now);
+    addTearDown(cubit.close);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light, // real theme: infinite-width button footgun
+        builder: (context, child) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: child ?? const SizedBox.shrink(),
+        ),
+        home: BlocProvider<CalendarCubit>.value(
+          value: cubit..load(),
+          child: const CalendarView(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    return cubit;
+  }
+
+  testWidgets('week strip renders 7 days with count badges; timeline ordered',
+      (tester) async {
+    await pump(tester);
+
+    // 7 day cells for the week of Sat 11 → Fri 17.
+    for (final d in [11, 12, 13, 14, 15, 16, 17]) {
+      expect(find.byKey(Key('calendar-day-$d-7')), findsOneWidget);
+    }
+    // Selected day (today, the 15th) shows both bookings in start order.
+    expect(find.byKey(const Key('calendar-booking-b1')), findsOneWidget);
+    expect(find.byKey(const Key('calendar-booking-b2')), findsOneWidget);
+    final y1 = tester.getTopLeft(find.byKey(const Key('calendar-booking-b1'))).dy;
+    final y2 = tester.getTopLeft(find.byKey(const Key('calendar-booking-b2'))).dy;
+    expect(y1, lessThan(y2));
+  });
+
+  testWidgets('selecting another day switches the timeline without refetch',
+      (tester) async {
+    await pump(tester);
+    clearInteractions(repository);
+
+    await tester.tap(find.byKey(const Key('calendar-day-16-7')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('calendar-booking-b3')), findsOneWidget);
+    expect(find.byKey(const Key('calendar-booking-b1')), findsNothing);
+    verifyNever(() => repository.fetchBookings(
+        from: any(named: 'from'), to: any(named: 'to')));
+  });
+
+  testWidgets('pending booking sheet confirms via the cubit', (tester) async {
+    await pump(tester);
+
+    await tester.tap(find.byKey(const Key('calendar-booking-b1')));
+    await tester.pumpAndSettle();
+    expect(find.text(AppStrings.bookingSheetTitle), findsOneWidget);
+    expect(find.byKey(const Key('sheet-confirm')), findsOneWidget);
+    expect(find.byKey(const Key('sheet-decline')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('sheet-confirm')));
+    await tester.pumpAndSettle();
+
+    verify(() => repository.confirmBooking('b1')).called(1);
+    expect(find.text(AppStrings.homeConfirmed), findsOneWidget); // snackbar
+  });
+
+  // Only what the server takes (openspec/changes/_inline/customer-reviews-and-nahal-seed): «تکمیل» from 15 minutes
+  // before the start, «عدم حضور» once the time is over. Both used to be offered hours ahead, and failed there.
+  testWidgets('a confirmed booking whose time has come offers complete/no-show',
+      (tester) async {
+    when(() => repository.fetchBookings(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+        )).thenAnswer((_) async => Right([
+          booking('b0', DateTime(2026, 7, 15, 7), HomeBookingStatus.confirmed),
+        ]));
+    await pump(tester);
+
+    await tester.tap(find.byKey(const Key('calendar-booking-b0')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('sheet-complete')), findsOneWidget);
+    expect(find.byKey(const Key('sheet-noshow')), findsOneWidget);
+    expect(find.byKey(const Key('sheet-confirm')), findsNothing);
+  });
+
+  testWidgets('a confirmed booking still ahead says when it can be marked done',
+      (tester) async {
+    await pump(tester); // now 08:00; b2 is at 14:00
+
+    await tester.tap(find.byKey(const Key('calendar-booking-b2')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('sheet-complete')), findsNothing);
+    expect(find.byKey(const Key('sheet-noshow')), findsNothing);
+    expect(find.byKey(const Key('sheet-complete-later')), findsOneWidget);
+  });
+
+  testWidgets('empty day shows the actionable empty state', (tester) async {
+    await pump(tester);
+
+    await tester.tap(find.byKey(const Key('calendar-day-17-7')));
+    await tester.pumpAndSettle();
+
+    expect(find.text(AppStrings.calendarEmptyDay), findsOneWidget);
+    expect(find.text('+ ${AppStrings.homeAddAppointment}'), findsOneWidget);
+  });
+
+  testWidgets('total failure shows retry that reloads', (tester) async {
+    when(() => repository.fetchBookings(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+        )).thenAnswer((_) async => const Left(ServerFailure('خطا')));
+    await pump(tester);
+
+    expect(find.byKey(const Key('app-error-retry')), findsOneWidget);
+
+    when(() => repository.fetchBookings(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+        )).thenAnswer((_) async => const Right([]));
+    await tester.tap(find.byKey(const Key('app-error-retry')));
+    await tester.pumpAndSettle();
+
+    expect(find.text(AppStrings.calendarEmptyDay), findsOneWidget);
+  });
+
+  testWidgets('nav bar shows calendar active; today jump present',
+      (tester) async {
+    await pump(tester);
+
+    // App-bar title once — the nav pill is icons-only, its calendar
+    // destination exposed via icon + semantics instead of a text label.
+    expect(find.text(AppStrings.navCalendar), findsOneWidget);
+    expect(find.byIcon(Icons.calendar_month_outlined), findsOneWidget);
+    expect(find.byKey(const Key('calendar-today')), findsOneWidget);
+    expect(find.byKey(const Key('calendar-create-action')), findsOneWidget);
+  });
+
+  // QA walkthrough 2026-09-22: a tapped "new booking request" lands on that booking with its actions open.
+  testWidgets('opening a booking from a notification shows its sheet, once', (tester) async {
+    when(() => repository.fetchBooking('b3'))
+        .thenAnswer((_) async => Right(booking('b3', DateTime(2026, 7, 16, 11), HomeBookingStatus.confirmed)));
+    final cubit = await pump(tester);
+
+    await cubit.openBooking('b3');
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(cubit.state.selectedDay, DateTime(2026, 7, 16));
+    expect(find.byType(BottomSheet), findsOneWidget);
+    expect(cubit.state.focusedBookingId, isNull, reason: 'cleared, so a rebuild does not reopen it');
+  });
+
+  // QA walkthrough 2026-09-22: "the arrow points right where it should point left; it is like that everywhere".
+  // Both icons mirror themselves in RTL (matchTextDirection), so the icon NAME is the LTR meaning: in Persian the
+  // week runs right→left, so "previous" points right (chevron_left) and "next" points left (chevron_right).
+  testWidgets('the week arrows point the way the week runs', (tester) async {
+    await pump(tester);
+
+    final previous = tester.widget<Icon>(find.descendant(
+        of: find.byKey(const Key('calendar-prev-week')), matching: find.byType(Icon)));
+    final next = tester.widget<Icon>(find.descendant(
+        of: find.byKey(const Key('calendar-next-week')), matching: find.byType(Icon)));
+
+    expect(previous.icon, Icons.chevron_left);
+    expect(next.icon, Icons.chevron_right);
+    expect(previous.icon!.matchTextDirection, isTrue);
+  });
+}

@@ -110,7 +110,7 @@ const hierarchy = await fetch('/api/v1/locations/hierarchy');
 
 ### Current Code (Inefficient)
 
-**File:** `booksy-frontend/src/shared/composables/useLocations.ts` or `ProfileManager.vue`
+**File:** `asanrezerve-frontend/src/shared/composables/useLocations.ts` or `ProfileManager.vue`
 
 ```typescript
 // ❌ BAD: Multiple API calls
@@ -162,7 +162,7 @@ const loadLocations = async () => {
 
 ### Step 1: Update Location Service
 
-**File:** `booksy-frontend/src/core/api/services/location.service.ts` (or similar)
+**File:** `asanrezerve-frontend/src/core/api/services/location.service.ts` (or similar)
 
 ```typescript
 export class LocationService {
@@ -187,7 +187,7 @@ export class LocationService {
 
 ### Step 2: Update Types
 
-**File:** `booksy-frontend/src/types/location.types.ts` (or similar)
+**File:** `asanrezerve-frontend/src/types/location.types.ts` (or similar)
 
 ```typescript
 export interface Province {
@@ -210,7 +210,7 @@ export interface ProvinceHierarchy extends Province {
 
 ### Step 3: Update Composable
 
-**File:** `booksy-frontend/src/shared/composables/useLocations.ts`
+**File:** `asanrezerve-frontend/src/shared/composables/useLocations.ts`
 
 ```typescript
 import { ref } from 'vue';
@@ -274,7 +274,7 @@ export function useLocations() {
 
 ### Step 4: Update ProfileManager Component
 
-**File:** `booksy-frontend/src/modules/provider/components/dashboard/ProfileManager.vue`
+**File:** `asanrezerve-frontend/src/modules/provider/components/dashboard/ProfileManager.vue`
 
 ```typescript
 <script setup lang="ts">
@@ -439,7 +439,7 @@ GET /api/v1/locations/hierarchy
 
 ### Implementation
 
-**File:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Controllers/V1/LocationsController.cs:86-113`
+**File:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api/Controllers/V1/LocationsController.cs:86-113`
 
 ```csharp
 [HttpGet("hierarchy")]

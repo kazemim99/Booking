@@ -1,0 +1,45 @@
+//// ========================================
+//// Application/Commands/Provider/ActivateProviderStaff/ActivateProviderStaffCommandHandler.cs
+//// ========================================
+//using AsanRezerve.Core.Application.Abstractions.CQRS;
+//using AsanRezerve.ServiceCatalog.Domain.Repositories;
+//using AsanRezerve.ServiceCatalog.Domain.ValueObjects;
+
+//namespace AsanRezerve.ServiceCatalog.Application.Commands.Provider.ActivateProviderStaff
+//{
+ 
+//    internal sealed class ActivateProviderStaffCommandHandler
+//        : ICommandHandler<ActivateProviderStaffCommand, ActivateProviderStaffResult>
+//    {
+//        private readonly IProviderWriteRepository _providerRepository;
+
+//        public ActivateProviderStaffCommandHandler(IProviderWriteRepository providerRepository)
+//        {
+//            _providerRepository = providerRepository;
+//        }
+
+//        public async Task<ActivateProviderStaffResult> Handle(
+//            ActivateProviderStaffCommand request,
+//            CancellationToken cancellationToken)
+//        {
+//            // ✅ Load Provider aggregate (not Staff directly)
+//            var providerId = ProviderId.From(request.ProviderId);
+//            var provider = await _providerRepository.GetByIdAsync(providerId, cancellationToken);
+
+//            if (provider == null)
+//                throw new KeyNotFoundException($"Provider {request.ProviderId} not found");
+
+
+//            // ✅ Save Provider aggregate (EF Core cascades to staff)
+//            await _providerRepository.UpdateProviderAsync(provider, cancellationToken);
+//                throw new InvalidOperationException($"Staff {request.StaffId} not found after activation");
+
+//            return new ActivateProviderStaffResult(
+//                provider.Id.Value,
+//                activatedStaff.Id,
+//                activatedStaff.FullName,
+//                activatedStaff.IsActive,
+//                DateTime.UtcNow);
+//        }
+//    }
+//}

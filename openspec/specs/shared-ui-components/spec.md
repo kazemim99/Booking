@@ -1,7 +1,7 @@
 # shared-ui-components Specification
 
 ## Purpose
-Catalogs the reusable structural widgets (cards, list rows, section headers, status badges, icon buttons, selection tiles) `booksy-provider-app` screens compose from, so a new screen reaches for an existing component instead of hand-rolling its own card or row.
+Catalogs the reusable structural widgets (cards, list rows, section headers, status badges, icon buttons, selection tiles) `asanrezerve-provider-app` screens compose from, so a new screen reaches for an existing component instead of hand-rolling its own card or row.
 ## Requirements
 ### Requirement: Card components
 The system SHALL provide `AppCard`: a white, flat (elevation 0) container with 15dp corner radius, a 1px `AppColors.border` outline, and 12dp interior padding. The system SHALL also provide `AppInfoCard` (adapted from Coliride's tagged info card): an `AppCard` body with an attached top tag strip (`AppColors.border` background, top-rounded, small bold navy label + 16dp icon) and a 40×40dp rounded (8dp) tinted icon container beside a muted-label / navy-value column. `AppInfoCard` SHALL be the standard presentation for wizard preview-step section summaries.

@@ -4,7 +4,7 @@
 # This script tests the logging and observability infrastructure
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "Testing Booksy Observability Setup" -ForegroundColor Cyan
+Write-Host "Testing AsanRezerve Observability Setup" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -25,7 +25,7 @@ docker-compose up -d seq
 Start-Sleep -Seconds 5
 
 # Check if Seq is running
-$seqRunning = docker ps --filter "name=booksy-seq" --format "{{.Status}}"
+$seqRunning = docker ps --filter "name=asanrezerve-seq" --format "{{.Status}}"
 if ($seqRunning) {
     Write-Host "✅ Seq container is running: $seqRunning" -ForegroundColor Green
 } else {
@@ -51,7 +51,7 @@ Write-Host ""
 
 # Step 4: Show Seq logs
 Write-Host "[4/5] Seq container logs (last 20 lines):" -ForegroundColor Yellow
-docker logs --tail 20 booksy-seq
+docker logs --tail 20 asanrezerve-seq
 Write-Host ""
 
 # Step 5: Summary and next steps
@@ -62,14 +62,14 @@ Write-Host ""
 Write-Host "📊 Access Points:" -ForegroundColor Yellow
 Write-Host "   • Seq UI: http://localhost:5341" -ForegroundColor White
 Write-Host "   • Username: admin" -ForegroundColor White
-Write-Host "   • Password: Booksy@2024!" -ForegroundColor White
+Write-Host "   • Password: AsanRezerve@2024!" -ForegroundColor White
 Write-Host ""
 Write-Host "🚀 Next Steps:" -ForegroundColor Yellow
 Write-Host "   1. Start ServiceCatalog API:" -ForegroundColor White
-Write-Host "      dotnet run --project src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api" -ForegroundColor Gray
+Write-Host "      dotnet run --project src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api" -ForegroundColor Gray
 Write-Host ""
 Write-Host "   2. Start UserManagement API:" -ForegroundColor White
-Write-Host "      dotnet run --project src/UserManagement/Booksy.UserManagement.API" -ForegroundColor Gray
+Write-Host "      dotnet run --project src/UserManagement/AsanRezerve.UserManagement.API" -ForegroundColor Gray
 Write-Host ""
 Write-Host "   3. Make some API requests to generate logs" -ForegroundColor White
 Write-Host ""

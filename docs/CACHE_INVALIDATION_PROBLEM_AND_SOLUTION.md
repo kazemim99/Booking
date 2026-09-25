@@ -6,7 +6,7 @@
 When updating a Provider Profile through the API and refreshing the page, changes are not visible because the data is cached in `CachedProviderReadRepository` without proper cache invalidation.
 
 ### Root Cause
-The application uses a caching decorator pattern ([CachedProviderReadRepository.cs](../src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Persistence/Repositories/CachedProviderReadRepository.cs:17)) that caches provider data with the following keys:
+The application uses a caching decorator pattern ([CachedProviderReadRepository.cs](../src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Infrastructure/Persistence/Repositories/CachedProviderReadRepository.cs:17)) that caches provider data with the following keys:
 - `Provider:{providerId}` - for GetByIdAsync
 - `Provider:owner:{ownerId}` - for GetByOwnerIdAsync
 
@@ -14,14 +14,14 @@ The application uses a caching decorator pattern ([CachedProviderReadRepository.
 
 ### Affected Operations
 All provider update operations suffer from this issue:
-- [UpdateProviderProfileCommandHandler.cs](../src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Commands/Provider/UpdateProviderProfile/UpdateProviderProfileCommandHandler.cs:8)
-- [UpdateBusinessProfileCommandHandler.cs](../src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Commands/Provider/UpdateBusinessProfile/UpdateBusinessProfileCommandHandler.cs:8)
-- [UpdateContactInfoCommandHandler.cs](../src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Commands/Provider/UpdateContactInfo/UpdateContactInfoCommandHandler.cs)
-- [UpdateLocationCommandHandler.cs](../src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Commands/Provider/UpdateLocation/UpdateLocationCommandHandler.cs)
-- [UpdateBusinessHoursCommandHandler.cs](../src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Commands/Provider/UpdateBusinessHours/UpdateBusinessHoursCommandHandler.cs)
-- [UpdateWorkingHoursCommandHandler.cs](../src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Commands/Provider/UpdateWorkingHours/UpdateWorkingHoursCommandHandler.cs)
-- [UploadGalleryImagesCommandHandler.cs](../src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Commands/Provider/UploadGalleryImages/UploadGalleryImagesCommandHandler.cs)
-- [DeleteGalleryImageCommandHandler.cs](../src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Commands/Provider/DeleteGalleryImage/DeleteGalleryImageCommandHandler.cs)
+- [UpdateProviderProfileCommandHandler.cs](../src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Commands/Provider/UpdateProviderProfile/UpdateProviderProfileCommandHandler.cs:8)
+- [UpdateBusinessProfileCommandHandler.cs](../src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Commands/Provider/UpdateBusinessProfile/UpdateBusinessProfileCommandHandler.cs:8)
+- [UpdateContactInfoCommandHandler.cs](../src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Commands/Provider/UpdateContactInfo/UpdateContactInfoCommandHandler.cs)
+- [UpdateLocationCommandHandler.cs](../src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Commands/Provider/UpdateLocation/UpdateLocationCommandHandler.cs)
+- [UpdateBusinessHoursCommandHandler.cs](../src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Commands/Provider/UpdateBusinessHours/UpdateBusinessHoursCommandHandler.cs)
+- [UpdateWorkingHoursCommandHandler.cs](../src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Commands/Provider/UpdateWorkingHours/UpdateWorkingHoursCommandHandler.cs)
+- [UploadGalleryImagesCommandHandler.cs](../src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Commands/Provider/UploadGalleryImages/UploadGalleryImagesCommandHandler.cs)
+- [DeleteGalleryImageCommandHandler.cs](../src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Commands/Provider/DeleteGalleryImage/DeleteGalleryImageCommandHandler.cs)
 
 ## Technical Analysis
 
@@ -63,7 +63,7 @@ All provider update operations suffer from this issue:
 ```
 
 ### Cache Service Available Methods
-The [ICacheService](../src/Infrastructure/Booksy.Infrastructure.Core/Caching/ICacheService.cs:10) interface provides:
+The [ICacheService](../src/Infrastructure/AsanRezerve.Infrastructure.Core/Caching/ICacheService.cs:10) interface provides:
 - `RemoveAsync(string key)` - Remove single cache key
 - `RemoveByPatternAsync(string pattern)` - Remove keys matching pattern
 
@@ -83,14 +83,14 @@ The [ICacheService](../src/Infrastructure/Booksy.Infrastructure.Core/Caching/ICa
 #### 1. Create Domain Event Handler for Cache Invalidation
 
 ```csharp
-// File: src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/EventHandlers/CacheInvalidationEventHandlers.cs
+// File: src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/EventHandlers/CacheInvalidationEventHandlers.cs
 
-using Booksy.Core.Application.Abstractions.Events;
-using Booksy.Infrastructure.Core.Caching;
-using Booksy.ServiceCatalog.Domain.Events;
+using AsanRezerve.Core.Application.Abstractions.Events;
+using AsanRezerve.Infrastructure.Core.Caching;
+using AsanRezerve.ServiceCatalog.Domain.Events;
 using Microsoft.Extensions.Logging;
 
-namespace Booksy.ServiceCatalog.Application.EventHandlers;
+namespace AsanRezerve.ServiceCatalog.Application.EventHandlers;
 
 /// <summary>
 /// Handles cache invalidation for provider-related domain events
@@ -190,7 +190,7 @@ The handler will be automatically registered by MediatR if you follow the existi
 
 **Verification:**
 - Check that domain events are properly raised in Provider aggregate methods
-- Verify [BusinessProfileUpdatedEvent](../src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Domain/Events/BusinessProfileUpdatedEvent.cs:9) is raised when profile is updated
+- Verify [BusinessProfileUpdatedEvent](../src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Domain/Events/BusinessProfileUpdatedEvent.cs:9) is raised when profile is updated
 - Ensure UnitOfWork dispatches domain events after SaveChangesAsync
 
 ---
@@ -260,14 +260,14 @@ public sealed class UpdateProviderProfileCommandHandler : ICommandHandler<Update
 **Implementation:**
 
 ```csharp
-// File: src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Persistence/Repositories/CachedProviderWriteRepository.cs
+// File: src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Infrastructure/Persistence/Repositories/CachedProviderWriteRepository.cs
 
-using Booksy.Infrastructure.Core.Caching;
-using Booksy.ServiceCatalog.Domain.Aggregates;
-using Booksy.ServiceCatalog.Domain.Repositories;
+using AsanRezerve.Infrastructure.Core.Caching;
+using AsanRezerve.ServiceCatalog.Domain.Aggregates;
+using AsanRezerve.ServiceCatalog.Domain.Repositories;
 using Microsoft.Extensions.Logging;
 
-namespace Booksy.ServiceCatalog.Infrastructure.Persistence.Repositories;
+namespace AsanRezerve.ServiceCatalog.Infrastructure.Persistence.Repositories;
 
 /// <summary>
 /// Cached decorator for ProviderWriteRepository that invalidates cache on mutations
@@ -422,7 +422,7 @@ public async Task UpdateProviderProfile_ShouldInvalidateCache()
 
 ```bash
 # Monitor Redis keys
-redis-cli KEYS "booksy:Provider:*"
+redis-cli KEYS "asanrezerve:Provider:*"
 
 # Watch cache operations in real-time
 redis-cli MONITOR
@@ -484,19 +484,19 @@ await _cacheService.SetAsync(cacheKey, provider, cacheDuration);
 ## Related Files
 
 ### Infrastructure
-- [CachedProviderReadRepository.cs](../src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Persistence/Repositories/CachedProviderReadRepository.cs)
-- [ProviderWriteRepository.cs](../src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Infrastructure/Persistence/Repositories/ProviderWriteRepository.cs)
-- [ICacheService.cs](../src/Infrastructure/Booksy.Infrastructure.Core/Caching/ICacheService.cs)
-- [RedisCacheService.cs](../src/Infrastructure/Booksy.Infrastructure.Core/Caching/RedisCacheService.cs)
+- [CachedProviderReadRepository.cs](../src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Infrastructure/Persistence/Repositories/CachedProviderReadRepository.cs)
+- [ProviderWriteRepository.cs](../src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Infrastructure/Persistence/Repositories/ProviderWriteRepository.cs)
+- [ICacheService.cs](../src/Infrastructure/AsanRezerve.Infrastructure.Core/Caching/ICacheService.cs)
+- [RedisCacheService.cs](../src/Infrastructure/AsanRezerve.Infrastructure.Core/Caching/RedisCacheService.cs)
 
 ### Domain Events
-- [BusinessProfileUpdatedEvent.cs](../src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Domain/Events/BusinessProfileUpdatedEvent.cs)
-- [BusinessHoursUpdatedEvent.cs](../src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Domain/Events/BusinessHoursUpdatedEvent.cs)
-- [GalleryImageUploadedEvent.cs](../src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Domain/Events/GalleryImageUploadedEvent.cs)
+- [BusinessProfileUpdatedEvent.cs](../src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Domain/Events/BusinessProfileUpdatedEvent.cs)
+- [BusinessHoursUpdatedEvent.cs](../src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Domain/Events/BusinessHoursUpdatedEvent.cs)
+- [GalleryImageUploadedEvent.cs](../src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Domain/Events/GalleryImageUploadedEvent.cs)
 
 ### Command Handlers (Need Cache Invalidation)
-- [UpdateProviderProfileCommandHandler.cs](../src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Commands/Provider/UpdateProviderProfile/UpdateProviderProfileCommandHandler.cs)
-- [UpdateBusinessProfileCommandHandler.cs](../src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Commands/Provider/UpdateBusinessProfile/UpdateBusinessProfileCommandHandler.cs)
+- [UpdateProviderProfileCommandHandler.cs](../src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Commands/Provider/UpdateProviderProfile/UpdateProviderProfileCommandHandler.cs)
+- [UpdateBusinessProfileCommandHandler.cs](../src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Commands/Provider/UpdateBusinessProfile/UpdateBusinessProfileCommandHandler.cs)
 
 ---
 
@@ -508,17 +508,17 @@ await _cacheService.SetAsync(cacheKey, provider, cacheDuration);
 
 #### Files Created/Modified:
 
-1. **Created:** [ProviderCacheInvalidationEventHandler.cs](../src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/EventHandlers/DomainEventHandlers/ProviderCacheInvalidationEventHandler.cs)
+1. **Created:** [ProviderCacheInvalidationEventHandler.cs](../src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/EventHandlers/DomainEventHandlers/ProviderCacheInvalidationEventHandler.cs)
    - Handles 14 different provider-related domain events
    - Invalidates cache automatically when provider data changes
    - Includes comprehensive logging and error handling
 
-2. **Modified:** [Provider.cs](../src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Domain/Aggregates/ProviderAggregate/Provider.cs#L738-L783)
+2. **Modified:** [Provider.cs](../src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Domain/Aggregates/ProviderAggregate/Provider.cs#L738-L783)
    - Added gallery management wrapper methods that raise domain events
 
 3. **Modified:** Command handlers to use new Provider methods
-   - [UploadGalleryImagesCommandHandler.cs](../src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Commands/Provider/UploadGalleryImages/UploadGalleryImagesCommandHandler.cs#L60-L64)
-   - [DeleteGalleryImageCommandHandler.cs](../src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Commands/Provider/DeleteGalleryImage/DeleteGalleryImageCommandHandler.cs#L47-L48)
+   - [UploadGalleryImagesCommandHandler.cs](../src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Commands/Provider/UploadGalleryImages/UploadGalleryImagesCommandHandler.cs#L60-L64)
+   - [DeleteGalleryImageCommandHandler.cs](../src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Commands/Provider/DeleteGalleryImage/DeleteGalleryImageCommandHandler.cs#L47-L48)
 
 #### Events Handled:
 

@@ -9,9 +9,9 @@ on:
 
 env:
   DOTNET_VERSION: '9.0.x'
-  SOLUTION_PATH: './Booksy.sln'
+  SOLUTION_PATH: './AsanRezerve.sln'
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ${{ github.repository_owner }}/booksy
+  IMAGE_PREFIX: ${{ github.repository_owner }}/asan-rezerve
 
 jobs:
   # Run tests
@@ -23,13 +23,13 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: booksy_admin
+          POSTGRES_USER: asan_rezerve_admin
           POSTGRES_PASSWORD: TestPassword123!
-          POSTGRES_DB: booksy_test
+          POSTGRES_DB: asan_rezerve_test
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U booksy_admin -d booksy_test"
+          --health-cmd "pg_isready -U asan_rezerve_admin -d asan_rezerve_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -77,7 +77,7 @@ jobs:
 
     - name: Run Integration Tests
       env:
-        ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=booksy_test;Username=booksy_admin;Password=TestPassword123!;Include Error Detail=true"
+        ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=asan_rezerve_test;Username=asan_rezerve_admin;Password=TestPassword123!;Include Error Detail=true"
         ConnectionStrings__Redis: "localhost:6379"
       run: |
         dotnet test ${{ env.SOLUTION_PATH }} \
@@ -98,13 +98,13 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: booksy_admin
+          POSTGRES_USER: asan_rezerve_admin
           POSTGRES_PASSWORD: TestPassword123!
-          POSTGRES_DB: booksy_e2e
+          POSTGRES_DB: asan_rezerve_e2e
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U booksy_admin -d booksy_e2e"
+          --health-cmd "pg_isready -U asan_rezerve_admin -d asan_rezerve_e2e"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -139,11 +139,11 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore ${{ env.SOLUTION_PATH }}
 
-    - name: Start Booksy host (sandbox auth, no real SMS)
+    - name: Start AsanRezerve host (sandbox auth, no real SMS)
       env:
         ASPNETCORE_ENVIRONMENT: Development
         ASPNETCORE_URLS: http://localhost:5050
-        ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=booksy_e2e;Username=booksy_admin;Password=TestPassword123!;Include Error Detail=true"
+        ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=asan_rezerve_e2e;Username=asan_rezerve_admin;Password=TestPassword123!;Include Error Detail=true"
         ConnectionStrings__Redis: "localhost:6379"
         EventBus__Provider: "InMemory"
         OTP_SANDBOX_CODE: "123456"
@@ -173,7 +173,7 @@ jobs:
         # by default, overriding the ASPNETCORE_URLS=5050 set above. Without this flag the host
         # listens on 5000 while the health check below polls 5050, so the wait loop could never
         # succeed and this job always timed out.
-        dotnet run --project src/Host/Booksy.Host/Booksy.Host.csproj --configuration Release --no-launch-profile > host.log 2>&1 &
+        dotnet run --project src/Host/AsanRezerve.Host/AsanRezerve.Host.csproj --configuration Release --no-launch-profile > host.log 2>&1 &
         echo $! > host.pid
 
     - name: Wait for host to become healthy
@@ -222,11 +222,11 @@ jobs:
         echo "date=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
         echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
-    - name: Build and push Booksy API (monolith)
+    - name: Build and push AsanRezerve API (monolith)
       uses: docker/build-push-action@v5
       with:
         context: .
-        file: ./src/Host/Booksy.Host/Dockerfile
+        file: ./src/Host/AsanRezerve.Host/Dockerfile
         push: true
         tags: |
           ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api:develop
@@ -239,24 +239,24 @@ jobs:
       with:
         node-version: '20'
         cache: 'npm'
-        cache-dependency-path: booksy-frontend/package-lock.json
+        cache-dependency-path: asan-rezerve-frontend/package-lock.json
 
     - name: Install frontend dependencies
-      working-directory: booksy-frontend
+      working-directory: asan-rezerve-frontend
       run: npm ci
 
     - name: Build frontend
-      working-directory: booksy-frontend
+      working-directory: asan-rezerve-frontend
       run: npm run build
 
     - name: Build and push Frontend
       uses: docker/build-push-action@v5
       with:
-        # Repo root, not booksy-frontend/: src/main.ts imports the shared token sheet
+        # Repo root, not asan-rezerve-frontend/: src/main.ts imports the shared token sheet
         # at ../../packages/design-tokens/tokens.css, which is outside that directory.
         # A narrower context leaves it out and the image build cannot resolve the import.
         context: .
-        file: ./booksy-frontend/Dockerfile
+        file: ./asan-rezerve-frontend/Dockerfile
         push: true
         tags: |
           ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:develop

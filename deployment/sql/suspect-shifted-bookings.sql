@@ -10,8 +10,8 @@
 -- CANDIDATE — booked online by a customer, before the fix, still upcoming — with the time they most likely chose,
 -- so the salon can call the customer and confirm. Nothing here writes.
 --
--- Run (on the box, as booksy):
---   docker exec -i booksy-postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+-- Run (on the box, as asan-rezerve):
+--   docker exec -i asan-rezerve-postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
 --     -v fix_deployed_at="'2026-09-23 12:00:00+03:30'" < suspect-shifted-bookings.sql
 -- Set fix_deployed_at to when the customer-app build with the fix went live.
 -- =====================================================================================================================

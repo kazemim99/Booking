@@ -68,7 +68,7 @@ Say which one you measured.
 An audit script can produce a false alarm as easily as a doc can carry a false claim. Before
 reporting a discrepancy, confirm the *command* is sound. Real examples from this repo:
 
-- Counting `*.csproj` matched a **directory** named `Booksy.Tests.Common.csproj`.
+- Counting `*.csproj` matched a **directory** named `AsanRezerve.Tests.Common.csproj`.
 - Grepping compose files for a broker matched **comments saying the broker was removed**.
 - Counting migrations included `…DbContextModelSnapshot.cs`, which is not a migration.
 

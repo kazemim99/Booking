@@ -1,0 +1,899 @@
+// ========================================
+// AsanRezerve.ServiceCatalog.Domain/Aggregates/BookingAggregate/Booking.cs
+// ========================================
+using AsanRezerve.Core.Domain.Abstractions.Entities;
+using AsanRezerve.Core.Domain.Abstractions.Rules;
+using AsanRezerve.Core.Domain.Base;
+using AsanRezerve.Core.Domain.Exceptions;
+using AsanRezerve.Core.Domain.ValueObjects;
+using AsanRezerve.ServiceCatalog.Domain.Aggregates.BookingAggregate.Entities;
+using AsanRezerve.ServiceCatalog.Domain.Enums;
+using AsanRezerve.ServiceCatalog.Domain.Events;
+using AsanRezerve.ServiceCatalog.Domain.ValueObjects;
+
+namespace AsanRezerve.ServiceCatalog.Domain.Aggregates.BookingAggregate
+{
+    /// <summary>
+    /// Booking aggregate root - manages appointment bookings with customers
+    /// </summary>
+    public sealed class Booking : AggregateRoot<BookingId>, IAuditableEntity
+    {
+        private readonly List<BookingHistoryEntry> _history = new();
+        private readonly List<BookingServiceItem> _services = new();
+
+        // Core Identity
+        public UserId CustomerId { get; private set; }
+        public ProviderId ProviderId { get; private set; }
+        public ServiceId ServiceId { get; private set; }
+        public Guid StaffId { get; private set; }
+
+        /// <summary>
+        /// The individual provider (professional) who will perform the service.
+        /// This is used when booking at an organization with staff hierarchy.
+        /// For solo organizations or independent individuals, this can be null.
+        /// </summary>
+        public ProviderId? IndividualProviderId { get; private set; }
+
+        /// <summary>
+        /// The salon's own customer-book entry this booking was made for, when the provider booked a
+        /// customer from their book (ProviderCustomer). Null for online bookings and plain walk-ins.
+        /// </summary>
+        public Guid? ProviderCustomerId { get; private set; }
+
+        /// <summary>
+        /// Whether the salon wants this booking's customer told by SMS. The salon decides per
+        /// booking (some customers are standing next to them as they enter it).
+        /// </summary>
+        public bool NotifyCustomer { get; private set; } = true;
+
+        // Booking Details
+        public TimeSlot TimeSlot { get; private set; }
+        public Duration Duration { get; private set; }
+        public BookingStatus Status { get; private set; }
+
+        // Pricing & Payment
+        public Price TotalPrice { get; private set; }
+        public PaymentInfo PaymentInfo { get; private set; }
+
+        // Policy & Rules
+        public BookingPolicy Policy { get; private set; }
+
+        // Additional Information
+        public string? CustomerNotes { get; private set; }
+        public string? StaffNotes { get; private set; }
+        public string? CancellationReason { get; private set; }
+
+        // Timestamps
+        public DateTime RequestedAt { get; private set; }
+        public DateTime? ConfirmedAt { get; private set; }
+        public DateTime? CancelledAt { get; private set; }
+        public DateTime? CompletedAt { get; private set; }
+        public DateTime? RescheduledAt { get; private set; }
+
+        // Rescheduling
+        public BookingId? PreviousBookingId { get; private set; }
+        public BookingId? RescheduledToBookingId { get; private set; }
+
+        // Collections
+        public IReadOnlyList<BookingHistoryEntry> History => _history.AsReadOnly();
+
+        /// <summary>
+        /// The service lines bundled in this visit. Always at least one entry
+        /// once created through a factory; TimeSlot/TotalPrice are their sums.
+        /// (Empty only on legacy rows written before multi-service landed.)
+        /// </summary>
+        public IReadOnlyList<BookingServiceItem> Services => _services.AsReadOnly();
+
+        // Audit Properties
+        public DateTime CreatedAt { get; set; }
+        public string? CreatedBy { get; set; }
+        public DateTime? LastModifiedAt { get; set; }
+        public string? LastModifiedBy { get; set; }
+
+        // Private constructor for EF Core
+        private Booking() : base() { }
+
+        /// <summary>
+        /// Factory method - Create a new booking request
+        /// </summary>
+        /// <param name="individualProviderId">Optional individual provider ID when booking at an organization with staff hierarchy</param>
+        public static Booking CreateBookingRequest(
+            UserId customerId,
+            ProviderId providerId,
+            ServiceId serviceId,
+            Guid staffId,
+            DateTime startTime,
+            Duration duration,
+            Price totalPrice,
+            BookingPolicy policy,
+            string? customerNotes = null,
+            ProviderId? individualProviderId = null,
+            IReadOnlyList<BookingServiceItem>? services = null)
+        {
+            var timeSlot = TimeSlot.Create(startTime, duration);
+            var depositAmount = policy.CalculateDepositAmount(
+                Money.Create(totalPrice.Amount, totalPrice.Currency));
+
+            var paymentInfo = PaymentInfo.Create(
+                Money.Create(totalPrice.Amount, totalPrice.Currency),
+                depositAmount);
+
+            var booking = new Booking
+            {
+                Id = BookingId.New(),
+                CustomerId = customerId,
+                ProviderId = providerId,
+                ServiceId = serviceId,
+                StaffId = staffId,
+                IndividualProviderId = individualProviderId,
+                TimeSlot = timeSlot,
+                Duration = duration,
+                Status = BookingStatus.Requested,
+                // Defensive copies. TotalPrice and Policy are EF owned entities keyed by their
+                // owning booking, and callers legitimately pass instances that belong to another
+                // aggregate — `service.BasePrice` and `service.BookingPolicy` are the Service's
+                // own. Storing those instances here would make two aggregates share one owned
+                // entity, which EF rejects on save as re-parenting ("part of a key and so cannot
+                // be modified"). Same rule as ADR-005; PaymentInfo already does this internally.
+                TotalPrice = totalPrice.Clone(),
+                PaymentInfo = paymentInfo,
+                Policy = policy.Clone(),
+                CustomerNotes = customerNotes,
+                RequestedAt = DateTime.UtcNow
+            };
+
+            if (services is { Count: > 0 })
+                booking._services.AddRange(services);
+
+            booking.AddHistoryEntry("Booking requested", BookingStatus.Requested);
+
+            booking.RaiseDomainEvent(new BookingRequestedEvent(
+                booking.Id,
+                booking.CustomerId,
+                booking.ProviderId,
+                booking.ServiceId,
+                booking.StaffId,
+                booking.TimeSlot.StartTime,
+                booking.TimeSlot.EndTime,
+                booking.TotalPrice,
+                booking.RequestedAt));
+
+            return booking;
+        }
+
+        /// <summary>
+        /// Creates a booking the provider entered on their own calendar
+        /// (walk-in / phone booking). Born Confirmed: the provider IS the
+        /// approver, so the request→confirm handshake would be them asking
+        /// themselves. Deliberately bypasses the deposit and advance-notice
+        /// rules — those protect the provider from customers, and do not
+        /// apply to the provider recording their own appointment.
+        /// </summary>
+        public static Booking CreateConfirmedByProvider(
+            UserId customerId,
+            ProviderId providerId,
+            ServiceId serviceId,
+            Guid staffId,
+            DateTime startTime,
+            Duration duration,
+            Price totalPrice,
+            BookingPolicy policy,
+            string? customerNotes = null,
+            ProviderId? individualProviderId = null,
+            IReadOnlyList<BookingServiceItem>? services = null)
+        {
+            var booking = CreateBookingRequest(
+                customerId,
+                providerId,
+                serviceId,
+                staffId,
+                startTime,
+                duration,
+                totalPrice,
+                policy,
+                customerNotes,
+                individualProviderId,
+                services);
+
+            // A walk-in is Confirmed from birth, not requested-then-confirmed.
+            // Drop the BookingRequestedEvent raised by the delegate factory so
+            // downstream handlers see a single Confirmed signal — otherwise the
+            // provider would get a spurious "new request" notification for a
+            // booking they entered themselves.
+            booking.ClearDomainEvents();
+
+            booking.Status = BookingStatus.Confirmed;
+            booking.ConfirmedAt = DateTime.UtcNow;
+            booking.AddHistoryEntry(
+                "Booking created by provider (walk-in) — auto-confirmed",
+                BookingStatus.Confirmed);
+
+            booking.RaiseDomainEvent(new BookingConfirmedEvent(
+                booking.Id,
+                booking.CustomerId,
+                booking.ProviderId,
+                booking.ServiceId,
+                booking.StaffId,
+                booking.TimeSlot.StartTime,
+                booking.TimeSlot.EndTime,
+                booking.ConfirmedAt.Value));
+
+            return booking;
+        }
+
+        // ========================================
+        // BUSINESS METHODS - STATE TRANSITIONS
+        // ========================================
+
+        /// <summary>
+        /// Records that the required deposit has been paid (create-then-pay: invoked when the deposit payment is
+        /// verified by the gateway). After this, <see cref="Confirm"/> passes the deposit gate. Idempotent: a no-op
+        /// if no deposit is required or the deposit is already covered — so a replayed payment event is safe.
+        /// </summary>
+        public void RecordDepositPaid(string paymentReference)
+        {
+            if (string.IsNullOrWhiteSpace(paymentReference))
+                throw new ArgumentException("Payment reference is required", nameof(paymentReference));
+
+            if (!Policy.RequireDeposit || PaymentInfo.DepositAmount.Amount == 0m)
+                return; // no deposit to record
+
+            if (PaymentInfo.IsDepositPaid())
+                return; // already recorded — idempotent
+
+            PaymentInfo = PaymentInfo.WithDepositPaid(paymentReference);
+            AddHistoryEntry("Deposit paid", Status);
+        }
+
+        /// <summary>
+        /// Confirm the booking after validation and optional payment
+        /// </summary>
+        public void Confirm()
+        {
+            // Business rules validation
+            if (Status != BookingStatus.Requested)
+                throw new BusinessRuleViolationException(
+                    new BookingCanOnlyBeConfirmedFromRequestedStateRule(Status));
+
+            // Check if deposit is required and paid
+            if (Policy.RequireDeposit && !PaymentInfo.IsDepositPaid())
+                throw new BusinessRuleViolationException(
+                    new DepositMustBePaidBeforeConfirmationRule());
+
+            // Check if booking time is still valid
+            if (!Policy.IsWithinBookingWindow(TimeSlot.StartTime, SalonTime.Now))
+                throw new BusinessRuleViolationException(
+                    new BookingMustBeWithinValidTimeWindowRule(Policy));
+
+            Status = BookingStatus.Confirmed;
+            ConfirmedAt = DateTime.UtcNow;
+
+            AddHistoryEntry("Booking confirmed", BookingStatus.Confirmed);
+
+            RaiseDomainEvent(new BookingConfirmedEvent(
+                Id,
+                CustomerId,
+                ProviderId,
+                ServiceId,
+                StaffId,
+                TimeSlot.StartTime,
+                TimeSlot.EndTime,
+                ConfirmedAt.Value));
+        }
+
+        /// <summary>
+        /// Cancel the booking with optional reason
+        /// </summary>
+        public void Cancel(string reason, bool byProvider = false)
+        {
+            // Business rules validation
+            if (!CanBeCancelled())
+                throw new BusinessRuleViolationException(
+                    new BookingCannotBeCancelledRule(Status));
+
+            var now = DateTime.UtcNow;
+            var canCancelWithoutFee = Policy.CanCancelWithoutFee(TimeSlot.StartTime, SalonTime.FromUtc(now));
+
+            Money? cancellationFee = null;
+            if (!canCancelWithoutFee && !byProvider && PaymentInfo.IsDepositPaid())
+            {
+                cancellationFee = Policy.CalculateCancellationFee(
+                    Money.Create(TotalPrice.Amount, TotalPrice.Currency));
+            }
+
+            Status = BookingStatus.Cancelled;
+            CancellationReason = reason;
+            CancelledAt = now;
+
+            AddHistoryEntry(
+                $"Booking cancelled: {reason} {(canCancelWithoutFee ? "(no fee)" : "(fee applied)")}",
+                BookingStatus.Cancelled);
+
+            RaiseDomainEvent(new BookingCancelledEvent(
+                Id,
+                CustomerId,
+                ProviderId,
+                ServiceId,
+                StaffId,
+                reason,
+                canCancelWithoutFee,
+                cancellationFee?.Amount ?? 0,
+                byProvider,
+                CancelledAt.Value));
+        }
+
+        /// <summary>
+        /// Why an active booking cannot be moved right now, in words for the customer — null when it can be (or when
+        /// it is no longer active, where there is nothing to move). Lets the apps say so BEFORE the customer picks a
+        /// slot instead of after (QA 2026-09-24).
+        /// </summary>
+        public string? RescheduleBlockedReason()
+        {
+            if (Status != BookingStatus.Requested && Status != BookingStatus.Confirmed)
+                return null;
+
+            if (!Policy.AllowRescheduling)
+                return new BookingCannotBeRescheduledRule(Status, Policy).Message;
+
+            return Policy.CanReschedule(TimeSlot.StartTime, SalonTime.Now)
+                ? null
+                : new RescheduleWindowExpiredRule(Policy, TimeSlot.StartTime).Message;
+        }
+
+        /// <summary>
+        /// Whether the visit is on record as done — the one state a review may be written for.
+        /// </summary>
+        public bool CanBeReviewed() => Status == BookingStatus.Completed;
+
+        /// <summary>
+        /// Why this booking cannot be reviewed YET, in words for the customer — null when it can be, and null when it
+        /// never will be (cancelled, no-show) or the visit is still ahead. The case it names: the appointment's time is
+        /// over and the salon has not marked it done, which only the salon can do. Without it the customer met a
+        /// booking with no «ثبت نظر» and no idea why (openspec/changes/_inline/customer-reviews-and-nahal-seed).
+        /// </summary>
+        public string? ReviewBlockedReason() =>
+            Status == BookingStatus.Confirmed && TimeSlot.EndTime <= SalonTime.Now
+                ? ReviewWaitsForTheSalonMessage
+                : null;
+
+        /// <summary>See <see cref="ReviewBlockedReason"/>.</summary>
+        public const string ReviewWaitsForTheSalonMessage =
+            "پس از اینکه سالن این نوبت را «انجام‌شده» ثبت کند، می‌توانید برایش نظر بنویسید.";
+
+        /// <summary>
+        /// Why a review of this booking is refused right now, in words for the customer; null when it can be reviewed.
+        /// The waiting-for-the-salon case says what will unlock it; any other state is named.
+        /// </summary>
+        public string? ReviewRefusal() =>
+            CanBeReviewed()
+                ? null
+                : ReviewBlockedReason()
+                  ?? $"فقط برای نوبت‌های انجام‌شده می‌توانید نظر ثبت کنید؛ وضعیت این نوبت: {BookingStatusLabel.Of(Status)}.";
+
+        /// <summary>
+        /// Throws the rule that stops this booking being moved — status/policy first, then the window before the
+        /// appointment. Callable ahead of any slot lookup so the customer is told the reason they can act on: the
+        /// window checked after slot availability hid behind «slot not available» (QA 2026-09-24).
+        /// </summary>
+        public void EnsureCanBeRescheduled()
+        {
+            if (!CanBeRescheduled())
+                throw new BusinessRuleViolationException(
+                    new BookingCannotBeRescheduledRule(Status, Policy));
+
+            if (!Policy.CanReschedule(TimeSlot.StartTime, SalonTime.Now))
+                throw new BusinessRuleViolationException(
+                    new RescheduleWindowExpiredRule(Policy, TimeSlot.StartTime));
+        }
+
+        /// <summary>
+        /// Reschedule the booking to a new time
+        /// </summary>
+        public Booking Reschedule(
+            DateTime newStartTime,
+            Guid newStaffId,
+            string? reason = null)
+        {
+            EnsureCanBeRescheduled();
+            var now = DateTime.UtcNow;
+
+            // Create new booking for the rescheduled time
+            var newBooking = new Booking
+            {
+                Id = BookingId.New(),
+                CustomerId = CustomerId,
+                ProviderId = ProviderId,
+                ServiceId = ServiceId,
+                StaffId = newStaffId,
+                TimeSlot = TimeSlot.Create(newStartTime, Duration),
+                Duration = Duration,
+                Status = BookingStatus.Requested,
+                // Clone every owned value object rather than handing over this booking's
+                // instances: TotalPrice, PaymentInfo and Policy are all EF owned entities
+                // keyed by their owning booking, so sharing an instance across two bookings
+                // reads as re-parenting and is rejected on save ("part of a key and so
+                // cannot be modified"). The successor carries the same VALUES, not the same
+                // objects. See ADR-005.
+                TotalPrice = TotalPrice.Clone(),
+                PaymentInfo = PaymentInfo.Clone(), // Transfer payment state (deposit, intents)
+                Policy = Policy.Clone(),
+                CustomerNotes = CustomerNotes,
+                PreviousBookingId = Id,
+                RequestedAt = now
+            };
+
+            // Mark current booking as rescheduled
+            Status = BookingStatus.Rescheduled;
+            RescheduledToBookingId = newBooking.Id;
+            RescheduledAt = now;
+
+            AddHistoryEntry(
+                $"Booking rescheduled to {newStartTime:yyyy-MM-dd HH:mm}. {reason}",
+                BookingStatus.Rescheduled);
+
+            newBooking.AddHistoryEntry(
+                $"Rescheduled from {TimeSlot.StartTime:yyyy-MM-dd HH:mm}",
+                BookingStatus.Requested);
+
+            RaiseDomainEvent(new BookingRescheduledEvent(
+                Id,
+                newBooking.Id,
+                CustomerId,
+                ProviderId,
+                TimeSlot.StartTime,
+                newStartTime,
+                StaffId,
+                newStaffId,
+                reason,
+                RescheduledAt.Value));
+
+            return newBooking;
+        }
+
+        /// <summary>
+        /// Mark booking as completed after service is provided
+        /// </summary>
+        public void Complete(string? staffNotes = null)
+        {
+            // Business rules validation
+            if (Status != BookingStatus.Confirmed)
+                throw new BusinessRuleViolationException(
+                    new BookingCanOnlyBeCompletedFromConfirmedStateRule(Status));
+
+            // Booking should be completed only after or near the scheduled time — on the salon's clock, which
+            // is what the booking's time is written in (QA 2026-09-24: UtcNow refused a 10:00 booking at 10:33).
+            var now = DateTime.UtcNow;
+            if (SalonTime.FromUtc(now) < TimeSlot.StartTime.AddMinutes(-15)) // Allow 15 min early completion
+                throw new BusinessRuleViolationException(
+                    new BookingCannotBeCompletedBeforeScheduledTimeRule(TimeSlot.StartTime));
+
+            Status = BookingStatus.Completed;
+            CompletedAt = now;
+            StaffNotes = staffNotes;
+
+            AddHistoryEntry("Booking completed", BookingStatus.Completed);
+
+            RaiseDomainEvent(new BookingCompletedEvent(
+                Id,
+                CustomerId,
+                ProviderId,
+                ServiceId,
+                StaffId,
+                TimeSlot.StartTime,
+                CompletedAt.Value));
+        }
+
+        /// <summary>
+        /// Mark booking as no-show when customer doesn't appear
+        /// </summary>
+        public void MarkAsNoShow(string? reason = null)
+        {
+            // Business rules validation
+            if (Status != BookingStatus.Confirmed)
+                throw new BusinessRuleViolationException(
+                    new NoShowCanOnlyBeMarkedFromConfirmedStateRule(Status));
+
+            // Can only mark as no-show after the scheduled time
+            var now = DateTime.UtcNow;
+            if (SalonTime.FromUtc(now) < TimeSlot.EndTime)
+                throw new BusinessRuleViolationException(
+                    new CannotMarkNoShowBeforeEndTimeRule(TimeSlot.EndTime));
+
+            Status = BookingStatus.NoShow;
+            StaffNotes = reason ?? "Customer did not show up";
+
+            AddHistoryEntry("Marked as no-show", BookingStatus.NoShow);
+
+            RaiseDomainEvent(new BookingNoShowEvent(
+                Id,
+                CustomerId,
+                ProviderId,
+                ServiceId,
+                StaffId,
+                TimeSlot.StartTime,
+                PaymentInfo.PaidAmount,
+                now));
+        }
+
+        /// <summary>
+        /// Assign or reassign staff to the booking
+        /// </summary>
+        public void AssignStaff(Guid newStaffId)
+        {
+            // Can only assign staff to Requested or Confirmed bookings
+            if (Status != BookingStatus.Requested && Status != BookingStatus.Confirmed)
+                throw new BusinessRuleViolationException(
+                    new StaffCanOnlyBeAssignedToActiveBookingsRule(Status));
+
+            // No change needed
+            if (StaffId == newStaffId)
+                return;
+
+            var previousStaffId = StaffId;
+            StaffId = newStaffId;
+
+            AddHistoryEntry($"Staff reassigned from {previousStaffId} to {newStaffId}", Status);
+
+            RaiseDomainEvent(new StaffAssignedToBookingEvent(
+                Id,
+                CustomerId,
+                ProviderId,
+                ServiceId,
+                previousStaffId,
+                newStaffId,
+                TimeSlot.StartTime,
+                DateTime.UtcNow));
+        }
+
+        // ========================================
+        // PAYMENT METHODS
+        // ========================================
+
+        /// <summary>
+        /// Process deposit payment
+        /// </summary>
+        public void ProcessDepositPayment(string paymentIntentId)
+        {
+            if (Status != BookingStatus.Requested)
+                throw new InvalidOperationException("Deposit can only be paid for requested bookings");
+
+            PaymentInfo = PaymentInfo.WithDepositPaid(paymentIntentId);
+
+            AddHistoryEntry($"Deposit paid: {PaymentInfo.DepositAmount}", Status);
+
+            RaiseDomainEvent(new BookingPaymentProcessedEvent(
+                Id,
+                CustomerId,
+                PaymentInfo.DepositAmount,
+                PaymentInfo.Status,
+                paymentIntentId,
+                DateTime.UtcNow));
+        }
+
+        /// <summary>
+        /// Process full payment
+        /// </summary>
+        public void ProcessFullPayment(string paymentIntentId)
+        {
+            if (Status == BookingStatus.Cancelled || Status == BookingStatus.NoShow)
+                throw new InvalidOperationException($"Cannot process payment for {Status} booking");
+
+            PaymentInfo = PaymentInfo.WithFullPayment(paymentIntentId);
+
+            AddHistoryEntry($"Full payment received: {PaymentInfo.TotalAmount}", Status);
+
+            RaiseDomainEvent(new BookingPaymentProcessedEvent(
+                Id,
+                CustomerId,
+                PaymentInfo.TotalAmount,
+                PaymentInfo.Status,
+                paymentIntentId,
+                DateTime.UtcNow));
+        }
+
+        /// <summary>
+        /// Process refund
+        /// </summary>
+        public void ProcessRefund(Money refundAmount, string refundId, string reason)
+        {
+            if (Status != BookingStatus.Cancelled)
+                throw new InvalidOperationException("Refunds can only be processed for cancelled bookings");
+
+            PaymentInfo = PaymentInfo.WithRefund(refundAmount, refundId);
+
+            AddHistoryEntry($"Refund processed: {refundAmount}. Reason: {reason}", Status);
+
+            RaiseDomainEvent(new BookingRefundProcessedEvent(
+                Id,
+                CustomerId,
+                refundAmount,
+                PaymentInfo.Status,
+                refundId,
+                reason,
+                DateTime.UtcNow));
+        }
+
+        // ========================================
+        // QUERY METHODS
+        // ========================================
+
+        /// <summary>
+        /// Check if booking can be cancelled
+        /// </summary>
+        public bool CanBeCancelled()
+        {
+            return Status == BookingStatus.Requested ||
+                   Status == BookingStatus.Confirmed;
+        }
+
+        /// <summary>
+        /// Check if booking can be rescheduled
+        /// </summary>
+        public bool CanBeRescheduled()
+        {
+            if (!Policy.AllowRescheduling)
+                return false;
+
+            return Status == BookingStatus.Requested ||
+                   Status == BookingStatus.Confirmed;
+        }
+
+        /// <summary>
+        /// Check if booking is in the past
+        /// </summary>
+        public bool IsInPast()
+        {
+            return TimeSlot.EndTime < SalonTime.Now;
+        }
+
+        /// <summary>
+        /// Check if booking is upcoming (within next 24 hours)
+        /// </summary>
+        public bool IsUpcoming()
+        {
+            var now = SalonTime.Now;
+            return TimeSlot.StartTime > now && TimeSlot.StartTime <= now.AddHours(24);
+        }
+
+        /// <summary>
+        /// Get remaining payment amount
+        /// </summary>
+        public Money GetRemainingPayment()
+        {
+            return PaymentInfo.GetRemainingAmount();
+        }
+
+        // ========================================
+        // HELPER METHODS
+        // ========================================
+
+        /// <summary>
+        /// Records which entry of the salon's customer book this booking is for. The caller checks the
+        /// entry belongs to this booking's salon.
+        /// </summary>
+        public void RecordForProviderCustomer(Guid providerCustomerId, bool notifyCustomer = true)
+        {
+            if (providerCustomerId == Guid.Empty)
+                throw new DomainValidationException(nameof(ProviderCustomerId), "مشتری نامعتبر است");
+            ProviderCustomerId = providerCustomerId;
+            NotifyCustomer = notifyCustomer;
+        }
+
+        /// <summary>
+        /// Add customer notes
+        /// </summary>
+        public void UpdateCustomerNotes(string notes, string addedBy)
+        {
+            CustomerNotes = notes;
+            AddHistoryEntry("Customer notes updated", Status);
+
+            RaiseDomainEvent(new BookingNotesAddedEvent(
+                Id,
+                CustomerId,
+                ProviderId,
+                notes,
+                addedBy,
+                IsStaffNote: false,
+                DateTime.UtcNow));
+        }
+
+        /// <summary>
+        /// Add staff notes (internal)
+        /// </summary>
+        public void UpdateStaffNotes(string notes, string addedBy)
+        {
+            StaffNotes = notes;
+            AddHistoryEntry("Staff notes updated", Status);
+
+            RaiseDomainEvent(new BookingNotesAddedEvent(
+                Id,
+                CustomerId,
+                ProviderId,
+                notes,
+                addedBy,
+                IsStaffNote: true,
+                DateTime.UtcNow));
+        }
+
+        /// <summary>
+        /// Add entry to booking history
+        /// </summary>
+        private void AddHistoryEntry(string description, BookingStatus status)
+        {
+            var entry = BookingHistoryEntry.Create(description, status);
+            _history.Add(entry);
+        }
+    }
+
+    // ========================================
+    // BUSINESS RULES
+    // ========================================
+
+    /// <summary>A booking status as the customer or salon reads it.</summary>
+    internal static class BookingStatusLabel
+    {
+        public static string Of(BookingStatus status) => status switch
+        {
+            BookingStatus.Requested => "در انتظار تأیید",
+            BookingStatus.Confirmed => "تأیید شده",
+            BookingStatus.Cancelled => "لغو شده",
+            BookingStatus.Completed => "انجام شده",
+            BookingStatus.NoShow => "عدم حضور",
+            BookingStatus.Rescheduled => "تغییر زمان داده شده",
+            _ => status.ToString(),
+        };
+    }
+
+    internal sealed class BookingCanOnlyBeConfirmedFromRequestedStateRule : IBusinessRule
+    {
+        private readonly BookingStatus _currentStatus;
+
+        public BookingCanOnlyBeConfirmedFromRequestedStateRule(BookingStatus currentStatus)
+        {
+            _currentStatus = currentStatus;
+        }
+
+        public string Message => $"فقط درخواست‌های در انتظار تأیید قابل تأیید هستند؛ وضعیت این نوبت: {BookingStatusLabel.Of(_currentStatus)}.";
+        public string ErrorCode => "BOOKING_INVALID_STATE_FOR_CONFIRMATION";
+        public bool IsBroken() => _currentStatus != BookingStatus.Requested;
+    }
+
+    internal sealed class DepositMustBePaidBeforeConfirmationRule : IBusinessRule
+    {
+        public string Message => "پیش از تأیید نوبت باید بیعانه پرداخت شود.";
+        public string ErrorCode => "BOOKING_DEPOSIT_NOT_PAID";
+        public bool IsBroken() => true;
+    }
+
+    internal sealed class BookingMustBeWithinValidTimeWindowRule : IBusinessRule
+    {
+        private readonly BookingPolicy _policy;
+
+        public BookingMustBeWithinValidTimeWindowRule(BookingPolicy policy)
+        {
+            _policy = policy;
+        }
+
+        public string Message => $"رزرو باید حداقل {_policy.MinAdvanceBookingHours} ساعت زودتر و حداکثر {_policy.MaxAdvanceBookingDays} روز زودتر انجام شود.";
+        public string ErrorCode => "BOOKING_OUTSIDE_TIME_WINDOW";
+        public bool IsBroken() => true;
+    }
+
+    internal sealed class BookingCannotBeCancelledRule : IBusinessRule
+    {
+        private readonly BookingStatus _status;
+
+        public BookingCannotBeCancelledRule(BookingStatus status)
+        {
+            _status = status;
+        }
+
+        public string Message => $"نوبتی که «{BookingStatusLabel.Of(_status)}» است قابل لغو نیست.";
+        public string ErrorCode => "BOOKING_CANNOT_BE_CANCELLED";
+        public bool IsBroken() => true;
+    }
+
+    internal sealed class BookingCannotBeRescheduledRule : IBusinessRule
+    {
+        private readonly BookingStatus _status;
+        private readonly BookingPolicy _policy;
+
+        public BookingCannotBeRescheduledRule(BookingStatus status, BookingPolicy policy)
+        {
+            _status = status;
+            _policy = policy;
+        }
+
+        public string Message => _policy.AllowRescheduling
+            ? $"نوبتی که «{BookingStatusLabel.Of(_status)}» است قابل تغییر زمان نیست."
+            : "این سالن تغییر زمان نوبت را مجاز نکرده است؛ برای تغییر با سالن تماس بگیرید.";
+        public string ErrorCode => "BOOKING_CANNOT_BE_RESCHEDULED";
+        public bool IsBroken() => true;
+    }
+
+    internal sealed class RescheduleWindowExpiredRule : IBusinessRule
+    {
+        private readonly BookingPolicy _policy;
+        private readonly DateTime _bookingStartTime;
+
+        public RescheduleWindowExpiredRule(BookingPolicy policy, DateTime bookingStartTime)
+        {
+            _policy = policy;
+            _bookingStartTime = bookingStartTime;
+        }
+
+        public string Message => $"تغییر زمان تا {_policy.RescheduleWindowHours} ساعت پیش از نوبت ممکن است؛ برای تغییر با سالن تماس بگیرید.";
+        public string ErrorCode => "BOOKING_RESCHEDULE_WINDOW_EXPIRED";
+        public bool IsBroken() => true;
+    }
+
+    internal sealed class BookingCanOnlyBeCompletedFromConfirmedStateRule : IBusinessRule
+    {
+        private readonly BookingStatus _status;
+
+        public BookingCanOnlyBeCompletedFromConfirmedStateRule(BookingStatus status)
+        {
+            _status = status;
+        }
+
+        public string Message => $"فقط نوبت‌های تأیید‌شده قابل ثبت به‌عنوان انجام‌شده هستند؛ وضعیت این نوبت: {BookingStatusLabel.Of(_status)}.";
+        public string ErrorCode => "BOOKING_INVALID_STATE_FOR_COMPLETION";
+        public bool IsBroken() => true;
+    }
+
+    internal sealed class BookingCannotBeCompletedBeforeScheduledTimeRule : IBusinessRule
+    {
+        private readonly DateTime _scheduledTime;
+
+        public BookingCannotBeCompletedBeforeScheduledTimeRule(DateTime scheduledTime)
+        {
+            _scheduledTime = scheduledTime;
+        }
+
+        public string Message => $"نوبت را پیش از زمان آن ({_scheduledTime:yyyy-MM-dd HH:mm}) نمی‌توان انجام‌شده ثبت کرد.";
+        public string ErrorCode => "BOOKING_TOO_EARLY_TO_COMPLETE";
+        public bool IsBroken() => true;
+    }
+
+    internal sealed class NoShowCanOnlyBeMarkedFromConfirmedStateRule : IBusinessRule
+    {
+        private readonly BookingStatus _status;
+
+        public NoShowCanOnlyBeMarkedFromConfirmedStateRule(BookingStatus status)
+        {
+            _status = status;
+        }
+
+        public string Message => $"عدم حضور فقط برای نوبت‌های تأیید‌شده ثبت می‌شود؛ وضعیت این نوبت: {BookingStatusLabel.Of(_status)}.";
+        public string ErrorCode => "BOOKING_INVALID_STATE_FOR_NO_SHOW";
+        public bool IsBroken() => true;
+    }
+
+    internal sealed class CannotMarkNoShowBeforeEndTimeRule : IBusinessRule
+    {
+        private readonly DateTime _endTime;
+
+        public CannotMarkNoShowBeforeEndTimeRule(DateTime endTime)
+        {
+            _endTime = endTime;
+        }
+
+        public string Message => $"عدم حضور را پیش از پایان نوبت ({_endTime:yyyy-MM-dd HH:mm}) نمی‌توان ثبت کرد.";
+        public string ErrorCode => "BOOKING_TOO_EARLY_FOR_NO_SHOW";
+        public bool IsBroken() => true;
+    }
+
+    internal sealed class StaffCanOnlyBeAssignedToActiveBookingsRule : IBusinessRule
+    {
+        private readonly BookingStatus _status;
+
+        public StaffCanOnlyBeAssignedToActiveBookingsRule(BookingStatus status)
+        {
+            _status = status;
+        }
+
+        public string Message => $"کارمند فقط به نوبت‌های در انتظار تأیید یا تأیید‌شده اختصاص داده می‌شود؛ وضعیت این نوبت: {BookingStatusLabel.Of(_status)}.";
+        public string ErrorCode => "BOOKING_INVALID_STATE_FOR_STAFF_ASSIGNMENT";
+        public bool IsBroken() => true;
+    }
+}

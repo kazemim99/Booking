@@ -1,7 +1,7 @@
 # overlays-and-navigation Specification
 
 ## Purpose
-Defines the shared overlay/chrome primitives (dialogs, bottom sheets, app-bar back/action icons) `booksy-provider-app` presents through, so confirmations and modal flows share one barrier/motion/sizing convention rather than each call site building its own `AlertDialog`.
+Defines the shared overlay/chrome primitives (dialogs, bottom sheets, app-bar back/action icons) `asanrezerve-provider-app` presents through, so confirmations and modal flows share one barrier/motion/sizing convention rather than each call site building its own `AlertDialog`.
 ## Requirements
 ### Requirement: Dialog presentation
 The system SHALL provide `AppDialog` and a `showAppDialog()` helper: a white, flat, 16dp-radius panel over a light `0x24000000` barrier, with an optional modal header (centered navy title, close action, optional divider) and an action row of `ButtonSize.dialog` (40dp) buttons. Confirmation dialogs (e.g., logout, destructive deletes) SHALL use this presentation.

@@ -1,9 +1,108 @@
 # Deployment & Operations Runbook
 
-Operational reference for running Booksy in Docker Compose on the production/staging servers.
+Operational reference for running AsanRezerve in Docker Compose on the production/staging servers.
 Moved verbatim out of `CLAUDE.md` on 2026-09-08 so the assistant instruction file can stay a
 routing document; nothing here changed in the move. For what the system *is*, see
 [openspec/project.md](../openspec/project.md); for CI, see `.github/workflows/`.
+
+## ⚠️ Pending: server-side rename to AsanRezerve (as of 2026-09-25)
+
+The repository was renamed **Booksy → AsanRezerve** (آسان رزرو) on 2026-09-25: solution, all
+namespaces, both frontend/Flutter app directories, `docker-compose.prod.yml` (service/container
+names, network), `.github/workflows/deploy.yml` (image prefix, health-check container name),
+and the `deployment/` nginx configs and setup scripts all now use the new name.
+
+**The live server at `194.1.155.230` has not been migrated yet** and still runs everything under
+the old `booksy` names described in the rest of this section (deploy user `booksy`, directory
+`/opt/booksy`, containers `booksy-api`/`booksy-frontend`/`booksy-postgres`/`booksy-redis`, runner
+label `booksy-prod`, images `ghcr.io/kazemim99/booksy-api`). **Do not just push this branch's
+`docker-compose.prod.yml`/`deploy.yml` to `master` and let CI run against the unmigrated box** —
+the deploy job's `runs-on: [self-hosted, asan-rezerve-prod]` label matches no registered runner
+(the job will queue forever, not fail loudly), and even after relabeling, `docker compose up -d`
+under the renamed service keys would create **brand-new, empty** volumes rather than reusing the
+production data — see why below.
+
+### The one risk that matters: Compose auto-names volumes after the directory
+
+`docker-compose.prod.yml` declares `postgres_data`, `redis_data`, `uploads_data`, etc. with no
+explicit `name:`, so Compose prefixes them with the **project name**, which defaults to the
+deploy directory's basename. Today that's `/opt/booksy` → volumes are actually named
+`booksy_postgres_data`, `booksy_redis_data`, `booksy_uploads_data` on disk. Renaming the directory
+to `/opt/asan-rezerve` changes the project name to `asan-rezerve`, so a plain `docker compose up
+-d` there would create **new, empty** `asan-rezerve_postgres_data` etc. and the app would boot
+against an empty database — the real data would still exist in the old volumes, but the running
+app would not see it. This must be handled explicitly, not by just renaming the directory.
+
+### Safe migration order (run once, on the box, as root unless noted)
+
+```bash
+# 0. Confirm what exists today before touching anything
+docker volume ls | grep booksy
+docker ps -a --filter "name=booksy-"
+
+# 1. Stop the app containers WITHOUT removing volumes (no `down -v`, no `-v` anywhere)
+cd /opt/booksy && docker compose -f docker-compose.prod.yml stop
+
+# 2. Move the deploy directory (keeps .env, docker-compose.prod.yml, etc.)
+mv /opt/booksy /opt/asan-rezerve
+cd /opt/asan-rezerve
+# Then copy this branch's docker-compose.prod.yml over the one here (git pull, or scp).
+
+# 3. Migrate each named volume's data to the new auto-derived name (repeat for every
+#    volume actually in use — check step 0's output; observability's seq_data/pgadmin_data
+#    only apply if that profile was ever started)
+for vol in postgres_data redis_data uploads_data; do
+  docker volume create asan-rezerve_${vol}
+  docker run --rm -v booksy_${vol}:/from -v asan-rezerve_${vol}:/to alpine \
+    sh -c "cp -av /from/. /to/"
+done
+
+# 4. Create the new deploy user, matching the old one's setup (docker group, no sudo)
+useradd -m -s /bin/bash asan-rezerve
+usermod -aG docker asan-rezerve
+chown -R asan-rezerve:asan-rezerve /opt/asan-rezerve
+
+# 5. nginx: install the new vhost files, remove the old ones, test before reload.
+#    TLS certs are per-domain (back.nahalkmi.ir etc.), not per-app-name — certbot is unaffected.
+cp deployment/nginx/asan-rezerve*.conf /etc/nginx/sites-available/
+ln -sf /etc/nginx/sites-available/asan-rezerve.conf /etc/nginx/sites-enabled/
+ln -sf /etc/nginx/sites-available/asan-rezerve-provider.conf /etc/nginx/sites-enabled/
+rm /etc/nginx/sites-enabled/booksy.conf /etc/nginx/sites-enabled/booksy-provider.conf
+nginx -t && systemctl reload nginx
+
+# 6. Bring the app up under the new names, against the migrated volumes
+docker compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml ps
+curl -s -o /dev/null -w '%{http_code}\n' https://back.nahalkmi.ir/health   # expect 200
+# Spot-check a known row count against the pre-migration database to confirm the data followed.
+
+# 7. Re-register the GitHub Actions self-hosted runner under the new user/label
+cd /home/booksy/actions-runner && ./svc.sh stop
+# As the new `asan-rezerve` user, in a fresh ~/actions-runner: ./config.sh --unattended \
+#   --url https://github.com/kazemim99/Booking --token <TOKEN> --name asan-rezerve-prod-1 \
+#   --labels asan-rezerve-prod
+# As root: ./svc.sh install asan-rezerve && ./svc.sh start
+# Update repo secrets: SERVER_USER=asan-rezerve, SERVER_DEPLOY_PATH=/opt/asan-rezerve
+
+# 8. Only after the above is verified stable (a day or two is reasonable), remove the old state:
+docker volume rm booksy_postgres_data booksy_redis_data booksy_uploads_data
+userdel -r booksy
+rm /etc/nginx/sites-available/booksy.conf /etc/nginx/sites-available/booksy-provider.conf
+```
+
+GHCR images need no migration step: `deploy.yml` now pushes to a new package
+(`ghcr.io/kazemim99/asan-rezerve-api`, `-frontend`) and the first deploy simply builds and pulls
+it fresh — there is no old image to carry data forward from.
+
+If Alertmanager's Slack routing (`deployment/monitoring/alertmanager/config.yml`) is actually wired
+up to real Slack channels, the channel/webhook names in that file were renamed too (`#booksy-alerts`
+→ `#asan-rezerve-alerts`, etc.) — recreate or rename the actual Slack channels before relying on
+alerts, since renaming the string in the config does not rename anything on Slack's side.
+
+**Once the migration above is done and verified**, update the rest of this document (the
+"Current production state" section and everything under "Architecture" / "Common Commands" /
+"GitHub Actions Workflows" below) from `booksy` to `asan-rezerve` to match — it was deliberately
+left describing the *current, pre-migration* reality so the commands in it keep working until then.
 
 ## Current production state (as of 2026-09-18)
 

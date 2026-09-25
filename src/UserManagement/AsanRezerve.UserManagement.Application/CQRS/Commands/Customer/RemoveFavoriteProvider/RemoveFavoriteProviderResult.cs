@@ -1,0 +1,15 @@
+// ========================================
+// AsanRezerve.UserManagement.Application/CQRS/Commands/Customer/RemoveFavoriteProvider/RemoveFavoriteProviderResult.cs
+// ========================================
+
+namespace AsanRezerve.UserManagement.Application.CQRS.Commands.Customer.RemoveFavoriteProvider
+{
+    /// <summary>
+    /// Result of removing a favorite provider
+    /// </summary>
+    public sealed record RemoveFavoriteProviderResult(
+        Guid CustomerId,
+        Guid ProviderId,
+        DateTime RemovedAt,
+        int RemainingFavorites);
+}

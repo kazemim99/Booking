@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Booksy - Stop All Services
+# AsanRezerve - Stop All Services
 # This script stops all running services
 
 echo "========================================"
-echo "  Booksy - Stopping All Services"
+echo "  AsanRezerve - Stopping All Services"
 echo "========================================"
 echo ""
 
@@ -38,10 +38,10 @@ rm -f "$SCRIPT_DIR/.pids"
 
 # Also kill any remaining dotnet and node processes for this project
 echo -e "${YELLOW}Cleaning up any remaining processes...${NC}"
-pkill -f "Booksy.UserManagement.API" 2>/dev/null
-pkill -f "Booksy.ServiceCatalog.Api" 2>/dev/null
-pkill -f "Booksy.Gateway" 2>/dev/null
-pkill -f "vite.*booksy-frontend" 2>/dev/null
+pkill -f "AsanRezerve.UserManagement.API" 2>/dev/null
+pkill -f "AsanRezerve.ServiceCatalog.Api" 2>/dev/null
+pkill -f "AsanRezerve.Gateway" 2>/dev/null
+pkill -f "vite.*asanrezerve-frontend" 2>/dev/null
 
 echo ""
 echo -e "${GREEN}All services stopped successfully!${NC}"

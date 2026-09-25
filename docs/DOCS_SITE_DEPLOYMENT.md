@@ -1,6 +1,6 @@
 # Docs-Site Deployment
 
-How to deploy the **Docusaurus documentation site** (`docs-site/`) to GitHub Pages. This is about publishing the docs site itself — it has nothing to do with deploying the Booksy application; see the root `CLAUDE.md` for that.
+How to deploy the **Docusaurus documentation site** (`docs-site/`) to GitHub Pages. This is about publishing the docs site itself — it has nothing to do with deploying the AsanRezerve application; see the root `CLAUDE.md` for that.
 
 **Docs URL**: `https://kazemim99.github.io/Booking/`
 

@@ -2,7 +2,7 @@
 
 ## Why
 
-A deep UI/UX review of `booksy-customer-app` (2026-09-23, code read end to end plus a guest walk of a local `master`
+A deep UI/UX review of `asanrezerve-customer-app` (2026-09-23, code read end to end plus a guest walk of a local `master`
 build against the production API at 390×844, 360×640 and 1440×900) found problems on the booking path, colour defects
 in the theme that repeat on many screens, and a web deployment that shows a blank page for several seconds. It builds on
 `openspec/changes/_inline/qa-walkthrough-2026-09-22` (all DONE); nothing here repeats that list.

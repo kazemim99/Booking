@@ -85,6 +85,11 @@ User request (2026-09-25): «الان من چرا نمیتونم بعنوان م
 
 ## Log
 
+- 2026-09-25 Merged master (47b0439 + 99321df: rename Booksy → AsanRezerve). Conflicts were import/using blocks only;
+  kept this change's additions under the new names, moved the new files into the renamed folders, and fixed
+  scripts/verify.sh/.ps1, which looked for asanrezerve-* folders (the apps are asan-rezerve-*), so the web and Flutter
+  gates could not run. FULL PASS after the merge (20 steps, 552 s, incl. the admin app).
+
 - 2026-09-25 FULL PASS on 1116492 (18 steps, 528 s): unit + architecture, integration suite, web type-check/lint/unit,
   customer and provider apps analyze + test. Not deployed; production untouched.
 

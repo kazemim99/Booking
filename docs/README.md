@@ -1,6 +1,6 @@
-# Booksy Documentation
+# AsanRezerve Documentation
 
-Welcome to the Booksy booking platform documentation. This directory contains comprehensive guides, API documentation, and development notes.
+Welcome to the AsanRezerve booking platform documentation. This directory contains comprehensive guides, API documentation, and development notes.
 
 ## Quick Navigation
 
@@ -35,7 +35,7 @@ Welcome to the Booksy booking platform documentation. This directory contains co
 
 ## Project Overview
 
-Booksy is a comprehensive booking platform designed for service providers (salons, spas, etc.) to manage appointments, customers, and services. The platform supports Persian/Farsi language with full RTL layout and Jalali calendar integration.
+AsanRezerve is a comprehensive booking platform designed for service providers (salons, spas, etc.) to manage appointments, customers, and services. The platform supports Persian/Farsi language with full RTL layout and Jalali calendar integration.
 
 ## Tech Stack
 
@@ -58,8 +58,8 @@ Booksy is a comprehensive booking platform designed for service providers (salon
 ## Project Structure
 
 ```
-Booksy/
-├── booksy-frontend/          # Vue 3 frontend application
+AsanRezerve/
+├── asanrezerve-frontend/          # Vue 3 frontend application
 │   ├── src/
 │   │   ├── modules/
 │   │   │   └── provider/     # Provider module
@@ -72,7 +72,7 @@ Booksy/
 │   │       ├── components/   # Reusable components
 │   │       └── utils/        # Utility functions
 │   └── package.json
-├── booksy-backend/           # Laravel backend
+├── asanrezerve-backend/           # Laravel backend
 └── docs/                     # This documentation directory
 ```
 
@@ -197,7 +197,7 @@ const method = () => {
 ### Frontend Setup
 
 ```bash
-cd booksy-frontend
+cd asanrezerve-frontend
 npm install
 npm run dev
 ```
@@ -205,7 +205,7 @@ npm run dev
 ### Backend Setup
 
 ```bash
-cd booksy-backend
+cd asanrezerve-backend
 composer install
 php artisan migrate
 php artisan serve

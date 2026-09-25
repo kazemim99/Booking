@@ -1,4 +1,4 @@
-# Booksy Documentation Index
+# AsanRezerve Documentation Index
 
 **Last Updated**: December 8, 2025
 

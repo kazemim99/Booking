@@ -6,7 +6,7 @@
 set -e
 
 echo "========================================="
-echo "Booksy - SSL/TLS Setup with Let's Encrypt"
+echo "AsanRezerve - SSL/TLS Setup with Let's Encrypt"
 echo "========================================="
 
 # Check if running as root
@@ -16,12 +16,12 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # Variables
-DOMAIN="${1:-booksy.yourdomain.com}"
+DOMAIN="${1:-asan-rezerve.yourdomain.com}"
 EMAIL="${2:-admin@yourdomain.com}"
 
-if [ "$DOMAIN" = "booksy.yourdomain.com" ]; then
+if [ "$DOMAIN" = "asan-rezerve.yourdomain.com" ]; then
     echo "Usage: sudo ./setup-ssl.sh your-domain.com your-email@example.com"
-    echo "Example: sudo ./setup-ssl.sh booksy.example.com admin@example.com"
+    echo "Example: sudo ./setup-ssl.sh asan-rezerve.example.com admin@example.com"
     exit 1
 fi
 
@@ -49,14 +49,14 @@ mkdir -p /var/www/certbot
 
 # Copy Nginx configuration
 echo "Setting up Nginx configuration..."
-NGINX_CONF="/etc/nginx/sites-available/booksy"
-cp /opt/booksy/deployment/nginx/booksy.conf $NGINX_CONF
+NGINX_CONF="/etc/nginx/sites-available/asan-rezerve"
+cp /opt/asan-rezerve/deployment/nginx/asan-rezerve.conf $NGINX_CONF
 
 # Replace domain placeholder
-sed -i "s/booksy.yourdomain.com/$DOMAIN/g" $NGINX_CONF
+sed -i "s/asan-rezerve.yourdomain.com/$DOMAIN/g" $NGINX_CONF
 
 # Create symlink
-ln -sf $NGINX_CONF /etc/nginx/sites-enabled/booksy
+ln -sf $NGINX_CONF /etc/nginx/sites-enabled/asan-rezerve
 
 # Remove default site
 rm -f /etc/nginx/sites-enabled/default
@@ -89,6 +89,6 @@ echo "Certificate will automatically renew every 90 days"
 echo ""
 echo "Next steps:"
 echo "1. Update your DNS A record to point $DOMAIN to this server's IP"
-echo "2. Update API_BASE_URL in /opt/booksy/.env to https://$DOMAIN"
-echo "3. Restart services: cd /opt/booksy && docker-compose -f docker-compose.prod.yml restart"
+echo "2. Update API_BASE_URL in /opt/asan-rezerve/.env to https://$DOMAIN"
+echo "3. Restart services: cd /opt/asan-rezerve && docker-compose -f docker-compose.prod.yml restart"
 echo ""

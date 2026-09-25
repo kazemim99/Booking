@@ -1,0 +1,6 @@
+@AsanRezerve.UserManagement.API_HostAddress = http://localhost:5031
+
+GET {{AsanRezerve.UserManagement.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

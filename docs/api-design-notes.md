@@ -44,10 +44,10 @@ Benefits:
 Continue using the provider update endpoint for business hours, and update the frontend service definitions to match reality.
 
 ### Related Files
-- Frontend: `booksy-frontend/src/modules/provider/services/hours.service.ts`
-- Frontend: `booksy-frontend/src/modules/provider/stores/hours.store.ts`
-- Frontend: `booksy-frontend/src/modules/provider/views/hours/BusinessHoursView.vue`
-- Backend: `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Controllers/V1/ProvidersController.cs`
+- Frontend: `asanrezerve-frontend/src/modules/provider/services/hours.service.ts`
+- Frontend: `asanrezerve-frontend/src/modules/provider/stores/hours.store.ts`
+- Frontend: `asanrezerve-frontend/src/modules/provider/views/hours/BusinessHoursView.vue`
+- Backend: `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api/Controllers/V1/ProvidersController.cs`
 
 ### Status
 - ⚠️ **Temporary Fix Applied**: Frontend now uses provider update endpoint correctly

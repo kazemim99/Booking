@@ -1,6 +1,6 @@
 # Geolocation Guide
 
-How Booksy's homepage location auto-detection works, how to test it, and how to debug it when it shows the wrong city.
+How AsanRezerve's homepage location auto-detection works, how to test it, and how to debug it when it shows the wrong city.
 
 ## How it works
 
@@ -12,7 +12,7 @@ Flow: `HeroSection` requests the current position → `GeolocationService` rever
 
 ### On mobile (best results)
 1. Enable location in device settings (Android: Settings → Location; iOS: Settings → Privacy → Location Services)
-2. Open the Booksy homepage — the GPS button (📍) is in the city field
+2. Open the AsanRezerve homepage — the GPS button (📍) is in the city field
 3. Click the GPS button and allow the location permission prompt
 4. Wait 10–20 seconds for the first GPS lock; a success message shows the detected city (e.g. "✅ موقعیت شما: اردبیل")
 
@@ -44,7 +44,7 @@ This is the raw Neshan reverse-geocode response. It may be flat (`{ "city": "...
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
-| `Neshan API error: 401`/`403` in console | Invalid/missing API key | Check `VITE_NESHAN_SERVICE_KEY` in `booksy-frontend/.env.development`; get a fresh **Service** key (not a Map key) from the [Neshan platform dashboard](https://platform.neshan.org/dashboard/keys) |
+| `Neshan API error: 401`/`403` in console | Invalid/missing API key | Check `VITE_NESHAN_SERVICE_KEY` in `asanrezerve-frontend/.env.development`; get a fresh **Service** key (not a Map key) from the [Neshan platform dashboard](https://platform.neshan.org/dashboard/keys) |
 | CORS error | Neshan API not allowing the origin | Should work on localhost by default; if blocked, test on a deployed domain |
 | City shows in an unexpected JSON field | Neshan response shape varies by area | The fallback chain above should already cover it; if not, add the new field name to the parser |
 | A `403` appears but location still resolves | The browser tries a Google-backed provider first, then falls back to device GPS | Expected — ignore |

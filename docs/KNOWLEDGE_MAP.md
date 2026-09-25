@@ -74,9 +74,9 @@ Two known traps:
 ## Where the code is
 
 Do not infer structure from the docs — read [`openspec/project.md`]openspec/project.md),
-which is verified against source. In brief: one ASP.NET Core host (`src/Host/Booksy.Host`)
+which is verified against source. In brief: one ASP.NET Core host (`src/Host/AsanRezerve.Host`)
 composing bounded contexts under `src/BoundedContexts/` and `src/UserManagement/`; four client
-apps (`booksy-frontend`, `booksy-admin`, `booksy-customer-app`, `booksy-provider-app`); tests
+apps (`asanrezerve-frontend`, `asanrezerve-admin`, `asanrezerve-customer-app`, `asanrezerve-provider-app`); tests
 under `tests/`.
 
 ## Full index
@@ -121,7 +121,7 @@ for f in *.md docs/*.md; do echo "$(git log -1 --format=%ad --date=short -- "$f"
 | 2026-08-09 | `IDENTITY_AND_STAFF_ARCHITECTURE.md` | Person → OrganizationMembership → StaffProfile design: current problems, target model, UX flows, domain model. Pairs with change `refactor-identity-and-membership`. |
 | 2026-07-16 | `API_ENDPOINTS.md` | Endpoint reference by context. *Aging* — confirm against `src/**/Controllers/`. |
 | 2026-07-14 | `COMPLETION_ROADMAP.md` | Phased plan to MVP with epics and status. *Aging* — statuses drift fastest. |
-| 2026-07-12 | `VISUAL_STUDIO_DEBUGGING.md` | Running/debugging `Booksy.Host` in VS against Docker infra. |
+| 2026-07-12 | `VISUAL_STUDIO_DEBUGGING.md` | Running/debugging `AsanRezerve.Host` in VS against Docker infra. |
 | 2026-07-12 | `GEOLOCATION_GUIDE.md` | Homepage location auto-detection: behavior, testing, debugging. |
 | 2026-06-19 | `CHANGELOG.md` | Release history. *Aging.* |
 | 2026-06-17 | `README.md` | Business overview, stack, project structure, getting started. **Its "Recent Updates" banner says 2025-12-21 — not a freshness signal.** |
@@ -148,7 +148,7 @@ Four 2026 files; the other 32 predate 2026. Treat pre-2026 entries as *why*, nev
 |---|---|---|
 | 2026-08-19 | `KNOWLEDGE.md` | **The knowledge contract** — where each kind of knowledge lives, which copy wins. |
 | 2026-08-19 | `SERVICE_CATEGORY_MODEL.md` | Provider/service category model. |
-| 2026-07-12 | `DOCS_SITE_DEPLOYMENT.md` | Deploying the Docusaurus site — *not* about deploying Booksy. |
+| 2026-07-12 | `DOCS_SITE_DEPLOYMENT.md` | Deploying the Docusaurus site — *not* about deploying AsanRezerve. |
 | 2025-12-18 | `INDEX.md` | **Broken** — 10 dead links. Do not use as a directory. |
 | 2025-12-18 | `BOOKING_API_REFERENCE.md`, `BOOKING_MIGRATION_CHECKLIST.md` | Booking API and migration checklist, pre-monolith. |
 | 2025-12-07 | `STAFF_INVITATION_FLOW.md`, `OTP_INVITATION_FLOW.md`, `HIERARCHY_MIGRATION_README.md` | Staff invitation and the **retired** provider-hierarchy model. Superseded by `IDENTITY_AND_STAFF_ARCHITECTURE.md`. |
@@ -174,10 +174,10 @@ truth. If it needs to be correct, that is its own piece of work.
 
 | Location | Answers |
 |---|---|
-| `booksy-customer-app/` | `PROJECT_SUMMARY.md`, `FLUTTER_BACKEND_CONNECTION.md`, `CUSTOMER_APP_UX_FLOW.md` |
-| `booksy-provider-app/` | `DESIGN_LANGUAGE.md` — **normative** design spec (tokens, components); states Coliride is a visual-language donor only, never its flows. `AUTH_SPECIFICATION.md`. |
-| `booksy-frontend/e2e/` | `README.md` — Playwright suite conventions. |
-| `booksy-admin/` | Has its own `AGENTS.md`, `CLAUDE.md`, and nested `openspec/`. |
+| `asanrezerve-customer-app/` | `PROJECT_SUMMARY.md`, `FLUTTER_BACKEND_CONNECTION.md`, `CUSTOMER_APP_UX_FLOW.md` |
+| `asanrezerve-provider-app/` | `DESIGN_LANGUAGE.md` — **normative** design spec (tokens, components); states Coliride is a visual-language donor only, never its flows. `AUTH_SPECIFICATION.md`. |
+| `asanrezerve-frontend/e2e/` | `README.md` — Playwright suite conventions. |
+| `asanrezerve-admin/` | Has its own `AGENTS.md`, `CLAUDE.md`, and nested `openspec/`. |
 
 ## Machine-local, not in git
 

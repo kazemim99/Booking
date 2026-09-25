@@ -18,7 +18,7 @@
 #
 # PREREQUISITES (host must run with sandbox auth + the fake gateway):
 #   OTP_SANDBOX_CODE=123456 Payments__UseFakeZarinPal=true \
-#     ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/Host/Booksy.Host
+#     ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/Host/AsanRezerve.Host
 #   (Postgres + Redis up)
 #
 # USAGE:  BASE=http://localhost:5000 bash tests/e2e/deposit-checkout-flow.sh

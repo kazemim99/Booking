@@ -7,7 +7,7 @@ this file is the short, practical map.
 ## The rule
 
 If a test needs Testcontainers, `WebApplicationFactory`, or a `DbContext`, it is not a unit test —
-it belongs in `Booksy.Host.IntegrationTests`. Everything else (pure logic, a handler with its
+it belongs in `AsanRezerve.Host.IntegrationTests`. Everything else (pure logic, a handler with its
 dependencies substituted, a controller with the mediator substituted, a specification, a mapping)
 belongs in one of the unit projects below.
 
@@ -17,37 +17,37 @@ belongs in one of the unit projects below.
 
 | Project | Covers |
 |---|---|
-| `Booksy.Core.Domain.UnitTests` | Core value objects, domain exceptions |
-| `Booksy.Infrastructure.Core.UnitTests` | Shared infrastructure (caching, persistence base) |
-| `Booksy.ServiceCatalog.Domain.UnitTests` | ServiceCatalog aggregates, value objects, domain events |
-| `Booksy.ServiceCatalog.Application.UnitTests` | ServiceCatalog command/query handlers, services |
-| `Booksy.ServiceCatalog.Api.UnitTests` | ServiceCatalog controllers, specifications, mapping |
-| `Booksy.Infrastructure.External.UnitTests` | Gateway adapters (payment, notifications) |
-| `Booksy.UserManagement.Application.UnitTests` | UserManagement application layer, including `JwtTokenService` |
-| `Booksy.ArchitectureTests` | Cross-cutting architecture rules (NetArchTest) |
+| `AsanRezerve.Core.Domain.UnitTests` | Core value objects, domain exceptions |
+| `AsanRezerve.Infrastructure.Core.UnitTests` | Shared infrastructure (caching, persistence base) |
+| `AsanRezerve.ServiceCatalog.Domain.UnitTests` | ServiceCatalog aggregates, value objects, domain events |
+| `AsanRezerve.ServiceCatalog.Application.UnitTests` | ServiceCatalog command/query handlers, services |
+| `AsanRezerve.ServiceCatalog.Api.UnitTests` | ServiceCatalog controllers, specifications, mapping |
+| `AsanRezerve.Infrastructure.External.UnitTests` | Gateway adapters (payment, notifications) |
+| `AsanRezerve.UserManagement.Application.UnitTests` | UserManagement application layer, including `JwtTokenService` |
+| `AsanRezerve.ArchitectureTests` | Cross-cutting architecture rules (NetArchTest) |
 
 **Integration** — real Postgres via Testcontainers, run by `scripts/verify -Tier full`:
 
 | Project | Covers |
 |---|---|
-| `Booksy.Host.IntegrationTests` | Everything that boots the real composed host: ServiceCatalog and UserManagement API/persistence behavior (`ServiceCatalog/`, `UserManagement/` folders, one shared `BooksyHostFactory`), and host composition itself (`Composition/` folder, its own unfaked `HostCompositionFactory`) |
+| `AsanRezerve.Host.IntegrationTests` | Everything that boots the real composed host: ServiceCatalog and UserManagement API/persistence behavior (`ServiceCatalog/`, `UserManagement/` folders, one shared `AsanRezerveHostFactory`), and host composition itself (`Composition/` folder, its own unfaked `HostCompositionFactory`) |
 
 One project, not three, since `docs/TEST_ARCHITECTURE_AUDIT.md` Phase 2 slice 4 — it used to be
-`Booksy.ServiceCatalog.IntegrationTests`, `Booksy.UserManagement.IntegrationTests` and
-`Booksy.Host.CompositionTests`, each booting its own host. Inside it, `ServiceCatalog/` and
-`UserManagement/` tests share one collection (`BooksyHostTestCollection`) and one faked host
+`AsanRezerve.ServiceCatalog.IntegrationTests`, `AsanRezerve.UserManagement.IntegrationTests` and
+`AsanRezerve.Host.CompositionTests`, each booting its own host. Inside it, `ServiceCatalog/` and
+`UserManagement/` tests share one collection (`AsanRezerveHostTestCollection`) and one faked host
 (payment gateway, notification senders replaced with capturing fakes); `Composition/` tests run
 against the real, unfaked production DI graph in their own collection
 (`HostCompositionCollection`). The two collections run in parallel with each other
 (`xunit.runner.json`, `[assembly: CollectionBehavior(MaxParallelThreads = 2)]`); classes within a
 collection never run concurrently with each other.
 
-**Shared test infrastructure**: `Booksy.Tests.Commons` — `PostgresTestContainerFixture` (one
+**Shared test infrastructure**: `AsanRezerve.Tests.Commons` — `PostgresTestContainerFixture` (one
 Postgres server per test process, one database per factory), `DatabaseReset` (per-test
 `TRUNCATE`), `ResettableDistributedCache`, `IResettableFake`, `IntegrationTestAuthenticationHandler`
 (claims-based test auth — no JWT is minted or needed), builders (`ProviderBuilder`,
 `ServiceBuilder`), AutoFixture customizations. No project references this for its own sake; it
-exists because `Booksy.Host.IntegrationTests` needs it.
+exists because `AsanRezerve.Host.IntegrationTests` needs it.
 
 ## Conventions
 
@@ -76,7 +76,7 @@ exists because `Booksy.Host.IntegrationTests` needs it.
 
 ```
 scripts/verify.ps1 -Tier fast    # unit + architecture, no Docker
-scripts/verify.ps1 -Tier full    # + Booksy.Host.IntegrationTests, + touched frontend/mobile apps
+scripts/verify.ps1 -Tier full    # + AsanRezerve.Host.IntegrationTests, + touched frontend/mobile apps
 ```
 
 POSIX twin: `scripts/verify.sh fast|full`. Result: `.verify/status.json`. A `-Filter`ed FULL run is

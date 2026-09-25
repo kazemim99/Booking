@@ -1,15 +1,15 @@
 # Visual Studio Debugging Guide
 
-How to debug the Booksy backend in Visual Studio while infrastructure (PostgreSQL, Redis, Seq, pgAdmin) runs in Docker.
+How to debug the AsanRezerve backend in Visual Studio while infrastructure (PostgreSQL, Redis, Seq, pgAdmin) runs in Docker.
 
-> The backend is a **single modular-monolith host** (`Booksy.Host`) — there is no separate Gateway, UserManagement API, or ServiceCatalog API process to start, and no RabbitMQ (cross-context events run in-process via CAP). If you find older instructions describing a Gateway + per-context APIs + RabbitMQ setup, they predate the monolith migration (see `MONOLITH_MIGRATION_PLAN.md`) and no longer apply.
+> The backend is a **single modular-monolith host** (`AsanRezerve.Host`) — there is no separate Gateway, UserManagement API, or ServiceCatalog API process to start, and no RabbitMQ (cross-context events run in-process via CAP). If you find older instructions describing a Gateway + per-context APIs + RabbitMQ setup, they predate the monolith migration (see `MONOLITH_MIGRATION_PLAN.md`) and no longer apply.
 
 ## Architecture
 
 ```
 ┌───────────────────────────┐
 │  Visual Studio (F5/Debug) │
-│      Booksy.Host :5000    │
+│      AsanRezerve.Host :5000    │
 └─────────────┬──────────────┘
               │
 ┌─────────────▼──────────────────────────────────────────┐
@@ -29,28 +29,28 @@ cd C:\Repos\Booking
 .\run-infrastructure.ps1   # starts docker-compose.infrastructure.yml: Postgres, Redis, Seq, pgAdmin
 ```
 
-(This script's printed next-steps still mention the old Gateway/multi-project setup — ignore that part; just start `Booksy.Host` per step 2 below.)
+(This script's printed next-steps still mention the old Gateway/multi-project setup — ignore that part; just start `AsanRezerve.Host` per step 2 below.)
 
-### 2. Run Booksy.Host in Visual Studio
+### 2. Run AsanRezerve.Host in Visual Studio
 
-1. Open `Booksy.sln`
-2. Set `Booksy.Host` as the startup project (single project — no "multiple startup projects" needed)
+1. Open `AsanRezerve.sln`
+2. Set `AsanRezerve.Host` as the startup project (single project — no "multiple startup projects" needed)
 3. Select the **http** launch profile
 4. Press **F5** — it starts on `http://localhost:5000` and opens Swagger
 
 ### 3. Run the frontend
 
 ```bash
-cd booksy-frontend
+cd asanrezerve-frontend
 npm run dev   # http://localhost:3000, Vite proxies /api to localhost:5000
 ```
 
 ## Debugging tips
 
-- **Breakpoints**: set them directly in controllers, command/query handlers, or domain code in `Booksy.Host`'s composed bounded contexts — everything runs in one process, so a single F5 session covers UserManagement and ServiceCatalog code alike.
-- **Logs**: Visual Studio's Output window shows the host's console log; for structured/searchable logs, use **Seq** at http://localhost:5341 (`admin` / `Booksy@2024!`).
-- **Database**: inspect via **pgAdmin** at http://localhost:5050 (`admin@booksy.com` / `Booksy@2024!`) — add a server pointing at `localhost:54321`, database `booksy`. Or use Visual Studio's SQL Server Object Explorer with the Npgsql provider.
-- **Redis**: `docker exec -it booksy-redis redis-cli -a Redis@2024!` (adjust the port per the note above), then `KEYS booksy:*` / `GET <key>`.
+- **Breakpoints**: set them directly in controllers, command/query handlers, or domain code in `AsanRezerve.Host`'s composed bounded contexts — everything runs in one process, so a single F5 session covers UserManagement and ServiceCatalog code alike.
+- **Logs**: Visual Studio's Output window shows the host's console log; for structured/searchable logs, use **Seq** at http://localhost:5341 (`admin` / `AsanRezerve@2024!`).
+- **Database**: inspect via **pgAdmin** at http://localhost:5050 (`admin@asanrezerve.com` / `AsanRezerve@2024!`) — add a server pointing at `localhost:54321`, database `asanrezerve`. Or use Visual Studio's SQL Server Object Explorer with the Npgsql provider.
+- **Redis**: `docker exec -it asanrezerve-redis redis-cli -a Redis@2024!` (adjust the port per the note above), then `KEYS asanrezerve:*` / `GET <key>`.
 - **Integration events (CAP)**: no broker to inspect — query the `cap` schema in Postgres for outbox/inbox rows, or watch Seq for CAP's own log lines.
 
 ## Common issues
@@ -58,10 +58,10 @@ npm run dev   # http://localhost:3000, Vite proxies /api to localhost:5000
 | Symptom | Cause | Fix |
 | --- | --- | --- |
 | `Failed to bind to address http://127.0.0.1:5000: address already in use` | Another process holds port 5000 | `netstat -ano \| findstr :5000` then `taskkill /F /PID <PID>` |
-| Can't connect to PostgreSQL | Container not healthy | `docker ps \| findstr postgres`; `docker exec booksy-postgres pg_isready -U booksy_admin` |
-| Can't connect to Redis | Wrong port (see note above) or container down | `docker exec booksy-redis redis-cli -a Redis@2024! ping` should return `PONG` |
-| Database doesn't exist | Fresh Postgres volume | `docker exec -it booksy-postgres psql -U booksy_admin -c "CREATE DATABASE booksy;"` — migrations then run automatically at host startup |
-| Frontend shows CORS errors | Backend not running, or CORS config out of date | Confirm `Booksy.Host` is up on :5000; CORS is configured for `localhost:3000` |
+| Can't connect to PostgreSQL | Container not healthy | `docker ps \| findstr postgres`; `docker exec asanrezerve-postgres pg_isready -U asanrezerve_admin` |
+| Can't connect to Redis | Wrong port (see note above) or container down | `docker exec asanrezerve-redis redis-cli -a Redis@2024! ping` should return `PONG` |
+| Database doesn't exist | Fresh Postgres volume | `docker exec -it asanrezerve-postgres psql -U asanrezerve_admin -c "CREATE DATABASE asanrezerve;"` — migrations then run automatically at host startup |
+| Frontend shows CORS errors | Backend not running, or CORS config out of date | Confirm `AsanRezerve.Host` is up on :5000; CORS is configured for `localhost:3000` |
 
 ## Stopping services
 
@@ -87,6 +87,6 @@ static const String baseUrl = 'http://192.168.1.x:5000';
 ```
 
 ```bash
-cd booksy-customer-app
+cd asanrezerve-customer-app
 flutter run
 ```

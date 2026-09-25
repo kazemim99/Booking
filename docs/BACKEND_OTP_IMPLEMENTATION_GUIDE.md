@@ -23,7 +23,7 @@ This guide provides step-by-step instructions for completing the backend impleme
 ## Files Created
 
 ### 1. Command Files
-- **Location:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application/Commands/ProviderHierarchy/AcceptInvitationWithRegistration/`
+- **Location:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application/Commands/ProviderHierarchy/AcceptInvitationWithRegistration/`
 
 #### AcceptInvitationWithRegistrationCommand.cs
 ```csharp
@@ -50,7 +50,7 @@ Validates:
 - OtpCode (exactly 6 digits)
 
 ### 2. Controller Endpoint
-- **Location:** `src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api/Controllers/V1/ProviderHierarchyController.cs`
+- **Location:** `src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api/Controllers/V1/ProviderHierarchyController.cs`
 - **Route:** `POST /api/v1/providers/{providerId}/hierarchy/invitations/{invitationId}/accept-with-registration`
 - **Authorization:** `[AllowAnonymous]` - No authentication required (unregistered users)
 
@@ -62,8 +62,8 @@ First, ensure all new files compile:
 
 ```bash
 cd c:\Repos\Booking
-dotnet build src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Application
-dotnet build src/BoundedContexts/ServiceCatalog/Booksy.ServiceCatalog.Api
+dotnet build src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Application
+dotnet build src/BoundedContexts/ServiceCatalog/AsanRezerve.ServiceCatalog.Api
 ```
 
 If there are compilation errors about missing namespaces, the project references are correct but the IDE needs to refresh.

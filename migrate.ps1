@@ -14,7 +14,7 @@ $Green = "Green"
 $Yellow = "Yellow"
 $Red = "Red"
 
-Write-Host "Booksy Database Migration Tool" -ForegroundColor $Green
+Write-Host "AsanRezerve Database Migration Tool" -ForegroundColor $Green
 Write-Host "================================" -ForegroundColor $Green
 
 function Run-Migrations {
@@ -22,7 +22,7 @@ function Run-Migrations {
     
     Write-Host "Running database migrations..." -ForegroundColor $Yellow
     
-    Push-Location "src/UserManagement/Booksy.UserManagement.Infrastructure"
+    Push-Location "src/UserManagement/AsanRezerve.UserManagement.Infrastructure"
     
     try {
         switch ($Action) {
@@ -33,7 +33,7 @@ function Run-Migrations {
                 }
                 Write-Host "Adding new migration: $MigrationName" -ForegroundColor $Yellow
                 dotnet ef migrations add $MigrationName `
-                    --startup-project "../Booksy.UserManagement.API" `
+                    --startup-project "../AsanRezerve.UserManagement.API" `
                     --context "UserManagementDbContext" `
                     --output-dir "Persistence/Migrations"
             }
@@ -41,21 +41,21 @@ function Run-Migrations {
             "update" {
                 Write-Host "Updating database..." -ForegroundColor $Yellow
                 dotnet ef database update `
-                    --startup-project "../Booksy.UserManagement.API" `
+                    --startup-project "../AsanRezerve.UserManagement.API" `
                     --context "UserManagementDbContext"
             }
             
             "remove" {
                 Write-Host "Removing last migration..." -ForegroundColor $Yellow
                 dotnet ef migrations remove `
-                    --startup-project "../Booksy.UserManagement.API" `
+                    --startup-project "../AsanRezerve.UserManagement.API" `
                     --context "UserManagementDbContext"
             }
             
             "list" {
                 Write-Host "Listing migrations..." -ForegroundColor $Yellow
                 dotnet ef migrations list `
-                    --startup-project "../Booksy.UserManagement.API" `
+                    --startup-project "../AsanRezerve.UserManagement.API" `
                     --context "UserManagementDbContext"
             }
             
@@ -66,7 +66,7 @@ function Run-Migrations {
                     New-Item -ItemType Directory -Path "../../../scripts" -Force
                 }
                 dotnet ef migrations script `
-                    --startup-project "../Booksy.UserManagement.API" `
+                    --startup-project "../AsanRezerve.UserManagement.API" `
                     --context "UserManagementDbContext" `
                     --output "../../../scripts/migrations.sql"
             }

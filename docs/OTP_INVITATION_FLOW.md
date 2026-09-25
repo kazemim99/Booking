@@ -20,7 +20,7 @@ This document describes the implementation of the OTP-based invitation acceptanc
 ### Components Created/Modified
 
 #### 1. `OTPInput.vue` ✅ (NEW)
-**Location**: `booksy-frontend/src/shared/components/ui/OTPInput.vue`
+**Location**: `asanrezerve-frontend/src/shared/components/ui/OTPInput.vue`
 
 **Features**:
 - 6-digit OTP input with individual boxes
@@ -46,7 +46,7 @@ interface Props {
 - `complete`: Emitted when all digits are filled
 
 #### 2. `AcceptInvitationView.vue` ✅ (MODIFIED)
-**Location**: `booksy-frontend/src/modules/provider/views/invitation/AcceptInvitationView.vue`
+**Location**: `asanrezerve-frontend/src/modules/provider/views/invitation/AcceptInvitationView.vue`
 
 **New Features**:
 - Three-step registration flow (preview → form → OTP)
@@ -89,7 +89,7 @@ const otpTimer = ref(120)
 - `formatPhone()`: Formats phone number for display (0912 XXX XXXX)
 
 #### 3. `hierarchy.service.ts` ✅ (MODIFIED)
-**Location**: `booksy-frontend/src/modules/provider/services/hierarchy.service.ts`
+**Location**: `asanrezerve-frontend/src/modules/provider/services/hierarchy.service.ts`
 
 **New Method**:
 ```typescript
@@ -118,7 +118,7 @@ async acceptInvitationWithRegistration(request: {
 
 ### 1. Controller Endpoint ⚠️ (TO BE IMPLEMENTED)
 
-**File**: `Booksy.ServiceCatalog.Api/Controllers/V1/ProviderHierarchyController.cs`
+**File**: `AsanRezerve.ServiceCatalog.Api/Controllers/V1/ProviderHierarchyController.cs`
 
 **Endpoint**:
 ```csharp
@@ -167,7 +167,7 @@ public record AcceptInvitationWithRegistrationRequest(
 
 ### 2. Command Handler ⚠️ (TO BE IMPLEMENTED)
 
-**File**: `Booksy.ServiceCatalog.Application/Commands/ProviderHierarchy/AcceptInvitationWithRegistration/AcceptInvitationWithRegistrationCommandHandler.cs`
+**File**: `AsanRezerve.ServiceCatalog.Application/Commands/ProviderHierarchy/AcceptInvitationWithRegistration/AcceptInvitationWithRegistrationCommandHandler.cs`
 
 **Responsibilities**:
 1. **Verify OTP**: Call UserManagement API to verify the OTP code

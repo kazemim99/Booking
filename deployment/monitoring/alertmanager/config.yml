@@ -3,7 +3,7 @@ global:
   slack_api_url: 'YOUR_SLACK_WEBHOOK_URL_HERE'  # Replace with your Slack webhook
 
 # Email configuration
-# smtp_from: 'alertmanager@booksy.com'
+# smtp_from: 'alertmanager@asan-rezerve.com'
 # smtp_smarthost: 'smtp.gmail.com:587'
 # smtp_auth_username: 'your-email@gmail.com'
 # smtp_auth_password: 'your-app-password'
@@ -53,28 +53,28 @@ receivers:
   # Default receiver
   - name: 'default'
     slack_configs:
-      - channel: '#booksy-alerts'
-        title: 'Booksy Production Alert'
+      - channel: '#asan-rezerve-alerts'
+        title: 'AsanRezerve Production Alert'
         text: '{{ range .Alerts }}{{ .Annotations.summary }}\n{{ .Annotations.description }}{{ end }}'
         send_resolved: true
 
   # Critical alerts - multiple channels
   - name: 'critical-alerts'
     slack_configs:
-      - channel: '#booksy-critical'
+      - channel: '#asan-rezerve-critical'
         title: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
         text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
         send_resolved: true
     # Uncomment for email notifications
     # email_configs:
-    #   - to: 'oncall@booksy.com'
+    #   - to: 'oncall@asan-rezerve.com'
     #     subject: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
     #     html: '{{ range .Alerts }}{{ .Annotations.description }}<br>{{ end }}'
 
   # Warning alerts
   - name: 'warning-alerts'
     slack_configs:
-      - channel: '#booksy-warnings'
+      - channel: '#asan-rezerve-warnings'
         title: '⚠️ Warning: {{ .GroupLabels.alertname }}'
         text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
         send_resolved: true
@@ -82,7 +82,7 @@ receivers:
   # Database team
   - name: 'database-team'
     slack_configs:
-      - channel: '#booksy-database'
+      - channel: '#asan-rezerve-database'
         title: '🗄️ Database Alert: {{ .GroupLabels.alertname }}'
         text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
         send_resolved: true
@@ -90,7 +90,7 @@ receivers:
   # Infrastructure team
   - name: 'infrastructure-team'
     slack_configs:
-      - channel: '#booksy-infrastructure'
+      - channel: '#asan-rezerve-infrastructure'
         title: '🖥️ Infrastructure Alert: {{ .GroupLabels.alertname }}'
         text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
         send_resolved: true
