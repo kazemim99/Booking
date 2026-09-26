@@ -139,11 +139,12 @@ export async function seedBookableProvider(): Promise<SeededProvider> {
  * service duration and buffer time.
  *
  * Relative to today: a fixed date turns into "Cannot create a booking in the past" once
- * it passes. A week out stays inside the services' 90-day advance-booking window.
+ * it passes, and customers may book at most 7 days ahead (BookingHorizonPolicy, whatever
+ * the service's own window says). Two and three days out sit well inside both limits.
  */
 export const SEED_SLOTS = {
-  keystone: futureSlot(7),
-  reschedule: futureSlot(8),
+  keystone: futureSlot(2),
+  reschedule: futureSlot(3),
 } as const
 
 /** `daysAhead` days from today at 10:00 UTC, as an ISO string. */

@@ -136,6 +136,10 @@ installable here), `full` to finish.
   (per-caller `phone-verification` policy, 5 per 5 min, every spec from one address) and the reschedule seed booked
   a hard-coded 2026-09-02 ("Cannot create a booking in the past"). Workflow sets `RateLimiting__Enabled=false` (as
   the integration host does); SEED_SLOTS are today+7 / today+8 at 10:00Z. Frontend type-check + lint clean.
+  Third round: 4 passed, 3 failed. today+8 broke the platform's 7-day customer booking window
+  (BookingHorizonPolicy; I had checked only the service's 90 days) → today+2 / today+3. The two registration specs
+  fail on a pre-existing web bug: the wizard maps every category to a legacy ProviderType ("Salon") that
+  ServiceCategoryResolver rejects (400 "Invalid category: Salon") — raised with the user, not fixed here.
 - 2026-09-26 CI (user asked to carry it on this PR): `Playwright keystone (UI)` had failed on every run since it was
   added — `dotnet run` applied launchSettings.json (applicationUrl :5000) over the job's ASPNETCORE_URLS (:5050), so
   the health wait polled a closed port. Reproduced locally with the job's env; `--no-launch-profile` → healthy on
