@@ -38,6 +38,7 @@ using AsanRezerve.Infrastructure.External.Notifications.Sms;
 
 using AsanRezerve.ServiceCatalog.Application.Services;
 using AsanRezerve.ServiceCatalog.Infrastructure.Services.Geocoding;
+using AsanRezerve.ServiceCatalog.Infrastructure.Persistence.Caching;
 namespace AsanRezerve.ServiceCatalog.Infrastructure.DependencyInjection
 {
     public static class ServiceCatalogInfrastructureExtensions
@@ -49,9 +50,15 @@ namespace AsanRezerve.ServiceCatalog.Infrastructure.DependencyInjection
             // HTTP Context Accessor (needed for URL generation)
             services.AddHttpContextAccessor();
 
+            // Evicts cached salon reads on every save that touches a salon (add-observability-and-caching). Scoped,
+            // like the ICacheInvalidator it feeds, so it lives and dies with the DbContext's own scope.
+            services.AddScoped<ReadModelCacheInvalidationInterceptor>();
+
             // Database Context
-            services.AddDbContext<ServiceCatalogDbContext>(options =>
+            services.AddDbContext<ServiceCatalogDbContext>((serviceProvider, options) =>
             {
+                options.AddInterceptors(serviceProvider.GetRequiredService<ReadModelCacheInvalidationInterceptor>());
+
                 var connectionString = configuration.GetConnectionString("ServiceCatalog")
                     ?? configuration.GetConnectionString("DefaultConnection");
 
@@ -163,6 +170,8 @@ namespace AsanRezerve.ServiceCatalog.Infrastructure.DependencyInjection
             services.AddScoped<IServiceQueryRepository, ServiceQueryRepository>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IUrlService, UrlService>();
+            // Cached reads embed absolute URLs built from that base: vary the cache by it (add-observability-and-caching).
+            services.AddScoped<AsanRezerve.Core.Application.Abstractions.Caching.ICacheKeyContributor, PublicBaseUrlCacheKeyContributor>();
 
             // Invitation & Registration Services
             services.AddScoped<IInvitationRegistrationService, InvitationRegistrationService>();
@@ -232,20 +241,6 @@ namespace AsanRezerve.ServiceCatalog.Infrastructure.DependencyInjection
                     failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy,
                     tags: new[] { "db", "servicecatalog" });
 
-
-            return services;
-        }
-
-        public static IServiceCollection AddServiceCatalogInfrastructureWithCache(
-            this IServiceCollection services,
-            IConfiguration configuration)
-        {
-            services.AddServiceCatalogInfrastructure(configuration);
-
-            // Add caching decorators for read repositories using Redis distributed cache
-            // These decorators implement the full repository interfaces and use ICacheService (Redis/InMemory)
-            services.Decorate<IProviderReadRepository, CachedProviderReadRepository>();
-            services.Decorate<IServiceReadRepository, CachedServiceReadRepository>();
 
             return services;
         }

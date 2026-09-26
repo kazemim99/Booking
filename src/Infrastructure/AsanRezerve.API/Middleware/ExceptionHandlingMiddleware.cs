@@ -41,12 +41,12 @@ public partial class ExceptionHandlingMiddleware
 
     private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
-        _logger.LogError(exception, "An unhandled exception occurred");
-
         // ✅ Prevent writing to response that has already started (prevents infinite loop)
         if (context.Response.HasStarted)
         {
-            _logger.LogWarning("Cannot write exception response - response has already started");
+            _logger.LogError(exception,
+                "Request {RequestMethod} {RequestPath} failed after its response had started; no error body was written",
+                context.Request.Method, context.Request.Path.Value);
             return;
         }
 
@@ -251,15 +251,14 @@ public partial class ExceptionHandlingMiddleware
                 }
                 else
                 {
-
-                    _logger.LogError(exception, "An unhandled exception occurred");
-
                     errorResponse = new ApiErrorResult(
                         "An internal server error occurred. Please try again later.",
                         "INTERNAL_ERROR");
                 }
                 break;
         }
+
+        LogOutcome(context, exception, response.StatusCode, errorResponse.Code);
 
         // ✅ Wrap error in same format as success responses
         var wrappedErrorResponse = new
@@ -277,6 +276,8 @@ public partial class ExceptionHandlingMiddleware
             metadata = new
             {
                 requestId = context.TraceIdentifier,
+                // Quote this to support: it is the X-Trace-Id header and the id of every log event of the request.
+                traceId = System.Diagnostics.Activity.Current?.TraceId.ToHexString() ?? context.TraceIdentifier,
                 timestamp = DateTimeOffset.UtcNow,
                 path = context.Request.Path.Value,
                 method = context.Request.Method
@@ -290,6 +291,27 @@ public partial class ExceptionHandlingMiddleware
         });
 
         await response.WriteAsync(jsonResponse);
+    }
+
+    /// <summary>
+    /// The one log event for an exception that ended a request (system-logging: "An exception is logged once"). A
+    /// server fault is an Error with its stack trace; a client error (validation, not found, forbidden, conflict,
+    /// too many requests) is an Information line without one — it is the caller's mistake, not ours, and five stack
+    /// traces per rejected form used to bury the real faults. The request's completion event carries the status too.
+    /// </summary>
+    private void LogOutcome(HttpContext context, Exception exception, int statusCode, string? errorCode)
+    {
+        if (statusCode >= 500)
+        {
+            _logger.LogError(exception,
+                "Request {RequestMethod} {RequestPath} failed with {StatusCode} {ErrorCode}: {ExceptionType}",
+                context.Request.Method, context.Request.Path.Value, statusCode, errorCode, exception.GetType().Name);
+            return;
+        }
+
+        _logger.LogInformation(
+            "Request {RequestMethod} {RequestPath} was rejected with {StatusCode} {ErrorCode}: {ExceptionType} {ExceptionMessage}",
+            context.Request.Method, context.Request.Path.Value, statusCode, errorCode, exception.GetType().Name, exception.Message);
     }
 
     /// <summary>

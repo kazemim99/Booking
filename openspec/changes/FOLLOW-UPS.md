@@ -224,6 +224,10 @@ where it also wiped the gallery; that part is fixed (the profile is edited in pl
 (refuse, or redirect to the profile editor) is a registration-flow decision.
 
 ## #70 Check whether a Redis-cached provider can be read back at all
+**CLOSED 2026-09-26 by `add-observability-and-caching`.** Confirmed both halves: production's cache pointed at
+localhost (so the aggregate cache never reached Redis), and aggregates cannot round-trip through System.Text.Json.
+Aggregates are no longer cached at all; read models are, through HybridCache over `ConnectionStrings:Redis`, and
+round-trip tests guard every cached result type (`ReadModelCachingTests`). Original note:
 `CachedProviderReadRepository` stores the `Provider` aggregate through `RedisCacheService`, which uses
 System.Text.Json. `Provider` has only a private constructor and private setters (and its gallery is a private
 list), so deserialization most likely throws — caught and counted as a Redis failure, which opens the cache
@@ -247,3 +251,18 @@ its own decision or slice.
   offers is a discovery feature to design, not a rename.
 - **The Vue provider dashboard** has no discounts screen: the live provider surface is the Flutter provider app.
 - **Stacking, category targeting of campaigns, bundles, loyalty** — out of scope by design (one discount per booking).
+
+## #72 Observability: what `add-observability-and-caching` deliberately left out
+Carried out of `openspec/changes/add-observability-and-caching` (2026-09-26). See `docs/OBSERVABILITY.md`.
+- **Metrics export.** `docker-compose.monitoring.yml` / `deployment/monitoring/prometheus/prometheus.yml` scrape
+  `asan-rezerve-api:80/metrics`, which the host does not serve; the dead OpenTelemetry project was deleted. Add
+  OpenTelemetry (metrics + traces, OTLP or Prometheus) when the box has room for a collector — the meters
+  (`AsanRezerve.Caching`, `AsanRezerve.ServiceCatalog.Bookings`) and W3C trace ids are already in place.
+- **A read-only API key for the MCP server.** It uses an admin JWT (60 minutes). A scoped, long-lived key is an
+  authentication change — decide it before building it.
+- **Multi-node.** Log-level overrides and HybridCache L1 are per process; a second API node needs a broadcast
+  (Redis pub/sub) for both.
+- **The committed Seq API key** (`32uDU44…`, removed from appsettings 2026-09-26) is still in git history: rotate it
+  if any Seq instance uses it.
+- **In-panel "Analyze with AI"** — declined 2026-09-25 (logs would leave the server); revisit only as a decision.
+

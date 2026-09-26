@@ -16,6 +16,15 @@ const DATE_TIME: Intl.DateTimeFormatOptions = {
   minute: '2-digit',
 }
 
+const TIMESTAMP: Intl.DateTimeFormatOptions = {
+  month: 'short',
+  day: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hourCycle: 'h23',
+}
+
 const format = (date: string | Date | undefined | null, options: Intl.DateTimeFormatOptions): string => {
   if (!date) return ''
 
@@ -35,3 +44,6 @@ export const formatDate = (date: string | Date | undefined | null): string => fo
 
 /** Date and time in the active locale. */
 export const formatDateTime = (date: string | Date | undefined | null): string => format(date, DATE_TIME)
+
+/** A log event's moment: day, month and time to the second, in the active locale. */
+export const formatTimestamp = (date: string | Date | undefined | null): string => format(date, TIMESTAMP)

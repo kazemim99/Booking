@@ -47,7 +47,10 @@ public sealed class ProviderDetailsResult
     public DateTime? ActivatedAt { get; init; }
     public DateTime? LastActiveAt { get; init; }
     public List<ProviderServiceItem>? Services { get; set; }
+    // [JsonInclude]: the salon page is cached, and a non-public setter would otherwise come back empty on every hit.
+    [System.Text.Json.Serialization.JsonInclude]
     public List<ProviderStaffItem> Staff { get; internal set; }
+    [System.Text.Json.Serialization.JsonInclude]
     public int ActiveServicesCount { get; internal set; }
 
 }

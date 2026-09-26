@@ -58,10 +58,10 @@ public class ProviderAccountNotificationTests : ServiceCatalogIntegrationTestBas
     /// A provider awaiting activation, built in that state rather than demoted into it.
     /// </summary>
     /// <remarks>
-    /// An earlier version created an active provider and dropped its status with raw SQL. That does not
-    /// work: provider reads are cached (hence ProviderCacheInvalidationEventHandler), so the write landed
-    /// in the table and the handler went on seeing an active provider — "Provider is already active",
-    /// from a row that said otherwise. Building it in the right state avoids the question entirely.
+    /// An earlier version created an active provider and dropped its status with raw SQL. That did not
+    /// work while provider aggregates were cached: the write landed in the table and the handler went on
+    /// seeing an active provider — "Provider is already active", from a row that said otherwise. Building
+    /// it in the right state avoids the question entirely.
     /// </remarks>
     private async Task<Domain.Aggregates.Provider> CreateInactiveProviderAsync()
     {

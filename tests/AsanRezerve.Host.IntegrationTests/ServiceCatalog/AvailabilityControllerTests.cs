@@ -1,5 +1,4 @@
 using AsanRezerve.Core.Domain.ValueObjects;
-using AsanRezerve.Infrastructure.Core.Caching;
 using AsanRezerve.ServiceCatalog.Api.Models.Responses;
 using AsanRezerve.ServiceCatalog.Application.Commands.Booking.CreateBooking;
 using AsanRezerve.ServiceCatalog.Domain.Aggregates.BookingAggregate;
@@ -160,7 +159,6 @@ public class AvailabilityControllerTests : ServiceCatalogIntegrationTestBase
         var tracked = await DbContext.Providers.FirstAsync(p => p.Id == provider.Id);
         tracked.AddHoliday(DateOnly.FromDateTime(futureDate), "Public holiday");
         await DbContext.SaveChangesAsync();
-        await InvalidateProviderCacheAsync(provider);
 
         var response = await GetAsync<AvailableSlotsResponse>(
             $"/api/v1/availability/slots?ProviderId={provider.Id.Value}&ServiceId={service.Id.Value}&Date={futureDate:yyyy-MM-dd}");
@@ -188,7 +186,6 @@ public class AvailabilityControllerTests : ServiceCatalogIntegrationTestBase
         tracked.AddException(
             DateOnly.FromDateTime(futureDate), new TimeOnly(14, 0), new TimeOnly(18, 0), "Late opening");
         await DbContext.SaveChangesAsync();
-        await InvalidateProviderCacheAsync(provider);
 
         var response = await GetAsync<AvailableSlotsResponse>(
             $"/api/v1/availability/slots?ProviderId={provider.Id.Value}&ServiceId={service.Id.Value}&Date={futureDate:yyyy-MM-dd}");
@@ -349,20 +346,6 @@ public class AvailabilityControllerTests : ServiceCatalogIntegrationTestBase
     #endregion
 
     #region Helper Methods
-
-    /// <summary>
-    /// The read side (<c>IProviderReadRepository</c>) is decorated by a cache. Mutating a
-    /// provider through the test's own <see cref="ServiceCatalogIntegrationTestBase.DbContext"/> —
-    /// as <c>AddHoliday</c>/<c>AddException</c> do here — never goes through the unit of work that
-    /// invalidates it in production, so a request made right after would still see the salon as it
-    /// was before the mutation. See <c>MakeBookableAsync</c>, which hits the same trap.
-    /// </summary>
-    private async Task InvalidateProviderCacheAsync(Domain.Aggregates.Provider provider)
-    {
-        var cache = Scope.ServiceProvider.GetRequiredService<ICacheService>();
-        await cache.RemoveAsync($"Provider:{provider.Id.Value}");
-        await cache.RemoveAsync($"Provider:owner:{provider.OwnerId.Value}");
-    }
 
     private async Task<Booking> CreateBookingForCustomerAsync(
         Guid customerId,

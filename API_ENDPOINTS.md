@@ -2,7 +2,7 @@
 
 Complete reference for all API endpoints across the AsanRezerve platform. All endpoints are served by a single host (`asanrezerve-api`) on `:5000`. Base URL: `http://napstar.ir/api`
 
-**Last Updated**: 2026-01-05
+**Last Updated**: 2026-09-26
 
 ---
 
@@ -18,6 +18,7 @@ Complete reference for all API endpoints across the AsanRezerve platform. All en
   - [Reviews](#reviews)
   - [Review Moderation (Admin)](#review-moderation-admin)
   - [Discounts & Campaigns](#discounts--campaigns)
+- [Observability (Admin)](#observability-admin)
 - [Host & Routing (Port 5000)](#host--routing-port-5000)
 
 ---
@@ -1011,6 +1012,76 @@ PUT  /api/v1/admin/promotions/{promotionId}          → edit a platform campaig
 POST /api/v1/admin/promotions/{promotionId}/pause | /resume | /end   → any promotion
 ```
 **Auth**: `AdminOnly`.
+
+---
+
+## Observability (Admin)
+
+OpenSpec change `add-observability-and-caching`; operations guide `docs/OBSERVABILITY.md`.
+**Auth**: `AdminOnly` (`Admin`, `Administrator`, `SysAdmin`). Served by the Host from
+`AsanRezerve.Infrastructure.Observability`. Log messages are masked before storage (phone numbers keep the first four
+and last two characters, e-mails the first character and the domain; passwords, OTP codes, tokens and keys are `***`).
+
+**Every response** (any endpoint) carries `X-Trace-Id` — the W3C trace id of the request — and success and error
+envelopes carry the same value as `metadata.traceId`. Quote it to support; it opens the whole request below.
+
+#### Search Logs
+```http
+GET /api/v1/admin/observability/logs?from=&to=&minLevel=Warning&search=&source=&traceId=&requestPath=&statusCode=&page=1&pageSize=50
+```
+Newest first. `from`/`to` are ISO instants (default: the last 24 hours; at most 14 days, the retention).
+`minLevel`: `Verbose|Debug|Information|Warning|Error|Fatal`. `search` matches message or exception text
+(case-insensitive); `source` and `requestPath` are prefixes. **Response 200**:
+`{ items[] { id, timestamp, level, message, sourceContext, traceId, requestPath, statusCode, elapsedMs, hasException }, totalCount, page, pageSize }`.
+An unknown `minLevel` is 400.
+
+#### One Event / One Request
+```http
+GET /api/v1/admin/observability/logs/{id}
+GET /api/v1/admin/observability/logs/trace/{traceId}
+```
+Detail: the list fields plus `messageTemplate, exception, spanId, routeTemplate, userId, properties` (JSON object).
+Trace: every stored event of that request, oldest first (at most 1 000). Unknown id → 404.
+
+#### Export
+```http
+GET /api/v1/admin/observability/logs/export?<same filters>
+```
+`application/x-ndjson`, one event per line, oldest first, at most 50 000; **not** wrapped in the response envelope.
+
+#### AI Digest
+```http
+GET /api/v1/admin/observability/digest?from=&to=&source=&format=json|markdown
+```
+Default window: the last hour. `source` narrows levels and errors to a source prefix. JSON:
+`{ from, to, generatedAt, levels[] { level, count }, errorGroups[] { level, sourceContext, messageTemplate, exceptionType, count, firstSeen, lastSeen, sampleTraceIds[] }, slowestRoutes[] { route, requests, serverErrors, p50Ms, p95Ms, maxMs }, cache[] { region, requests, hits, misses, hitRatio }, logStore }`.
+`format=markdown` → `{ markdown }`, ready to paste into an AI assistant (the MCP server in `tools/observability-mcp` uses it).
+
+#### System Overview
+```http
+GET /api/v1/admin/observability/overview
+```
+`{ generatedAt, environment, version, startedAt, process { workingSetMb, gcHeapMb, gen0..2Collections, threadPoolThreads, pendingWorkItems, cpuSeconds }, lastHour { requests, serverErrors, errorRate, p95Ms }, levelsLastHour[], last24Hours[] { hour, information, warnings, errors }, slowestRoutesLastHour[], topErrorsLastHour[], cache, logStore { ready, enqueued, written, dropped, failedBatches, queueLength, lastError, lastWriteAt }, logStorage { totalBytes, partitions, oldestDay, newestDay } (null until the store is ready), counters[] { meter, name, description, total } }`.
+
+#### Log Levels
+```http
+GET    /api/v1/admin/observability/log-levels
+PUT    /api/v1/admin/observability/log-levels            { "category": "AsanRezerve.ServiceCatalog", "level": "Debug", "durationMinutes": 30 }
+DELETE /api/v1/admin/observability/log-levels/{category}
+```
+Rows: `{ category, configuredLevel, effectiveLevel, override { level, expiresAt, updatedBy, updatedAt } }`. `level`:
+`Trace|Debug|Information|Warning|Error|Critical|None`; `category` is `Default` or a namespace/type name
+(`[A-Za-z_][A-Za-z0-9_.]*`, ≤ 200). `durationMinutes` 1–10 080, omitted = until reset. Applies at once to every logger,
+survives a restart, and is audited (`Log level for … changed from … to … by …`). Invalid input → 400. DELETE → 204.
+
+#### Cache
+```http
+GET  /api/v1/admin/observability/cache
+POST /api/v1/admin/observability/cache/invalidate   { "tag": "provider:{id}" }  |  { "all": true }
+```
+`{ regions[] { region, requests, hits, misses, hitRatio }, l1 { entries, hits, misses, estimatedSize }, l2 { store, circuit: Closed|Open|HalfOpen, consecutiveFailures, openedAt, lastError, redisEndpoints, redisConnected } }`.
+Tags: `provider:{id}` (salon page), `provider-directory` (salon lists), `categories`, `locations`, `query:{QueryType}`.
+Invalidate → 204; neither tag nor `all` → 400.
 
 ---
 

@@ -46,8 +46,8 @@ Which level a test belongs at, and the plan for this architecture:
 Short version: if it needs Testcontainers, `WebApplicationFactory` or a `DbContext` it is not a unit
 test; everything else belongs in a unit project.
 
-- **Backend unit/architecture**: the eight projects `scripts/verify` runs in FAST — no Docker, ~10 s
-  of test time for ~960 tests. Two of them (`AsanRezerve.ServiceCatalog.Api.UnitTests`,
+- **Backend unit/architecture**: the ten projects `scripts/verify` runs in FAST (nine unit + architecture) — no
+  Docker, ~15 s of test time for ~1 650 tests. Two of them (`AsanRezerve.ServiceCatalog.Api.UnitTests`,
   `AsanRezerve.Infrastructure.External.UnitTests`) hold controller, specification, mapping and gateway-adapter
   tests that used to sit inside the integration project behind Docker.
 - **Integration** (`tests/AsanRezerve.Host.IntegrationTests` — one project since Phase 2 slice 4, was three: ServiceCatalog, UserManagement and Host composition each booting their own host): real composed host against Testcontainers Postgres, plain xUnit, two collections (`ServiceCatalog`/`UserManagement` sharing one faked host, `Composition` on its own unfaked one) running in parallel. Reqnroll/Gherkin BDD was retired 2026-09-11 — see `openspec/changes/_inline/retire-reqnroll/tasks.md`.
@@ -65,6 +65,7 @@ test; everything else belongs in a unit project.
 ## Where the documents are
 
 - Root (living): [API_ENDPOINTS.md](API_ENDPOINTS.md), [DTO_MAPPING.md](DTO_MAPPING.md), [TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md), [COMPLETION_ROADMAP.md](COMPLETION_ROADMAP.md), [ARCHITECTURAL_DECISIONS.md](ARCHITECTURAL_DECISIONS.md), [GEOLOCATION_GUIDE.md](GEOLOCATION_GUIDE.md), [VISUAL_STUDIO_DEBUGGING.md](VISUAL_STUDIO_DEBUGGING.md).
+- Logging, log levels, the admin Logs page, the AI digest and MCP server, caching: [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md).
 - Operations: [docs/DEPLOYMENT_RUNBOOK.md](docs/DEPLOYMENT_RUNBOOK.md) — compose commands, health checks, resource limits, environment variables, troubleshooting (moved out of this file 2026-09-08). **Production is live** (`https://back.nahalkmi.ir`, `https://provider.nahalkmi.ir` on shared VPS 194.1.155.230) — read its "Current production state" section first: it has the manual deploy procedure, the shared-box gotchas, and two open items (sandbox OTP left **on** in prod, FOLLOW-UPS #58; CI deploy job still failing at `scp`, #59).
 - Navigation and staleness: [docs/KNOWLEDGE_MAP.md](docs/KNOWLEDGE_MAP.md). `docs/archive/` and `docs-site/` are historical.
 - Apps: [asanrezerve-customer-app/PROJECT_SUMMARY.md](asanrezerve-customer-app/PROJECT_SUMMARY.md), [asanrezerve-customer-app/FLUTTER_BACKEND_CONNECTION.md](asanrezerve-customer-app/FLUTTER_BACKEND_CONNECTION.md).

@@ -290,7 +290,7 @@ What changes: reviews are moderated (nothing new is public until an administrato
 votes are one per signed-in user, providers can reply (also moderated), and a provider's rating is
 computed from published reviews only.
 
-1. **Back up first.** `docker exec booksy-postgres pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc > ~/pre-reviews-$(date +%F).dump`
+1. **Back up first.** `docker exec booksy-postgres pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --exclude-table-data='observability.log_events*' -Fc > ~/pre-reviews-$(date +%F).dump`
    (values from `/opt/booksy/.env`; the migration backfills existing rows, and a dump is the only undo for data).
 2. **Deploy as usual** (push to `master`, or the manual steps above). The migration applies at
    startup. It is **additive only** — new columns with defaults, three new tables
@@ -555,7 +555,7 @@ no sudo), never root.
 ### Infrastructure Services
 - **PostgreSQL** (`127.0.0.1:5432`): Single primary database (`booksy`) with schema-per-context (schemas: `user_management`, `ServiceCatalog`, `cap`). One connection string (`DefaultConnection`).
 - **Redis** (`127.0.0.1:6379`): Caching layer with LRU eviction policy (192MB limit on the shared reference box; raise it in `docker-compose.prod.yml` if you have more headroom)
-- **Seq** (`127.0.0.1:5341`, `127.0.0.1:5342`) and **pgAdmin** (`127.0.0.1:5050`): OFF by default (Compose `profiles: ["observability"]`) — optional, RAM-hungry admin tools that aren't required for the app to run. Start them with `docker compose --profile observability up -d` if the box has headroom; otherwise use an SSH tunnel + a local pgAdmin/DBeaver, and rely on Serilog's own log output (it degrades gracefully when Seq isn't reachable).
+- **Seq** (`127.0.0.1:5341`, `127.0.0.1:5342`) and **pgAdmin** (`127.0.0.1:5050`): OFF by default (Compose `profiles: ["observability"]`) — optional, RAM-hungry admin tools that aren't required for the app to run. Start them with `docker compose --profile observability up -d` if the box has headroom **and** set `SEQ_SERVER_URL=http://seq:5341` in `.env` (the Seq sink is off when it is empty, the default); otherwise use an SSH tunnel + a local pgAdmin/DBeaver. Logs do not need Seq: the admin panel's **Logs** page reads the API's own database log store (`observability` schema, 14 days) — see `docs/OBSERVABILITY.md`.
 
 ### Service Communication
 - All containers connect via a Docker bridge network (`booksy-network`, subnet 172.25.0.0/16)
@@ -609,8 +609,8 @@ docker compose -f docker-compose.prod.yml up -d --scale booksy-api=3
 # Access PostgreSQL shell
 docker exec -it booksy-postgres psql -U booksy_admin -d booksy_user_management
 
-# Create database backup
-docker exec booksy-postgres pg_dump -U booksy_admin booksy_user_management > backup_$(date +%Y%m%d_%H%M%S).sql
+# Create database backup (stored logs left out: tables kept, rows not — see docs/OBSERVABILITY.md)
+docker exec booksy-postgres pg_dump -U booksy_admin --exclude-table-data='observability.log_events*' booksy_user_management > backup_$(date +%Y%m%d_%H%M%S).sql
 
 # Restore from backup
 docker exec -i booksy-postgres psql -U booksy_admin booksy_user_management < backup.sql
@@ -697,8 +697,19 @@ All environment variables are stored in `/opt/booksy/.env`. Key variables includ
 
 - **Database**: `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`
 - **Redis**: `REDIS_PASSWORD`
-- **Seq**: `SEQ_FIRSTRUN_ADMINUSERNAME`, `SEQ_FIRSTRUN_ADMINPASSWORD`
+- **Seq**: `SEQ_FIRSTRUN_ADMINUSERNAME`, `SEQ_FIRSTRUN_ADMINPASSWORD`; `SEQ_SERVER_URL` (empty = no Seq sink)
 - **Container Registry**: `GITHUB_REPOSITORY_OWNER` (currently: kazemim99)
+
+**Observability and caching (from 2026-09-26, `add-observability-and-caching`).** No new variable is required. On the
+first start the API creates the `observability` schema (log store, log-level overrides); if that fails the API still
+runs and the admin Logs page reports the store as not ready. The cache now really uses `REDIS_CONNECTION_STRING`
+(before, it pointed at localhost inside the container and never reached Redis); Redis keys move from `RateLimit_*` to
+`asanrezerve:*`, so rate-limit windows restart once and old keys expire on their own. Log volume drops: SQL commands and
+ASP.NET Core routing are no longer logged at Information. Stored logs live in `observability.log_events`, one
+partition per UTC day, dropped whole after 14 days; database dumps should leave their rows out
+(`--exclude-table-data='observability.log_events*'`, as the backup script does) — the tables and the log-level
+overrides are still dumped. The raw `postgres_data` volume archive still contains them. Watch the store's size on Logs ›
+Overview › Log store. Details: `docs/OBSERVABILITY.md`.
 
 Never commit the `.env` file to version control. The `.env.backup` file should also be excluded from commits.
 

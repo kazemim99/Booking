@@ -13,9 +13,10 @@ services:
       - ConnectionStrings__Redis=${REDIS_CONNECTION_STRING}
       # CAP runs in-process; no RabbitMQ broker required.
       - EventBus__Provider=InMemory
-      # Serilog's Seq sink buffers and retries silently if unreachable — safe to point
-      # at a Seq that isn't running when the observability profile is off (see below).
-      - Seq__ServerUrl=${SEQ_SERVER_URL:-http://seq:5341}
+      # Seq is opt-in: set SEQ_SERVER_URL=http://seq:5341 in .env when the observability profile runs.
+      # Empty (the default) = no Seq sink. Logs are always in the admin panel (Logs page), which reads
+      # the database log store — see docs/OBSERVABILITY.md.
+      - Seq__ServerUrl=${SEQ_SERVER_URL:-}
       # The address browsers reach the API at. TLS ends in the host nginx, so the API itself only
       # ever sees http:// requests; image URLs built from those were blocked by HTTPS pages.
       - App__PublicBaseUrl=${PUBLIC_BASE_URL:-https://back.nahalkmi.ir}

@@ -199,6 +199,7 @@ $noBuild = if ($SkipBuild) { '' } else { '--no-build' }
 $unitProjects = @(
     'tests/AsanRezerve.Core.Domain.UnitTests',
     'tests/AsanRezerve.Infrastructure.Core.UnitTests',
+    'tests/AsanRezerve.Infrastructure.Observability.UnitTests',
     'tests/AsanRezerve.ServiceCatalog.Domain.UnitTests',
     'tests/AsanRezerve.ServiceCatalog.Application.UnitTests',
     'tests/AsanRezerve.ServiceCatalog.Api.UnitTests',

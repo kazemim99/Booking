@@ -70,6 +70,10 @@ jobs:
         EventBus__Provider: "InMemory"
         OTP_SANDBOX_CODE: "123456"
         Sms__SandboxMode: "true"
+        # Every spec logs in from the same address, so the per-caller "phone-verification" policy
+        # (5 codes per 5 minutes) answered 429 from the sixth login on. Off here as in the
+        # integration test host (appsettings.Testing.json); rate limiting is not what this suite tests.
+        RateLimiting__Enabled: "false"
         # Point the cross-context HTTP self-calls at THIS host. appsettings.json still has
         # them on :5000 from the microservices era, so completing provider registration
         # (which refreshes the token via ProvidersController.RefreshProviderToken) fails with
@@ -78,8 +82,10 @@ jobs:
         # COMPLETION_ROADMAP Epic 1.1 — the self-call should become an in-process call.
         Services__UserManagement__BaseUrl: "http://localhost:5050/api"
         Services__ServiceCatalog__BaseUrl: "http://localhost:5050/api"
+      # --no-launch-profile: otherwise dotnet run applies Properties/launchSettings.json, whose applicationUrl
+      # (http://localhost:5000) overrides ASPNETCORE_URLS above and the health wait below polls a closed port.
       run: |
-        dotnet run --project src/Host/AsanRezerve.Host/AsanRezerve.Host.csproj --configuration Release > host.log 2>&1 &
+        dotnet run --project src/Host/AsanRezerve.Host/AsanRezerve.Host.csproj --configuration Release --no-launch-profile > host.log 2>&1 &
         echo $! > host.pid
 
     - name: Wait for host to become healthy

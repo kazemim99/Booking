@@ -73,7 +73,17 @@ public sealed class PagedResult<T>
         ? "0 of 0"
         : $"{((PageNumber - 1) * PageSize) + 1}-{Math.Min(PageNumber * PageSize, TotalCount)} of {TotalCount}";
 
+    /// <summary>
+    /// For System.Text.Json: its constructor parameters must match the properties' types, and <see cref="Items"/> is
+    /// an <see cref="IReadOnlyList{T}"/>. With the public constructor's <c>IEnumerable&lt;T&gt;</c> a page could be
+    /// written but never read back, so a cached salon list failed on every hit (add-observability-and-caching).
+    /// </summary>
     [JsonConstructor]
+    private PagedResult(IReadOnlyList<T> items, int totalCount, int pageNumber, int pageSize)
+        : this((IEnumerable<T>)items, totalCount, pageNumber, pageSize)
+    {
+    }
+
     public PagedResult(
         IEnumerable<T> items,
         int totalCount,

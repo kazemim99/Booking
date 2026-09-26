@@ -133,7 +133,7 @@ namespace AsanRezerve.API
             services.AddServiceCatalogApplication();
 
             // Use cached version for Redis/InMemory caching on read repositories
-            services.AddServiceCatalogInfrastructureWithCache(Configuration);
+            services.AddServiceCatalogInfrastructure(Configuration);
 
             // Other services
             services.AddResponseCompression();
@@ -167,7 +167,6 @@ namespace AsanRezerve.API
 
             // Global Middlewares
             app.UseMiddleware<ExceptionHandlingMiddleware>();
-            app.UseMiddleware<RequestLoggingMiddleware>();
 
             app.UseHttpsRedirection();
 

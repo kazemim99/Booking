@@ -69,7 +69,9 @@ namespace AsanRezerve.Core.Application.Behaviors
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Transaction failed for {RequestName}, rolling back", requestName);
+                // Not an Error with the stack trace: the exception is logged once, where it ends the request (or by
+                // LoggingBehavior outside one). This line only records that the transaction was rolled back.
+                _logger.LogWarning("Transaction for {RequestName} rolled back: {ExceptionType}", requestName, ex.GetType().Name);
 
                 await _unitOfWork.RollbackTransactionAsync(cancellationToken);
 

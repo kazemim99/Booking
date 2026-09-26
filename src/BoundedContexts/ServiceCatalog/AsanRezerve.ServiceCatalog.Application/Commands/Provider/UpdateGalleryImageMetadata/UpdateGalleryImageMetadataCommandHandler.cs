@@ -41,8 +41,8 @@ public sealed class UpdateGalleryImageMetadataCommandHandler
         }
 
         // Through the aggregate root: it stamps Profile.LastUpdatedAt (every meaningful gallery change
-        // must) and raises the domain event that invalidates CachedProviderReadRepository. Returns false
-        // for a no-op edit, in which case there is nothing to persist.
+        // must) and raises the gallery domain event. Returns false for a no-op edit, in which case there is
+        // nothing to persist.
         var changed = provider.UpdateGalleryImageMetadata(
             request.ImageId, request.Caption, request.AltText);
 

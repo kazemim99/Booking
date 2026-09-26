@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "asanrezerve-observability": {
+      "command": "node",
+      "args": ["/absolute/path/to/Booking/tools/observability-mcp/src/server.mjs"],
+      "env": {
+        "ASANREZERVE_API_URL": "https://back.nahalkmi.ir/api/v1",
+        "ASANREZERVE_ADMIN_TOKEN": "<admin JWT from the admin panel>",
+        "ASANREZERVE_MCP_ALLOW_WRITES": "false"
+      }
+    }
+  }
+}

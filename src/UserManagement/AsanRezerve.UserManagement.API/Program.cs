@@ -168,7 +168,6 @@ app.UseMiddleware<ApiResponseMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 // Request Logging
-app.UseMiddleware<RequestLoggingMiddleware>();
 
 // HTTPS Redirection
 app.UseHttpsRedirection();

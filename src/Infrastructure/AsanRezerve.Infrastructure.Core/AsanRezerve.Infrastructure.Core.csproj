@@ -13,6 +13,8 @@
     <PackageReference Include="Savorboard.CAP.InMemoryMessageQueue" Version="8.0.0" />
     <PackageReference Include="StackExchange.Redis" Version="2.8.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.19" />
+    <!-- L1 (in-process) + L2 (Redis) cache with stampede protection and tag invalidation (add-observability-and-caching). -->
+    <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" Version="9.10.0" />
   </ItemGroup>
 
   <ItemGroup>

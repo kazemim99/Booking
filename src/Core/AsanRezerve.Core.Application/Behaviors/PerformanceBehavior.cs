@@ -41,15 +41,12 @@ namespace AsanRezerve.Core.Application.Behaviors
             {
                 var requestName = typeof(TRequest).Name;
 
+                // One event; the request is destructured so the logging pipeline masks its secrets.
                 _logger.LogWarning(
-                    "Long running request detected: {RequestName} ({ElapsedMilliseconds}ms) exceeded threshold ({ThresholdMs}ms)",
+                    "Slow request {RequestName} took {ElapsedMs} ms (threshold {ThresholdMs} ms) {@Request}",
                     requestName,
                     elapsedMilliseconds,
-                    _warningThresholdMs);
-
-                // Log additional details for investigation
-                _logger.LogWarning(
-                    "Request details: {@Request}",
+                    _warningThresholdMs,
                     request);
             }
 

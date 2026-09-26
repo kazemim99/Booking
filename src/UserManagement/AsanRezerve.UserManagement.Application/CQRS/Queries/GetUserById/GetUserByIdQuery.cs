@@ -3,11 +3,7 @@
 // ========================================
 namespace AsanRezerve.UserManagement.Application.CQRS.Queries.GetUserById
 {
-    public sealed record GetUserByIdQuery(Guid UserId) : IQuery<UserDetailsViewModel>
-    {
-        public bool IsCacheable => true;
-        public string CacheKey => $"user:details:{UserId}";
-        public int CacheExpirationSeconds => 300; // 5 minutes
-    }
+    // Not cacheable: personal data its owner edits, and nothing evicted it (add-observability-and-caching).
+    public sealed record GetUserByIdQuery(Guid UserId) : IQuery<UserDetailsViewModel>;
 }
 

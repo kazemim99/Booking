@@ -31,24 +31,23 @@ using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Net.Http.Headers;
-using Serilog;
+using AsanRezerve.Infrastructure.Observability.Diagnostics;
+using AsanRezerve.Infrastructure.Observability.Logging;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var persianFriendlyJson = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All);
+
 // ---------------------------------------------------------------------------
-// Serilog
+// Logging — Logging:LogLevel decides what is logged (and admins can override it at runtime);
+// Serilog masks secrets and writes to console, rolling CLEF file, the database log store and
+// (when configured) Seq. See AsanRezerve.Infrastructure.Observability and docs/OBSERVABILITY.md.
 // ---------------------------------------------------------------------------
-builder.Host.UseSerilog((context, services, configuration) =>
-    configuration
-        .ReadFrom.Configuration(context.Configuration)
-        .ReadFrom.Services(services)
-        .Enrich.FromLogContext()
-        .Enrich.WithMachineName()
-        .Enrich.WithEnvironmentName()
-        .WriteTo.Console()
-        .WriteTo.File("logs/asanrezerve-host-.txt", rollingInterval: RollingInterval.Day));
+// Runtime log-level overrides (admin panel → Logs → Log levels): a configuration source added last, so it wins.
+AsanRezerve.Infrastructure.Observability.Logging.Levels.RuntimeLogLevels.Attach(builder.Configuration, builder.Services);
+builder.Logging.AddAsanRezerveLogging(builder.Configuration);
 
 // ---------------------------------------------------------------------------
 // JSON + Controllers (one registration; controllers discovered from both
@@ -59,6 +58,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    options.SerializerOptions.Encoder = persianFriendlyJson;
 });
 
 builder.Services.AddControllers(options =>
@@ -67,6 +67,8 @@ builder.Services.AddControllers(options =>
     })
     .AddApplicationPart(typeof(AsanRezerve.UserManagement.API.Extensions.SwaggerExtensions).Assembly)
     .AddApplicationPart(typeof(AsanRezerve.ServiceCatalog.Api.Extensions.SwaggerExtensions).Assembly)
+    // Admin observability API (logs, log levels, overview, AI digest, cache).
+    .AddApplicationPart(typeof(AsanRezerve.Infrastructure.Observability.ObservabilityRegistration).Assembly)
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
@@ -75,6 +77,9 @@ builder.Services.AddControllers(options =>
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
         options.JsonSerializerOptions.AllowTrailingCommas = true;
         options.JsonSerializerOptions.ReadCommentHandling = JsonCommentHandling.Skip;
+        // Persian text as UTF-8 instead of \uXXXX escapes: up to a third of the bytes for the same text, and less
+        // work to write. HTML-sensitive characters (<, >, &, quotes) are still escaped.
+        options.JsonSerializerOptions.Encoder = persianFriendlyJson;
     });
 
 builder.Services.ConfigureApiOptions(builder.Configuration, builder.Environment);
@@ -138,14 +143,12 @@ builder.Services.AddCors(options =>
 // ---------------------------------------------------------------------------
 // Client rate limiting (Redis-backed) — carried over from ServiceCatalog
 // ---------------------------------------------------------------------------
+// Its counters live in the application's one IDistributedCache (Redis, shared connection), registered with the
+// rest of caching by AddInfrastructureCore -> AddAsanRezerveCaching. It used to register a second Redis cache of
+// its own here under the "RateLimit_" prefix, which the query cache then silently shared.
 builder.Services.AddMemoryCache();
 builder.Services.Configure<ClientRateLimitOptions>(builder.Configuration.GetSection("ClientRateLimiting"));
 builder.Services.Configure<ClientRateLimitPolicies>(builder.Configuration.GetSection("ClientRateLimitPolicies"));
-builder.Services.AddStackExchangeRedisCache(options =>
-{
-    options.Configuration = builder.Configuration.GetConnectionString("Redis");
-    options.InstanceName = "RateLimit_";
-});
 builder.Services.AddDistributedRateLimiting();
 builder.Services.AddSingleton<IClientResolveContributor, ClientRateLimitResolver>();
 builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
@@ -166,7 +169,10 @@ builder.Services.AddUserManagementInfrastructure(builder.Configuration);
 
 // ServiceCatalog context
 builder.Services.AddServiceCatalogApplication();
-builder.Services.AddServiceCatalogInfrastructureWithCache(builder.Configuration);
+builder.Services.AddServiceCatalogInfrastructure(builder.Configuration);
+
+// Observability: database log store (14-day retention), system overview, AI digest, admin API services.
+AsanRezerve.Infrastructure.Observability.ObservabilityRegistration.AddAsanRezerveObservability(builder.Services, builder.Configuration);
 
 // Cross-context composition: serve UserManagement's provider lookup in-process rather
 // than over a loopback HTTP call that the host's own auth fallback policy rejects.
@@ -218,6 +224,9 @@ var app = builder.Build();
 // ---------------------------------------------------------------------------
 // HTTP pipeline
 // ---------------------------------------------------------------------------
+// First, so it times the whole request, sees its final status and returns X-Trace-Id on every response.
+app.UseMiddleware<RequestTelemetryMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -229,7 +238,6 @@ app.UseSwaggerConfiguration(app.Services.GetRequiredService<IApiVersionDescripti
 app.UseResponseCompression();
 app.UseMiddleware<ApiResponseMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-app.UseMiddleware<RequestLoggingMiddleware>();
 
 app.UseHttpsRedirection();
 app.UseCors("AllowSpecificOrigins");
@@ -297,6 +305,9 @@ var seed = builder.Configuration.GetValue("Database:SeedOnStartup", app.Environm
 var seedReferenceData = builder.Configuration.GetValue("Database:SeedReferenceData", true);
 
 await app.MigrateAndSeedDatabaseAsync<UserManagementDbContext, UserManagementDatabaseSeeder>(seedData: seed);
+
+// The log store's schema; never fails startup (see MigrateObservabilityStoreAsync).
+await AsanRezerve.Infrastructure.Observability.ObservabilityRegistration.MigrateObservabilityStoreAsync(app.Services);
 
 using (var scope = app.Services.CreateScope())
 {

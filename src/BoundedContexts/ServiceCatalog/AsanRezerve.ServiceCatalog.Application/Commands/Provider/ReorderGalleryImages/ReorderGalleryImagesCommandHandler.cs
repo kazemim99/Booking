@@ -31,13 +31,10 @@ public sealed class ReorderGalleryImagesCommandHandler
             throw new InvalidOperationException($"Provider {request.ProviderId} not found");
         }
 
-        // Go through the aggregate root, not provider.Profile directly. The root's methods raise the
-        // domain events that ProviderCacheInvalidationEventHandler listens for, and the read path is
-        // decorated by CachedProviderReadRepository — so a mutation applied straight to Profile persists
-        // correctly but leaves the cache holding the pre-change gallery. That was the actual defect here:
-        // raw SQL confirmed display_order was written exactly as requested, while the API kept serving
-        // the stale snapshot. DeleteGalleryImage never had the bug because it already routed through the
-        // root.
+        // Go through the aggregate root, not provider.Profile directly: the root raises the domain events.
+        // History: a mutation applied straight to Profile once persisted correctly while a provider cache kept
+        // serving the pre-change gallery, because that cache was invalidated by these events only. Cached salon
+        // reads are now evicted by the save pipeline for any provider change (add-observability-and-caching).
         provider.ReorderGalleryImages(request.ImageOrders);
 
         if (request.PrimaryImageId.HasValue)

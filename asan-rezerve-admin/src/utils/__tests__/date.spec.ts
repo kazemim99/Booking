@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { formatDate, formatDateTime } from '../date'
+import { formatDate, formatDateTime, formatTimestamp } from '../date'
 import { useLocaleStore } from '../../stores/locale.store'
 import { Language, DateFormat } from '../../types/locale.types'
 
@@ -76,5 +76,12 @@ describe('date formatting', () => {
     const shown = formatDate(registeredAt)
     expect(shown.startsWith('⁨')).toBe(true)
     expect(shown.endsWith('⁩')).toBe(true)
+  })
+
+  it('renders log timestamps to the second', () => {
+    useLocaleStore().setLocale(Language.English)
+
+    expect(formatTimestamp('2026-09-26T08:05:09Z')).toMatch(/\d{2}:\d{2}:\d{2}/)
+    expect(formatTimestamp(null)).toBe('')
   })
 })
