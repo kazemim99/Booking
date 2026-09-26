@@ -208,42 +208,11 @@ export interface CompleteRegistrationResponse {
 }
 
 class ProviderRegistrationService {
-  /**
-   * Map frontend category ID to backend ProviderType enum
-   */
-  private mapCategoryToProviderType(categoryId: string): string {
-    const mapping: Record<string, string> = {
-      'nail_salon': 'Salon',
-      'hair_salon': 'Salon',
-      'brows_lashes': 'Salon',
-      'braids_locs': 'Salon',
-      'massage': 'Spa',
-      'barbershop': 'Salon',
-      'aesthetic_medicine': 'Medical',
-      'dental_orthodontics': 'Clinic',
-      'hair_removal': 'Salon',
-      'health_fitness': 'GymFitness',
-      'home_services': 'HomeServices',
-    }
-
-    return mapping[categoryId] || 'Salon' // Default to Salon if not found
-  }
-
-  /**
-   * Map backend ProviderType enum to frontend category ID
-   */
-  private mapProviderTypeToCategory(providerType: string): string {
-    const reverseMapping: Record<string, string> = {
-      'Salon': 'hair_salon',
-      'Spa': 'massage',
-      'Medical': 'aesthetic_medicine',
-      'Clinic': 'dental_orthodontics',
-      'GymFitness': 'health_fitness',
-      'HomeServices': 'home_services',
-    }
-
-    return reverseMapping[providerType] || 'hair_salon' // Default to hair_salon if not found
-  }
+  // Categories travel as they are. The category step emits the canonical slug ("hair-salon"); the backend's
+  // ServiceCategoryResolver accepts that, the enum name, the numeric id and the old taxonomy ids, and the step
+  // normalises whatever a saved draft returns (parseCategory). The translation table to the pre-enum ProviderType
+  // names that used to sit here was keyed by the old "hair_salon" ids, so every slug fell back to "Salon" — which
+  // the backend rejects — and a resumed barbershop came back as a women's salon.
 
   /**
    * Create a draft provider (Step 3 - After business info, category, and location)
@@ -251,15 +220,9 @@ class ProviderRegistrationService {
   async createProviderDraft(
     request: CreateProviderDraftRequest,
   ): Promise<CreateProviderDraftResponse> {
-    // Map category ID to ProviderType enum
-    const mappedRequest = {
-      ...request,
-      category: this.mapCategoryToProviderType(request.category),
-    }
-
     const response = await serviceCategoryClient.post<CreateProviderDraftResponse>(
       'v1/providers/draft',
-      mappedRequest,
+      request,
     )
     return response.data!
   }
@@ -274,13 +237,6 @@ class ProviderRegistrationService {
       'v1/providers/draft',
     )
 
-    // Map ProviderType back to frontend category ID
-    if (response.data && response.data.draftData) {
-      response.data.draftData.category = this.mapProviderTypeToCategory(
-        response.data.draftData.category,
-      )
-    }
-
     return response.data!
   }
 
@@ -288,14 +244,9 @@ class ProviderRegistrationService {
    * Step 3: Save location and create provider draft
    */
   async saveStep3Location(request: CreateProviderDraftRequest): Promise<CreateProviderDraftResponse> {
-    const mappedRequest = {
-      ...request,
-      category: this.mapCategoryToProviderType(request.category),
-    }
-
     const response = await serviceCategoryClient.post<CreateProviderDraftResponse>(
       'v1/Registration/step-3/location',
-      mappedRequest,
+      request,
     )
     return response.data!
   }
@@ -460,13 +411,6 @@ class ProviderRegistrationService {
     const response = await serviceCategoryClient.get<RegistrationProgressResponse>(
       'v1/Registration/progress',
     )
-
-    // Map ProviderType back to frontend category ID
-    if (response.data && response.data.draftData) {
-      response.data.draftData.businessInfo.category = this.mapProviderTypeToCategory(
-        response.data.draftData.businessInfo.category,
-      )
-    }
 
     return response.data!
   }
