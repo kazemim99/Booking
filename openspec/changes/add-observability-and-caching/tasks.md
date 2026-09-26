@@ -66,15 +66,15 @@ installable here), `full` to finish.
 - [x] 5.2 RuntimeLogLevelConfigurationProvider + LogLevelService + expiry sweep.
 
 ## 6. Log store
-- [ ] 6.1 ObservabilityDbContext + records + migration InitialObservabilityStore; migrate at startup.
-- [ ] 6.2 Unit tests: LogStoreWriter mapping (level, trace, promoted props, masked message) + bounded drop + flush.
-- [ ] 6.3 LogStoreSink + LogStoreWriter (Channel + binary COPY) + LogRetentionService; override persistence.
-- [ ] 6.4 Unit tests: AI digest Markdown/JSON builder (grouping, ordering, empty window).
-- [ ] 6.5 LogQueryService (search, get, trace, export, digest, overview) + SystemOverview (process, meters, cache).
+- [x] 6.1 ObservabilityDbContext + records + migration InitialObservabilityStore; migrate at startup.
+- [x] 6.2 Unit tests: LogStoreWriter mapping (level, trace, promoted props, masked message) + bounded drop + flush.
+- [x] 6.3 LogStoreSink + LogStoreWriter (Channel + binary COPY) + LogRetentionService; override persistence.
+- [x] 6.4 Unit tests: AI digest Markdown/JSON builder (grouping, ordering, empty window).
+- [x] 6.5 LogQueryService (search, get, trace, export, digest, overview) + SystemOverview (process, meters, cache).
 
 ## 7. Admin API
-- [ ] 7.1 Integration tests: observability endpoints — 401/403/200, search, trace, levels roundtrip, cache stats/purge.
-- [ ] 7.2 AdminObservabilityController + registration; X-Trace-Id + digest integration checks green.
+- [x] 7.1 Integration tests: observability endpoints — 401/403/200, search, trace, levels roundtrip, cache stats/purge.
+- [x] 7.2 AdminObservabilityController + registration; X-Trace-Id + digest integration checks green.
 
 ## 8. Hot path
 - [ ] 8.1 Unit tests: ApiResponseMiddleware envelope identical shape, raw embed, non-JSON body as string, traceId.
@@ -111,6 +111,10 @@ installable here), `full` to finish.
 
 ## Log
 
+- 2026-09-26 Slices 6-7: log store (observability schema, binary COPY writer, retention), query service, AI digest,
+  overview, admin controller. Found and fixed: BoundedChannelFullMode.DropWrite reports success while discarding
+  (drops were uncountable) → Wait mode with TryWrite; exception and message text now scrubbed of phones/e-mails
+  before storage. Admin API integration tests 12/12; full integration 898/898; FAST green.
 - 2026-09-25 Slices 4-5: logging pipeline, masking, request telemetry, log-once, runtime levels. The first
   integration run after slice 4 failed 871/886: the host could not start (MissingMethodException in the Seq sink —
   compiled against Serilog.Sinks.Seq 8.0.0, the host resolves 9.0.0 via UserManagement.API). Aligned to 9.0.0;

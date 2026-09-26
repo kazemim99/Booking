@@ -169,6 +169,24 @@ public sealed partial class SensitiveDataMaskingEnricher : ILogEventEnricher
         return at <= 0 ? Redacted : string.Concat(text.AsSpan(0, 1), "***", text.AsSpan(at));
     }
 
+    /// <summary>
+    /// Masks phone numbers and e-mail addresses inside free text — exception messages and stack traces, which are
+    /// stored as text rather than properties. Best effort; see the class remarks.
+    /// </summary>
+    public static string? ScrubText(string? text)
+    {
+        if (string.IsNullOrEmpty(text)) return text;
+
+        var scrubbed = MobileNumberInText().Replace(text, m => MaskPhone(m.Value));
+        return EmailInText().Replace(scrubbed, m => MaskEmail(m.Value));
+    }
+
+    [GeneratedRegex(@"(?<![\w+])(\+98|0098|0)?9\d{9}(?!\w)", RegexOptions.CultureInvariant)]
+    private static partial Regex MobileNumberInText();
+
+    [GeneratedRegex(@"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", RegexOptions.CultureInvariant)]
+    private static partial Regex EmailInText();
+
     [GeneratedRegex(@"^(\+98|0098|98|0)?9\d{9}$", RegexOptions.CultureInvariant)]
     private static partial Regex MobileNumber();
 

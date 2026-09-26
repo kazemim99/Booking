@@ -64,6 +64,8 @@ builder.Services.AddControllers(options =>
     })
     .AddApplicationPart(typeof(AsanRezerve.UserManagement.API.Extensions.SwaggerExtensions).Assembly)
     .AddApplicationPart(typeof(AsanRezerve.ServiceCatalog.Api.Extensions.SwaggerExtensions).Assembly)
+    // Admin observability API (logs, log levels, overview, AI digest, cache).
+    .AddApplicationPart(typeof(AsanRezerve.Infrastructure.Observability.ObservabilityRegistration).Assembly)
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
@@ -162,6 +164,9 @@ builder.Services.AddUserManagementInfrastructure(builder.Configuration);
 // ServiceCatalog context
 builder.Services.AddServiceCatalogApplication();
 builder.Services.AddServiceCatalogInfrastructure(builder.Configuration);
+
+// Observability: database log store (14-day retention), system overview, AI digest, admin API services.
+AsanRezerve.Infrastructure.Observability.ObservabilityRegistration.AddAsanRezerveObservability(builder.Services, builder.Configuration);
 
 // Cross-context composition: serve UserManagement's provider lookup in-process rather
 // than over a loopback HTTP call that the host's own auth fallback policy rejects.
@@ -294,6 +299,9 @@ var seed = builder.Configuration.GetValue("Database:SeedOnStartup", app.Environm
 var seedReferenceData = builder.Configuration.GetValue("Database:SeedReferenceData", true);
 
 await app.MigrateAndSeedDatabaseAsync<UserManagementDbContext, UserManagementDatabaseSeeder>(seedData: seed);
+
+// The log store's schema; never fails startup (see MigrateObservabilityStoreAsync).
+await AsanRezerve.Infrastructure.Observability.ObservabilityRegistration.MigrateObservabilityStoreAsync(app.Services);
 
 using (var scope = app.Services.CreateScope())
 {

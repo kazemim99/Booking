@@ -128,7 +128,8 @@ namespace AsanRezerve.Core.Domain.Infrastructure.Middleware
 
         private bool IsApiRequest(HttpRequest request)
         {
-            return request.Path.StartsWithSegments(_options.ApiPathPrefix);
+            return request.Path.StartsWithSegments(_options.ApiPathPrefix)
+                && !_options.ExcludedPathPrefixes.Any(prefix => request.Path.StartsWithSegments(prefix, StringComparison.OrdinalIgnoreCase));
         }
 
         private string GetSuccessMessage(int statusCode)
