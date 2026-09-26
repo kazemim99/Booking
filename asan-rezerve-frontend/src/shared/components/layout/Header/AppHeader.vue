@@ -20,6 +20,7 @@
 
       <!-- Logo -->
       <router-link to="/" class="logo">
+        <BrandMark class="logo-icon" />
         <span class="logo-text">AsanRezerve</span>
       </router-link>
 
@@ -82,6 +83,7 @@ import { useRouter } from 'vue-router'
 import HeaderNav from './HeaderNav.vue'
 import UserMenu from './UserMenu.vue'
 import LanguageSwitcher from './LanguageSwitcher.vue'
+import BrandMark from '@/shared/components/brand/BrandMark.vue'
 
 interface Props {
   isSidebarCollapsed?: boolean
@@ -157,6 +159,7 @@ function toggleNotifications(): void {
 .logo {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
   text-decoration: none;
   font-size: 1.5rem;
   font-weight: 700;
@@ -165,6 +168,12 @@ function toggleNotifications(): void {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   transition: opacity 0.2s;
+}
+
+.logo-icon {
+  width: 1.6rem;
+  height: 1.6rem;
+  flex-shrink: 0;
 
   &:hover {
     opacity: 0.8;

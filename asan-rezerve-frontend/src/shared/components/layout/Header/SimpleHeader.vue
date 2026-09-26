@@ -16,7 +16,7 @@
 
       <!-- Logo -->
       <router-link to="/" class="logo">
-        <img src="@/assets/logo.svg" alt="AsanRezerve" />
+        <BrandMark class="logo-icon" />
         <span class="logo-text">AsanRezerve</span>
       </router-link>
 
@@ -39,6 +39,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import UserMenu from './UserMenu.vue'
+import BrandMark from '@/shared/components/brand/BrandMark.vue'
 
 interface Props {
   showBackButton?: boolean
@@ -130,9 +131,9 @@ const goBack = () => {
   opacity: 0.8;
 }
 
-.logo img {
+.logo-icon {
   height: 36px;
-  width: auto;
+  width: 36px;
 }
 
 .logo-text {

@@ -4,10 +4,10 @@
     <div class="sidebar-header">
       <router-link to="/admin/dashboard" class="brand">
         <span v-if="!isCollapsed" class="brand-text">
-          <span class="brand-icon">⚙️</span>
-          Admin Panel
+          <BrandMark theme="reversed" class="brand-icon" />
+          پنل مدیریت
         </span>
-        <span v-else class="brand-icon-only">⚙️</span>
+        <BrandMark v-else theme="reversed" class="brand-icon-only" />
       </router-link>
     </div>
 
@@ -90,6 +90,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import NavItem from './NavItem.vue'
+import BrandMark from '@/shared/components/brand/BrandMark.vue'
 
 interface Props {
   isCollapsed: boolean
@@ -148,11 +149,13 @@ const pendingProvidersCount = computed(() => {
 }
 
 .brand-icon {
-  font-size: 1.5rem;
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 .brand-icon-only {
-  font-size: 1.75rem;
+  width: 1.75rem;
+  height: 1.75rem;
 }
 
 .sidebar-nav {

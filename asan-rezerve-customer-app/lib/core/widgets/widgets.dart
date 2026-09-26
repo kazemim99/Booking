@@ -7,6 +7,7 @@ export 'app_bottom_sheet.dart';
 export 'app_button.dart';
 export 'app_card.dart';
 export 'app_circle_icon_button.dart';
+export 'brand_mark.dart';
 export 'app_snackbar.dart';
 export 'app_text_field.dart';
 export 'empty_state.dart';

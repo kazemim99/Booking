@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status-bar notification icon: the brand mark as a single-colour silhouette (branding/symbol-mono-*.svg).
+     Android draws only its alpha, so a full-colour launcher icon would show as a solid square here. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group
+        android:scaleX="0.22"
+        android:scaleY="0.22"
+        android:translateX="1"
+        android:translateY="1">
+        <path
+            android:pathData="M50,13 L14,83 M50,13 L86,83 M32,48 L54,70 L82,25"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="8.5"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+    </group>
+</vector>

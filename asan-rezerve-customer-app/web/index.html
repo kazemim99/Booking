@@ -28,7 +28,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="آسان رزرو">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
@@ -49,10 +49,7 @@
       font-family: Tahoma, "Segoe UI", system-ui, sans-serif;
       transition: opacity 200ms ease-out;
     }
-    #splash .mark {
-      width: 72px; height: 72px; border-radius: 20px; background: #3777C0; color: #FFFFFF;
-      display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: 700;
-    }
+    #splash .mark { width: 72px; height: 72px; display: block; }
     #splash .name { font-size: 22px; font-weight: 700; margin: 0; }
     #splash .tagline { font-size: 14px; color: #5A6B8C; margin: 0; }
     #splash .spinner {
@@ -70,7 +67,13 @@
 </head>
 <body>
   <div id="splash" role="status" aria-live="polite">
-    <div class="mark" aria-hidden="true">ب</div>
+    <!-- The app icon, inline (branding/appicon-blue.svg). -->
+    <svg class="mark" aria-hidden="true" viewBox="0 0 100 100" fill="none" stroke="#FFFFFF" stroke-width="8.5"
+         stroke-linecap="round" stroke-linejoin="round">
+      <rect width="100" height="100" rx="22.4" fill="#3777C0" stroke="none"/>
+      <path d="M50 13 14 83M50 13l36 70"/>
+      <polyline points="32,48 54,70 82,25"/>
+    </svg>
     <p class="name">آسان رزرو</p>
     <p class="tagline">رزرو آنلاین خدمات زیبایی</p>
     <div class="spinner" aria-hidden="true"></div>

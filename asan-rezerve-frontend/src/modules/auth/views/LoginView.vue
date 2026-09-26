@@ -4,16 +4,7 @@
       <div class="auth-card">
         <!-- Logo/Icon -->
         <div class="icon-container">
-          <div class="icon-wrapper">
-            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-              />
-            </svg>
-          </div>
+          <div class="icon-wrapper"><BrandMark class="icon" /></div>
         </div>
 
         <!-- Header -->
@@ -74,6 +65,7 @@
 </template>
 
 <script setup lang="ts">
+import BrandMark from '@/shared/components/brand/BrandMark.vue'
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { usePhoneVerification } from '../composables/usePhoneVerification'
@@ -173,7 +165,7 @@ const handleSubmit = async () => {
   width: 4rem;
   height: 4rem;
   border-radius: 9999px;
-  background: rgba(139, 92, 246, 0.1);
+  background: rgba(55, 119, 192, 0.1);
   margin: 0 auto 1rem;
 }
 
