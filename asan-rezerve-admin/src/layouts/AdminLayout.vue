@@ -2,8 +2,8 @@
   <a-layout class="admin-layout">
     <a-layout-sider v-model:collapsed="collapsed" :trigger="null" collapsible theme="dark">
       <div class="logo">
+        <BrandMark theme="reversed" class="logo-mark" />
         <h2 v-if="!collapsed">{{ $t('app.name') }}</h2>
-        <h2 v-else>{{ isPersian ? 'آسان رزرو' : 'BA' }}</h2>
       </div>
 
       <a-menu
@@ -131,10 +131,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth.store'
-import { useLocaleStore } from '../stores/locale.store'
+import BrandMark from '../components/common/BrandMark.vue'
 import LanguageSwitcher from '../components/common/LanguageSwitcher.vue'
 import { useUnreadCount } from '../composables/useUnreadCount'
 import {
@@ -155,9 +155,6 @@ import {
   BellOutlined,
   LogoutOutlined,
 } from '@ant-design/icons-vue'
-
-const localeStore = useLocaleStore()
-const isPersian = computed(() => localeStore.isPersian)
 
 const router = useRouter()
 const route = useRoute()
@@ -198,7 +195,14 @@ const handleLogout = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem;
   background: rgba(255, 255, 255, 0.1);
+}
+
+.logo-mark {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex-shrink: 0;
 }
 
 .logo h2 {

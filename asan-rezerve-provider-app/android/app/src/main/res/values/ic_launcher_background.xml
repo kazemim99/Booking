@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Adaptive launcher icon background (mipmap-anydpi-v26/ic_launcher.xml). -->
+    <color name="ic_launcher_background">#FFFFFFFF</color>
+    <!-- Tint Android applies to ic_notification and the notification's app name. -->
+    <color name="notification_accent">#FF3777C0</color>
+</resources>

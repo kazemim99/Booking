@@ -3,6 +3,7 @@
     <div class="header-container">
       <!-- Logo -->
       <router-link to="/" class="logo">
+        <BrandMark class="logo-icon" />
         <span class="logo-text">AsanRezerve</span>
       </router-link>
 
@@ -39,6 +40,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useAuthStore } from '@/core/stores/modules/auth.store'
 import RoleBasedUserMenu from '@/shared/components/layout/Header/RoleBasedUserMenu.vue'
 import LanguageSwitcher from '@/shared/components/layout/Header/LanguageSwitcher.vue'
+import BrandMark from '@/shared/components/brand/BrandMark.vue'
 
 const authStore = useAuthStore()
 const isAuthenticated = computed(() => authStore.isAuthenticated)
@@ -129,12 +131,19 @@ onUnmounted(() => {
 .logo {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
   text-decoration: none;
   transition: all 0.3s ease;
 
   &:hover {
     transform: scale(1.05);
   }
+}
+
+.logo-icon {
+  width: 1.9rem;
+  height: 1.9rem;
+  flex-shrink: 0;
 }
 
 .logo-text {

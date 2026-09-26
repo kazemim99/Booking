@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../config/theme/app_tokens.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/widgets/brand_mark.dart';
 
 /// Branding-only splash. The router holds this route until the stored
 /// session resolves (AuthNotifier.sessionResolved), then redirects to home —
@@ -16,11 +17,7 @@ class SplashPage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.calendar_today_rounded,
-              size: 100,
-              color: theme.colorScheme.primary,
-            ),
+            const BrandMark(size: 96, semanticLabel: AppStrings.appName),
             const SizedBox(height: AppSpacing.lg),
             Text(AppStrings.appName, style: theme.textTheme.displaySmall),
             const SizedBox(height: AppSpacing.xs),

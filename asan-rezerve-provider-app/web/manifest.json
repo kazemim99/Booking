@@ -1,11 +1,13 @@
 {
-    "name": "asanrezerve_provider_app",
-    "short_name": "asanrezerve_provider_app",
+    "name": "آسان رزرو | پنل کسب‌وکار",
+    "short_name": "آسان رزرو کسب‌وکار",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FFFFFF",
+    "theme_color": "#3777C0",
+    "description": "آسان رزرو کسب‌وکار: نوبت‌ها، کارکنان و خدمات سالن خود را مدیریت کنید.",
+    "lang": "fa",
+    "dir": "rtl",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
