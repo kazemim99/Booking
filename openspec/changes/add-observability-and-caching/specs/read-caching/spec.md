@@ -8,8 +8,8 @@ The platform SHALL cache query results (read models) and SHALL NOT place domain 
 - **THEN** it is read from the database, not from a cache
 
 ### Requirement: Cached reads are fresh after a change
-Cached entries SHALL use absolute expiration and be tagged; domain events that change what a cached read returns
-SHALL evict its tags immediately and again after the unit of work commits.
+Cached entries SHALL use absolute expiration and be tagged; every saved change to what a cached read returns SHALL
+evict its tags after the save and again after the unit of work commits.
 
 #### Scenario: Salon edits show at once
 - **WHEN** a salon page has been read (and cached) and the owner updates the salon's profile
@@ -18,6 +18,10 @@ SHALL evict its tags immediately and again after the unit of work commits.
 #### Scenario: A new service shows on the salon page
 - **WHEN** a salon page with services has been cached and the salon adds a service
 - **THEN** the next read lists the new service
+
+#### Scenario: A change committed without domain events
+- **WHEN** a salon's row is changed and saved through the DbContext directly
+- **THEN** the next salon page read returns the change
 
 #### Scenario: Availability is never served from cache
 - **WHEN** a slot is booked

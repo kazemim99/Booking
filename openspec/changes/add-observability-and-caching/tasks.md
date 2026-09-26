@@ -1,5 +1,5 @@
-Status: ACTIVE
-Verify: FAST
+Status: DONE
+Verify: FULL
 
 Change: add-observability-and-caching. User request 2026-09-25 (architect review of logging + caching for lowest
 latency, AI-analysable monitoring, logs and log levels in the admin panel). Decisions taken by the user the same day
@@ -86,12 +86,12 @@ installable here), `full` to finish.
 - [x] 9.3 Logs page with Events / Log levels / Overview tabs; fa/en keys; type-check + unit tests green.
 
 ## 10. MCP server
-- [ ] 10.1 tools/observability-mcp: tools over the admin API, read-only unless allowed; node:test unit tests.
+- [x] 10.1 tools/observability-mcp: tools over the admin API, read-only unless allowed; node:test unit tests.
 
 ## 11. Cleanup and docs
-- [ ] 11.1 Delete AsanRezerve.Infrastructure.Monitoring; drop dead Observability config + committed Seq key; Seq opt-in.
-- [ ] 11.2 docs/OBSERVABILITY.md; API_ENDPOINTS.md; project.md Logging/Caching facts; FOLLOW-UPS #70 closed + new.
-- [ ] 11.3 FULL verify green; tasks.md reflects reality; Status DONE.
+- [x] 11.1 Delete AsanRezerve.Infrastructure.Monitoring; drop dead Observability config + committed Seq key; Seq opt-in.
+- [x] 11.2 docs/OBSERVABILITY.md; API_ENDPOINTS.md; project.md Logging/Caching facts; FOLLOW-UPS #70 closed + new.
+- [x] 11.3 FULL verify green; tasks.md reflects reality; Status DONE.
 
 ## Decisions
 
@@ -111,6 +111,14 @@ installable here), `full` to finish.
 
 ## Log
 
+- 2026-09-26 Slices 10-11: MCP server `tools/observability-mcp` (7 read tools, 3 write tools behind
+  ASANREZERVE_MCP_ALLOW_WRITES; node:test 10/10). Deleted the dead Infrastructure.Monitoring project, the dead
+  Seq/App Insights/Sentry block and the committed Seq API key (still in git history — rotate it); Seq is opt-in via
+  SEQ_SERVER_URL. Docs: docs/OBSERVABILITY.md, API_ENDPOINTS.md, project.md, FOLLOW-UPS (#70 closed, #72 added),
+  runbook, knowledge map. FULL verify PASS 2026-09-26T00:43Z (14 steps: build, 10 unit/architecture projects,
+  integration 898/898, admin type-check + vitest). The first FULL run reported BLOCKED only because the local
+  `master` ref was 26 commits stale, so verify's touched() saw the frontend and Flutter apps as changed; after
+  fast-forwarding the local ref to origin/master they are untouched and not run.
 - 2026-09-26 Slices 8-9: envelope embeds raw JSON (Utf8JsonWriter) with a correct Content-Length; Persian as UTF-8
   in MVC and envelope; NDJSON export excluded from the envelope. The full suite caught an order-dependent digest
   test (other tests' errors outranked its group) → digest gained a `source` filter. Admin Logs page: Events / Log

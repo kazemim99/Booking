@@ -68,6 +68,7 @@ Two known traps:
 | Where does knowledge live, and which copy wins? | [`docs/KNOWLEDGE.md`]docs/KNOWLEDGE.md) |
 | How do I run / deploy / debug it? | [`CLAUDE.md`]CLAUDE.md) — commands, Docker, health checks, troubleshooting |
 | How do I write or run tests? | `AGENTS.md` (policy) · `CLAUDE.md` `## Test Suites` |
+| Logs, log levels, trace ids, the AI digest / MCP server, caching? | [`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md) (2026-09-26) |
 | How do we archive an OpenSpec change? | skill `openspec-change-lifecycle` |
 | How do I confirm a claim is true? | skill `verify-before-claiming` |
 

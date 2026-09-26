@@ -78,16 +78,24 @@ after authorization) uses `HybridCache.GetOrCreateAsync` with absolute expiratio
 `q:{QueryType}:{CacheKey ?? SHA-256(JSON of the whole query)}`, and the query's tags. A null result is returned but
 not cached. A handler exception propagates and is not cached. A cache failure (serialisation, L1) is logged and the
 handler runs uncached. Hits/misses are counted per query type (`CacheMetrics`, meter `AsanRezerve.Caching`).
-`ICacheInvalidator.InvalidateAsync(tags)` evicts now and again when the DI scope ends (`CacheInvalidationScope`,
-`IAsyncDisposable`), i.e. after the unit of work committed — domain events are dispatched before `SaveChanges`, so an
-immediate-only eviction can be undone by a concurrent read of the uncommitted-old row.
+`ICacheInvalidator.InvalidateAsync(tags)` (`HybridCacheInvalidator`, scoped) evicts now and again when the DI scope
+ends (`IAsyncDisposable` + `IDisposable`), i.e. after the unit of work committed — domain events are dispatched before
+`SaveChanges`, so an immediate-only eviction can be undone by a concurrent read of the uncommitted-old row.
+
+*Revised during implementation (tier 1):* invalidation hangs off an **EF SaveChanges interceptor**
+(`ReadModelCacheInvalidationInterceptor`), not domain events — many mutators raise none (service price/duration, a
+member leaving, a gallery caption) and fixture commits raise none either. It traces every added/modified/deleted row
+(owned types walked to their root, rows with a foreign key to `Provider`) to its salon. HybridCache runs the factory
+on a pool thread without the caller's `ExecutionContext`; the behavior runs the handler under the captured context
+(IHttpContextAccessor, trace ids). `ICacheKeyContributor` adds out-of-query inputs to every key (the public base URL
+photo links are built from).
 
 Cached (tags → invalidated by):
 | Read | Lifetime | Tags |
 |---|---|---|
-| `GetProviderByIdQuery` (salon page) | 5 min | `provider:{id}` ← provider profile/hours/gallery/location/staff/status/policy/holiday/exception events, service events, membership events |
-| `SearchProvidersQuery` without coordinates, `GetFeaturedProvidersQuery` | 60 s | `provider-directory` ← same events (any provider) |
-| `GetCategoriesWithCountsQuery` | 10 min | `categories` (counts may lag ≤ 10 min) |
+| `GetProviderByIdQuery` (salon page) | 5 min | `provider:{id}` ← any saved change to the salon, its services, staff, hours |
+| `SearchProvidersQuery` without coordinates | 60 s | `provider-directory` ← any provider change |
+| `GetCategoriesWithCountsQuery` | 10 min | `categories` ← any provider change |
 | `LocationsController` reads | 12 h | `locations` (reference data) |
 Not cached any more: availability calendar, customer by id, favourites, user by id, admin user search.
 
@@ -99,7 +107,8 @@ escaped. The JSON is semantically identical; only escaping changes.
 
 ### D10 — Admin API
 `api/v1/admin/observability` (AdminOnly): `GET logs`, `GET logs/{id}`, `GET logs/trace/{traceId}`,
-`GET logs/export` (NDJSON, ≤ 50 000 rows), `GET digest?format=json|markdown`, `GET overview`, `GET log-levels`,
+`GET logs/export` (NDJSON, ≤ 50 000 rows, excluded from the envelope), `GET digest?format=json|markdown&source=`,
+`GET overview`, `GET log-levels`,
 `PUT log-levels`, `DELETE log-levels/{category}`, `GET cache`, `POST cache/invalidate`. Lists are
 `{ items, totalCount, page, pageSize }` like `admin/promotions`. Default window: last 24 h; maximum window 14 days.
 

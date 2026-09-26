@@ -555,7 +555,7 @@ no sudo), never root.
 ### Infrastructure Services
 - **PostgreSQL** (`127.0.0.1:5432`): Single primary database (`booksy`) with schema-per-context (schemas: `user_management`, `ServiceCatalog`, `cap`). One connection string (`DefaultConnection`).
 - **Redis** (`127.0.0.1:6379`): Caching layer with LRU eviction policy (192MB limit on the shared reference box; raise it in `docker-compose.prod.yml` if you have more headroom)
-- **Seq** (`127.0.0.1:5341`, `127.0.0.1:5342`) and **pgAdmin** (`127.0.0.1:5050`): OFF by default (Compose `profiles: ["observability"]`) — optional, RAM-hungry admin tools that aren't required for the app to run. Start them with `docker compose --profile observability up -d` if the box has headroom; otherwise use an SSH tunnel + a local pgAdmin/DBeaver, and rely on Serilog's own log output (it degrades gracefully when Seq isn't reachable).
+- **Seq** (`127.0.0.1:5341`, `127.0.0.1:5342`) and **pgAdmin** (`127.0.0.1:5050`): OFF by default (Compose `profiles: ["observability"]`) — optional, RAM-hungry admin tools that aren't required for the app to run. Start them with `docker compose --profile observability up -d` if the box has headroom **and** set `SEQ_SERVER_URL=http://seq:5341` in `.env` (the Seq sink is off when it is empty, the default); otherwise use an SSH tunnel + a local pgAdmin/DBeaver. Logs do not need Seq: the admin panel's **Logs** page reads the API's own database log store (`observability` schema, 14 days) — see `docs/OBSERVABILITY.md`.
 
 ### Service Communication
 - All containers connect via a Docker bridge network (`booksy-network`, subnet 172.25.0.0/16)
@@ -697,8 +697,15 @@ All environment variables are stored in `/opt/booksy/.env`. Key variables includ
 
 - **Database**: `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`
 - **Redis**: `REDIS_PASSWORD`
-- **Seq**: `SEQ_FIRSTRUN_ADMINUSERNAME`, `SEQ_FIRSTRUN_ADMINPASSWORD`
+- **Seq**: `SEQ_FIRSTRUN_ADMINUSERNAME`, `SEQ_FIRSTRUN_ADMINPASSWORD`; `SEQ_SERVER_URL` (empty = no Seq sink)
 - **Container Registry**: `GITHUB_REPOSITORY_OWNER` (currently: kazemim99)
+
+**Observability and caching (from 2026-09-26, `add-observability-and-caching`).** No new variable is required. On the
+first start the API creates the `observability` schema (log store, log-level overrides); if that fails the API still
+runs and the admin Logs page reports the store as not ready. The cache now really uses `REDIS_CONNECTION_STRING`
+(before, it pointed at localhost inside the container and never reached Redis); Redis keys move from `RateLimit_*` to
+`asanrezerve:*`, so rate-limit windows restart once and old keys expire on their own. Log volume drops: SQL commands and
+ASP.NET Core routing are no longer logged at Information. Details: `docs/OBSERVABILITY.md`.
 
 Never commit the `.env` file to version control. The `.env.backup` file should also be excluded from commits.
 

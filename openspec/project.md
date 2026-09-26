@@ -75,20 +75,33 @@ bounded context in-process — there are no per-service hosts and no API gateway
 - Health probes `/health`, `/health/ready`, `/health/live`, all explicitly `AllowAnonymous()`
   (a global authenticated fallback policy would otherwise 401 container probes)
 
-**Caching**
-- **Redis** via `Microsoft.Extensions.Caching.StackExchangeRedis 9.0.4` / `StackExchange.Redis 2.8.0`
+**Caching** *(re-verified 2026-09-26, `add-observability-and-caching`)*
+- **`HybridCache`** (`Microsoft.Extensions.Caching.Hybrid 9.10.0`): in-process L1 over Redis L2, registered by
+  `AddAsanRezerveCaching` (`Infrastructure.Core/Caching/CachingRegistration.cs`). L2 is `ResilientDistributedCache`
+  (circuit breaker). One lazily-opened Redis connection (`RedisConnection`) from `ConnectionStrings:Redis`
+  (`Cache:RedisConnectionString` only as an override), shared by `IDistributedCache` (rate limiting, OTP state,
+  prefix `asanrezerve:`) — `Microsoft.Extensions.Caching.StackExchangeRedis 9.0.19` / `StackExchange.Redis 2.8.0`
+- Cached reads go through `CachingBehavior` (MediatR, innermost) for queries whose `IsCacheable` is true — the
+  allowlist is `tests/AsanRezerve.ArchitectureTests/QueryCachePolicyTests.cs` — plus `LocationsController`.
+  Invalidation: `ReadModelCacheInvalidationInterceptor` (EF SaveChanges interceptor on `ServiceCatalogDbContext`)
+  evicts tags through `ICacheInvalidator`. **Domain aggregates are not cached** (the `Cached*ReadRepository`
+  decorators and `ICacheService` were removed)
 
 **Security**
 - JWT bearer (`Microsoft.AspNetCore.Authentication.JwtBearer 9.0.4`), `System.IdentityModel.Tokens.Jwt`
 - `BCrypt.Net-Next 4.0.3` for password hashing, `Otp.NET 1.4.0` for OTP
 - Policy-based authorization: `AddSecurity()` + `AddPolicyAuthorization()` (`Program.cs`)
 
-**Logging**
-- **Serilog** → **Console + rolling daily file** (`logs/asanrezerve-host-.txt`), configured inline in
-  `Program.cs` via `UseSerilog(...)` plus `ReadFrom.Configuration`
-- `Serilog.Sinks.Seq` is referenced and an `Observability:Seq` config block exists in
-  `appsettings.json`, but **no Serilog sink configuration section exists** in
-  `appsettings.json` or `appsettings.Development.json` — the Seq sink is **not wired** in the Host today.
+**Logging** *(re-verified 2026-09-26, `add-observability-and-caching`)*
+- **Microsoft.Extensions.Logging is the level gate** (`Logging:LogLevel`, plus runtime overrides from
+  `RuntimeLogLevelConfigurationProvider`); **Serilog is a provider** behind it (`builder.Logging.AddAsanRezerveLogging`,
+  `Infrastructure.Observability/Logging/LoggingPipeline.cs`) — not `UseSerilog`
+- Sinks: async console, async rolling CLEF file (`logs/asanrezerve-host-*.clef`), Seq only when `Seq:ServerUrl` is set,
+  and the database log store (`observability.log_events`, 14-day retention). `SensitiveDataMaskingEnricher` masks
+  every event first
+- `RequestTelemetryMiddleware` (first in the pipeline) writes one event per request and the `X-Trace-Id` header
+- Admin API `api/v1/admin/observability/*` (`AdminObservabilityController`, `AdminOnly`); MCP server in
+  `tools/observability-mcp`. Guide: `docs/OBSERVABILITY.md`
 
 **Third-party integrations** (configured in `src/Host/AsanRezerve.Host/appsettings.json`)
 - Payments: **ZarinPal** (`Payment:DefaultProvider`), IDPay, Behpardakht enabled; Parsian, Saman disabled.
@@ -108,7 +121,7 @@ These were previously asserted in project documentation and are **false**. Verif
 | Autofac as DI container | `Autofac.Extensions.DependencyInjection` is referenced, but the container is never swapped. The only `Autofac` usage in `src/` is a stray `using Autofac.Core;` in `ServiceQueryRepository.cs`. |
 | snake_case DB naming via EFCore.NamingConventions | Package referenced by 2 projects, but **`UseSnakeCaseNamingConvention` is never called**. Schema names are inconsistent by hand (`user_management` vs `ServiceCatalog`). |
 | Architecture tests enforcing layer rules | `NetArchTest.Rules 1.3.2` is referenced, but `tests/AsanRezerve.ArchitectureTests/` contains **only an empty template test** (`UnitTest1.Test1()` with no body). No architecture rule is enforced anywhere. |
-| OpenTelemetry / Jaeger / Prometheus / Sentry / App Insights in the running system | All wiring lives in `src/Infrastructure/AsanRezerve.Infrastructure.Monitoring`, which **no project references** (`grep` for `ProjectReference.*Monitoring` returns nothing). It is dead code in the solution. `Program.cs` wires no telemetry. |
+| OpenTelemetry / Jaeger / Prometheus / Sentry / App Insights in the running system | None is wired. The dead `AsanRezerve.Infrastructure.Monitoring` project that held such wiring was **deleted 2026-09-26**. The host serves no `/metrics` (FOLLOW-UPS #72); its meters are read in-process by `ApplicationCounters` for the admin overview. |
 | Separate per-context databases | One database, three schemas, one connection string. |
 
 ### Frontend

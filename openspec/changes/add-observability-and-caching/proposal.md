@@ -70,9 +70,10 @@ levels and cache tools to Claude Code / Claude Desktop through the admin API wit
   multiplexer shared by the cache, rate limiting and OTP state), which fixes production's localhost cache.
 - Cache read models, not aggregates: the aggregate decorators and `ICacheService` are removed; queries opt in with a
   key, tags and a lifetime. Keys include every query parameter by default.
-- Invalidation is event-driven and commit-safe: provider, service and staff domain events evict the provider's tag
-  immediately and again when the request scope ends (after commit), so a concurrent read cannot pin the old row.
-- Cached: salon page (`GET Providers/{id}`), non-geographic salon lists and featured salons, categories, locations.
+- Invalidation hangs off the save pipeline and is commit-safe: any saved change to a salon, its services or staff
+  evicts its tags after the save and again when the request scope ends (after commit), so a concurrent read cannot
+  pin the old row.
+- Cached: salon page (`GET Providers/{id}`), non-geographic salon lists, categories, locations.
   Caching removed where it was wrong: availability calendar (must be live), customer/user details, favourites,
   admin user search.
 - Admins see hit ratios per region, L1/L2 state, and can purge a tag or everything.
