@@ -70,6 +70,10 @@ jobs:
         EventBus__Provider: "InMemory"
         OTP_SANDBOX_CODE: "123456"
         Sms__SandboxMode: "true"
+        # Every spec logs in from the same address, so the per-caller "phone-verification" policy
+        # (5 codes per 5 minutes) answered 429 from the sixth login on. Off here as in the
+        # integration test host (appsettings.Testing.json); rate limiting is not what this suite tests.
+        RateLimiting__Enabled: "false"
         # Point the cross-context HTTP self-calls at THIS host. appsettings.json still has
         # them on :5000 from the microservices era, so completing provider registration
         # (which refreshes the token via ProvidersController.RefreshProviderToken) fails with

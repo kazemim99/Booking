@@ -130,18 +130,29 @@ export async function seedBookableProvider(): Promise<SeededProvider> {
 
 /**
  * Slots used when seeding bookings, in UTC. The seeded provider is open 09:00-18:00
- * local (Tehran, UTC+3:30), so 10:00Z = 13:30 local sits comfortably inside the day.
+ * local (Tehran, UTC+3:30) every day, so 10:00Z = 13:30 local sits comfortably inside the day.
  *
  * Specs run in parallel against the SAME shared provider+staff seeded by
  * global-setup, and the backend rejects an overlapping slot for a staff member with
  * 409 RESOURCE_CONFLICT — so every spec that seeds a booking must claim its own slot
  * here. Distinct days (not just distinct hours) keep them clear of each other's
  * service duration and buffer time.
+ *
+ * Relative to today: a fixed date turns into "Cannot create a booking in the past" once
+ * it passes. A week out stays inside the services' 90-day advance-booking window.
  */
 export const SEED_SLOTS = {
-  keystone: '2026-09-01T10:00:00Z',
-  reschedule: '2026-09-02T10:00:00Z',
+  keystone: futureSlot(7),
+  reschedule: futureSlot(8),
 } as const
+
+/** `daysAhead` days from today at 10:00 UTC, as an ISO string. */
+function futureSlot(daysAhead: number): string {
+  const slot = new Date()
+  slot.setUTCDate(slot.getUTCDate() + daysAhead)
+  slot.setUTCHours(10, 0, 0, 0)
+  return slot.toISOString()
+}
 
 /**
  * Seeds a booking for `customer` against the seeded provider, so the customer's

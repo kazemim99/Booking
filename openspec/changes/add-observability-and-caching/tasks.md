@@ -131,6 +131,11 @@ installable here), `full` to finish.
 
 ## Log
 
+- 2026-09-26 CI, second round: with the host reachable the Playwright suite ran in CI for the first time; 5 failed.
+  The new request/exception log lines named both causes: `send-verification-code` answered 429 from the sixth login
+  (per-caller `phone-verification` policy, 5 per 5 min, every spec from one address) and the reschedule seed booked
+  a hard-coded 2026-09-02 ("Cannot create a booking in the past"). Workflow sets `RateLimiting__Enabled=false` (as
+  the integration host does); SEED_SLOTS are today+7 / today+8 at 10:00Z. Frontend type-check + lint clean.
 - 2026-09-26 CI (user asked to carry it on this PR): `Playwright keystone (UI)` had failed on every run since it was
   added — `dotnet run` applied launchSettings.json (applicationUrl :5000) over the job's ASPNETCORE_URLS (:5050), so
   the health wait polled a closed port. Reproduced locally with the job's env; `--no-launch-profile` → healthy on
