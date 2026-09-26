@@ -475,6 +475,8 @@
       "dropped": "Dropped",
       "failedBatches": "Failed batches",
       "queue": "Queued",
+      "storageSize": "Stored size",
+      "storageDays": "Days kept",
       "lastError": "Last error",
       "counters": "System counters",
       "digest": "Digest for AI",

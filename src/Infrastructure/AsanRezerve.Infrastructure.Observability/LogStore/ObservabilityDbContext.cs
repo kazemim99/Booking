@@ -21,8 +21,9 @@ public sealed class ObservabilityDbContext(DbContextOptions<ObservabilityDbConte
 
         modelBuilder.Entity<LogEventRecord>(e =>
         {
+            // Partitioned by day on timestamp (see the migration and LogPartitions): the key must include it.
             e.ToTable("log_events");
-            e.HasKey(x => x.Id);
+            e.HasKey(x => new { x.Timestamp, x.Id }).HasName("PK_log_events");
             e.Property(x => x.Id).HasColumnName("id").UseIdentityAlwaysColumn();
             e.Property(x => x.Timestamp).HasColumnName("timestamp");
             e.Property(x => x.Level).HasColumnName("level");
@@ -39,7 +40,7 @@ public sealed class ObservabilityDbContext(DbContextOptions<ObservabilityDbConte
             e.Property(x => x.UserId).HasColumnName("user_id").HasMaxLength(100);
             e.Property(x => x.Properties).HasColumnName("properties").HasColumnType("jsonb");
 
-            e.HasIndex(x => x.Timestamp).HasDatabaseName("ix_log_events_timestamp");
+            e.HasIndex(x => x.Id).HasDatabaseName("ix_log_events_id");
             e.HasIndex(x => new { x.Level, x.Timestamp }).HasDatabaseName("ix_log_events_level_timestamp");
             e.HasIndex(x => x.TraceId).HasDatabaseName("ix_log_events_trace_id");
             e.HasIndex(x => new { x.SourceContext, x.Timestamp }).HasDatabaseName("ix_log_events_source_timestamp");

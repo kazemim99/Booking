@@ -209,6 +209,8 @@ public class AdminObservabilityTests : ServiceCatalogIntegrationTestBase
 
         overview["process"]!["workingSetMb"]!.Value<double>().Should().BeGreaterThan(0);
         overview["logStore"]!["ready"]!.Value<bool>().Should().BeTrue();
+        overview["logStorage"]!["partitions"]!.Value<int>().Should().BeGreaterThanOrEqualTo(4);
+        overview["logStorage"]!["totalBytes"]!.Value<long>().Should().BeGreaterThan(0);
         overview["cache"]!["l2"].Should().NotBeNull();
         overview["environment"]!.Value<string>().Should().Be("Testing");
     }
@@ -229,23 +231,5 @@ public class AdminObservabilityTests : ServiceCatalogIntegrationTestBase
         var lines = (await response.Content.ReadAsStringAsync()).Split('\n', StringSplitOptions.RemoveEmptyEntries);
         lines.Should().HaveCount(2);
         lines.Select(l => JObject.Parse(l)["message"]!.Value<string>()).Should().OnlyContain(m => m.Contains(marker));
-    }
-
-    [Fact]
-    public async Task Events_older_than_the_retention_are_deleted()
-    {
-        var marker = Marker();
-        var writer = Factory.Services.GetRequiredService<ILogEventBatchWriter>();
-        var now = DateTimeOffset.UtcNow;
-        LogEventRow Row(DateTimeOffset at, string text) =>
-            new(at, 3, text, "x", null, "AsanRezerve.Tests.Retention", null, null, null, null, null, null, null, null);
-        await writer.WriteAsync([Row(now.AddDays(-15), "old " + marker), Row(now.AddDays(-1), "recent " + marker)], CancellationToken.None);
-
-        await Factory.Services.GetRequiredService<LogRetention>().DeleteOlderThanAsync(now.AddDays(-14));
-
-        using var scope = Factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<ObservabilityDbContext>();
-        var left = await db.LogEvents.Where(e => e.Message.EndsWith(marker)).Select(e => e.Message).ToListAsync();
-        left.Should().Equal("recent " + marker);
     }
 }

@@ -112,8 +112,9 @@ cat > $DEPLOY_PATH/scripts/backup.sh << 'EOF'
 BACKUP_DIR="/opt/asan-rezerve/backups"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
-# Backup database
-docker exec asan-rezerve-postgres pg_dump -U asan_rezerve_admin asan_rezerve_production > $BACKUP_DIR/db_backup_$TIMESTAMP.sql
+# Backup database. Stored logs (observability.log_events and its daily partitions) are left out: they are
+# diagnostics, kept 14 days, and would make up most of the dump. Their tables and the log-level overrides are kept.
+docker exec asan-rezerve-postgres pg_dump -U asan_rezerve_admin --exclude-table-data='observability.log_events*' asan_rezerve_production > $BACKUP_DIR/db_backup_$TIMESTAMP.sql
 
 # Backup volumes
 docker run --rm -v asan-rezerve_postgres_data:/data -v $BACKUP_DIR:/backup alpine tar czf /backup/postgres_volume_$TIMESTAMP.tar.gz /data

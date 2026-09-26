@@ -146,6 +146,14 @@ export interface LogStoreStats {
   lastWriteAt?: string | null
 }
 
+/** Size of the log store (`observability.log_events`, one partition per UTC day). */
+export interface LogStorage {
+  totalBytes: number
+  partitions: number
+  oldestDay?: string | null
+  newestDay?: string | null
+}
+
 export interface SystemOverview {
   generatedAt: string
   environment: string
@@ -168,6 +176,7 @@ export interface SystemOverview {
   topErrorsLastHour: ErrorGroup[]
   cache: CacheOverview
   logStore?: LogStoreStats | null
+  logStorage?: LogStorage | null
   counters: { meter: string; name: string; description?: string | null; total: number }[]
 }
 

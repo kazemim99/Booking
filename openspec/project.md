@@ -97,7 +97,7 @@ bounded context in-process — there are no per-service hosts and no API gateway
   `RuntimeLogLevelConfigurationProvider`); **Serilog is a provider** behind it (`builder.Logging.AddAsanRezerveLogging`,
   `Infrastructure.Observability/Logging/LoggingPipeline.cs`) — not `UseSerilog`
 - Sinks: async console, async rolling CLEF file (`logs/asanrezerve-host-*.clef`), Seq only when `Seq:ServerUrl` is set,
-  and the database log store (`observability.log_events`, 14-day retention). `SensitiveDataMaskingEnricher` masks
+  and the database log store (`observability.log_events`, partitioned by UTC day, 14-day retention by dropping whole days). `SensitiveDataMaskingEnricher` masks
   every event first
 - `RequestTelemetryMiddleware` (first in the pipeline) writes one event per request and the `X-Trace-Id` header
 - Admin API `api/v1/admin/observability/*` (`AdminObservabilityController`, `AdminOnly`); MCP server in

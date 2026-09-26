@@ -78,8 +78,24 @@ in production. The sandbox SMS body (with the OTP) is only logged at Debug under
 API). Events at or above `Observability:LogStore:MinimumLevel` (Information) are queued (10 000) and written in
 batches (500 or every 2 s) with binary COPY by a background writer; a full queue drops and counts, a failed batch is
 retried once then dropped and counted — a slow or down database never slows a request. The Overview tab shows
-written/dropped/failed counts and the last error. Retention: `RetentionDays` (14, decided 2026-09-25), enforced
-hourly. Indexed by time, level+time, trace id and source+time.
+written/dropped/failed counts, the last error, the store's size on disk and the days it holds.
+
+**Partitioned by day.** `log_events` has one partition per UTC day (`log_events_p20260926`); yesterday, today and
+the next two days always exist (created at startup and hourly). Retention (`RetentionDays`, 14, decided 2026-09-25)
+drops a whole day once all of it is older than that — instant, and no dead rows for autovacuum to chase, unlike
+`DELETE`. An event whose day has no partition yet (the hourly job failed for days, or a clock far off) waits in
+`log_events_default` and moves into its day when the day is created; parked events past the retention are deleted.
+Indexed by time (the key), level+time, trace id, source+time and id.
+
+**Backups leave the rows out.** Stored logs are diagnostics and would make up most of a dump, so
+`pg_dump --exclude-table-data='observability.log_events*'` (the backup script and runbook commands) keeps the tables
+and the log-level overrides but not the events. The raw volume archive still has them.
+
+**When to store less.** The size on the Overview is the number to watch. Every request writes one event, so at
+roughly 1 KB per row 20 000 requests a day is ~350 MB over 14 days and 200 000 a day ~3.5 GB. If it grows too big
+for the box: shorten `RetentionDays`, or raise `MinimumLevel` to `Warning` (the overview's request counts and p95 are
+then empty, because they are computed from the stored request events — which is also why sampling successful
+requests is not built: it would falsify them), or move the store to its own database or a log server (Loki).
 
 | Setting (`Observability:LogStore:*`) | Default |
 |---|---|

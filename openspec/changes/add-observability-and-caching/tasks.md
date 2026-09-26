@@ -93,6 +93,20 @@ installable here), `full` to finish.
 - [x] 11.2 docs/OBSERVABILITY.md; API_ENDPOINTS.md; project.md Logging/Caching facts; FOLLOW-UPS #70 closed + new.
 - [x] 11.3 FULL verify green; tasks.md reflects reality; Status DONE.
 
+## 12. Log store at scale (2026-09-26, after review of storing logs in the application database)
+- [x] 12.1 Unit tests: partition plan — daily UTC partitions today-1..today+2 created, whole days older than the
+  retention dropped, foreign/malformed names ignored, day boundaries in UTC.
+- [x] 12.2 LogPartitionPlan (pure) for 12.1.
+- [x] 12.3 Integration tests: log_events is partitioned; ensure is idempotent; rows parked in the default partition
+  move into a new day's partition; retention drops old partitions and old default rows, keeps recent; an event is
+  still found by id and trace id; storage size is reported on the overview.
+- [x] 12.4 Migration creates log_events partitioned by day (+ default partition, sequence id, PK (timestamp, id));
+  LogPartitions (ensure / retention by DROP / storage size) at startup and hourly; overview storage block; admin
+  Overview shows it.
+- [x] 12.5 Backups keep the log store's schema but not its rows (server-setup.sh, runbook); docs (OBSERVABILITY.md,
+  design D6, log-explorer spec).
+- [x] 12.6 FULL verify green; Status DONE.
+
 ## Decisions
 
 - 2026-09-25 (user) Log retention in the database: 14 days.
@@ -108,9 +122,22 @@ installable here), `full` to finish.
 - Tier 1: salon-page invalidation hangs off an EF SaveChanges interceptor (every tracked change), not domain events.
 - Tier 1: cached handlers run under the caller's ExecutionContext; the public base URL is part of every query-cache key.
 - Tier 2: delete dead AsanRezerve.Infrastructure.Monitoring and the committed Seq API key; Seq becomes opt-in.
+- 2026-09-26 (user) "Fix it if you think it is better" on the log-store review: partition by day, keep log rows out
+  of backups, show storage size. Tier 1: request-event sampling NOT built — the overview's request counts and p95
+  are computed from the stored request events, so sampling would falsify them unless weighted; revisit with the
+  storage size the overview now shows.
+- Tier 1: the InitialObservabilityStore migration is edited in place (partitioned table) rather than followed by a
+  second migration — it has never been applied outside test containers (branch unmerged, not deployed).
 
 ## Log
 
+- 2026-09-26 Slice 12 (log store at scale): log_events partitioned by UTC day (hand-written in the regenerated
+  InitialObservabilityStore migration; key (timestamp, id)); LogPartitions creates yesterday..today+2 at startup and
+  hourly, moves events parked in the default partition into a new day in the same transaction, drops whole days past
+  14 days; overview/admin show size and day range; dumps exclude the rows (checked on postgres:16: tables and
+  overrides dumped, events not). Checked on postgres:16 first that identity columns work on a partitioned parent (my
+  first draft assumed they did not). Sampling not built (tier-1 decision above). Unit 90 (+8 plan), integration
+  901/901 (+4 partition tests, retention test moved), admin vitest 148/148. FULL verify PASS.
 - 2026-09-26 Slices 10-11: MCP server `tools/observability-mcp` (7 read tools, 3 write tools behind
   ASANREZERVE_MCP_ALLOW_WRITES; node:test 10/10). Deleted the dead Infrastructure.Monitoring project, the dead
   Seq/App Insights/Sentry block and the committed Seq API key (still in git history — rotate it); Seq is opt-in via

@@ -477,6 +477,8 @@
       "dropped": "کنارگذاشته",
       "failedBatches": "دسته‌های ناموفق",
       "queue": "در صف",
+      "storageSize": "حجم ذخیره‌شده",
+      "storageDays": "روزهای نگهداری",
       "lastError": "آخرین خطا",
       "counters": "شمارنده‌های سامانه",
       "digest": "خلاصه برای هوش مصنوعی",

@@ -290,7 +290,7 @@ What changes: reviews are moderated (nothing new is public until an administrato
 votes are one per signed-in user, providers can reply (also moderated), and a provider's rating is
 computed from published reviews only.
 
-1. **Back up first.** `docker exec booksy-postgres pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc > ~/pre-reviews-$(date +%F).dump`
+1. **Back up first.** `docker exec booksy-postgres pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --exclude-table-data='observability.log_events*' -Fc > ~/pre-reviews-$(date +%F).dump`
    (values from `/opt/booksy/.env`; the migration backfills existing rows, and a dump is the only undo for data).
 2. **Deploy as usual** (push to `master`, or the manual steps above). The migration applies at
    startup. It is **additive only** — new columns with defaults, three new tables
@@ -609,8 +609,8 @@ docker compose -f docker-compose.prod.yml up -d --scale booksy-api=3
 # Access PostgreSQL shell
 docker exec -it booksy-postgres psql -U booksy_admin -d booksy_user_management
 
-# Create database backup
-docker exec booksy-postgres pg_dump -U booksy_admin booksy_user_management > backup_$(date +%Y%m%d_%H%M%S).sql
+# Create database backup (stored logs left out: tables kept, rows not — see docs/OBSERVABILITY.md)
+docker exec booksy-postgres pg_dump -U booksy_admin --exclude-table-data='observability.log_events*' booksy_user_management > backup_$(date +%Y%m%d_%H%M%S).sql
 
 # Restore from backup
 docker exec -i booksy-postgres psql -U booksy_admin booksy_user_management < backup.sql
@@ -705,7 +705,11 @@ first start the API creates the `observability` schema (log store, log-level ove
 runs and the admin Logs page reports the store as not ready. The cache now really uses `REDIS_CONNECTION_STRING`
 (before, it pointed at localhost inside the container and never reached Redis); Redis keys move from `RateLimit_*` to
 `asanrezerve:*`, so rate-limit windows restart once and old keys expire on their own. Log volume drops: SQL commands and
-ASP.NET Core routing are no longer logged at Information. Details: `docs/OBSERVABILITY.md`.
+ASP.NET Core routing are no longer logged at Information. Stored logs live in `observability.log_events`, one
+partition per UTC day, dropped whole after 14 days; database dumps should leave their rows out
+(`--exclude-table-data='observability.log_events*'`, as the backup script does) — the tables and the log-level
+overrides are still dumped. The raw `postgres_data` volume archive still contains them. Watch the store's size on Logs ›
+Overview › Log store. Details: `docs/OBSERVABILITY.md`.
 
 Never commit the `.env` file to version control. The `.env.backup` file should also be excluded from commits.
 

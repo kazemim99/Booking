@@ -1061,7 +1061,7 @@ Default window: the last hour. `source` narrows levels and errors to a source pr
 ```http
 GET /api/v1/admin/observability/overview
 ```
-`{ generatedAt, environment, version, startedAt, process { workingSetMb, gcHeapMb, gen0..2Collections, threadPoolThreads, pendingWorkItems, cpuSeconds }, lastHour { requests, serverErrors, errorRate, p95Ms }, levelsLastHour[], last24Hours[] { hour, information, warnings, errors }, slowestRoutesLastHour[], topErrorsLastHour[], cache, logStore { ready, enqueued, written, dropped, failedBatches, queueLength, lastError, lastWriteAt }, counters[] { meter, name, description, total } }`.
+`{ generatedAt, environment, version, startedAt, process { workingSetMb, gcHeapMb, gen0..2Collections, threadPoolThreads, pendingWorkItems, cpuSeconds }, lastHour { requests, serverErrors, errorRate, p95Ms }, levelsLastHour[], last24Hours[] { hour, information, warnings, errors }, slowestRoutesLastHour[], topErrorsLastHour[], cache, logStore { ready, enqueued, written, dropped, failedBatches, queueLength, lastError, lastWriteAt }, logStorage { totalBytes, partitions, oldestDay, newestDay } (null until the store is ready), counters[] { meter, name, description, total } }`.
 
 #### Log Levels
 ```http

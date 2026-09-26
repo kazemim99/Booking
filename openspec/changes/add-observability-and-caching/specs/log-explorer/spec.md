@@ -14,11 +14,22 @@ dropped events SHALL be counted.
 - **THEN** the excess is dropped and counted, and logging calls return immediately
 
 ### Requirement: Stored logs are kept for 14 days
-The store SHALL delete events older than the configured retention (14 days).
+The store SHALL remove events older than the configured retention (14 days) by whole UTC days, and SHALL NOT remove an
+event younger than the retention. Events SHALL be stored in one partition per UTC day, so that removing a day leaves
+no dead rows; an event whose day has no partition yet SHALL still be stored and SHALL move into its day when the day
+is created. Database backups SHALL keep the log store's tables but not its events.
 
-#### Scenario: Old events are removed
+#### Scenario: Old days are removed
 - **WHEN** the retention job runs
-- **THEN** events older than 14 days are deleted and newer ones remain
+- **THEN** every day that ended more than 14 days ago is removed with its events, and newer events remain
+
+#### Scenario: An event arrives for a day without a partition
+- **WHEN** an event is stored for a day that has no partition, and later that day's partition is created
+- **THEN** the event is stored meanwhile and afterwards is found in its day's partition
+
+#### Scenario: The store's size is visible
+- **WHEN** an admin opens the system overview
+- **THEN** it shows the log store's size on disk and the range of days it holds
 
 ### Requirement: Admins search and inspect logs
 Administrators (AdminOnly) SHALL be able to search stored events by time window, minimum level, text, source,

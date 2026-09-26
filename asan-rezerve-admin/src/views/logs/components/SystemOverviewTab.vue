@@ -99,6 +99,13 @@
               <a-descriptions-item :label="t('logs.overviewTab.dropped')">{{ o.logStore.dropped }}</a-descriptions-item>
               <a-descriptions-item :label="t('logs.overviewTab.failedBatches')">{{ o.logStore.failedBatches }}</a-descriptions-item>
               <a-descriptions-item :label="t('logs.overviewTab.queue')">{{ o.logStore.queueLength }}</a-descriptions-item>
+              <template v-if="o.logStorage">
+                <a-descriptions-item :label="t('logs.overviewTab.storageSize')">{{ formatBytes(o.logStorage.totalBytes) }}</a-descriptions-item>
+                <a-descriptions-item :label="t('logs.overviewTab.storageDays')">
+                  <span dir="ltr">{{ o.logStorage.oldestDay ?? '—' }} → {{ o.logStorage.newestDay ?? '—' }}</span>
+                  ({{ o.logStorage.partitions }})
+                </a-descriptions-item>
+              </template>
               <a-descriptions-item v-if="o.logStore.lastError" :label="t('logs.overviewTab.lastError')" :span="2"><span dir="ltr" class="mono">{{ o.logStore.lastError }}</span></a-descriptions-item>
             </a-descriptions>
           </a-card>
@@ -151,6 +158,7 @@ import { BarChart } from 'echarts/charts'
 import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components'
 import VChart from 'vue-echarts'
 import type { ErrorGroup, LogLevelName } from '../../../api/observability.api'
+import { formatBytes } from '../../../utils/bytes'
 import { formatTimestamp } from '../../../utils/date'
 import { useSystemOverview } from '../useSystemOverview'
 import { LEVEL_COLORS } from './levelColors'

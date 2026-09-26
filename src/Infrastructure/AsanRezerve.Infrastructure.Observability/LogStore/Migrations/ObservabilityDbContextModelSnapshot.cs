@@ -25,6 +25,10 @@ namespace AsanRezerve.Infrastructure.Observability.LogStore.Migrations
 
             modelBuilder.Entity("AsanRezerve.Infrastructure.Observability.LogStore.LogEventRecord", b =>
                 {
+                    b.Property<DateTimeOffset>("Timestamp")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("timestamp");
+
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint")
@@ -81,10 +85,6 @@ namespace AsanRezerve.Infrastructure.Observability.LogStore.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("status_code");
 
-                    b.Property<DateTimeOffset>("Timestamp")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("timestamp");
-
                     b.Property<string>("TraceId")
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
@@ -95,10 +95,11 @@ namespace AsanRezerve.Infrastructure.Observability.LogStore.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("user_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Timestamp", "Id")
+                        .HasName("PK_log_events");
 
-                    b.HasIndex("Timestamp")
-                        .HasDatabaseName("ix_log_events_timestamp");
+                    b.HasIndex("Id")
+                        .HasDatabaseName("ix_log_events_id");
 
                     b.HasIndex("TraceId")
                         .HasDatabaseName("ix_log_events_trace_id");

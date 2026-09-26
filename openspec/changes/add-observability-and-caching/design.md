@@ -58,9 +58,19 @@ enqueues into a bounded `Channel` (10 000; full → drop and count). `LogStoreWr
 counted and retried once, then the batch is dropped; the app is never affected. `FlushAsync` exists for tests and
 shutdown. Table `observability.log_events`: id, timestamp, level, message (rendered, masked), message_template,
 exception, source_context, trace_id, span_id, request_path, status_code, elapsed_ms, user_id, properties (jsonb).
-Indexes: timestamp, (level, timestamp), trace_id, (source_context, timestamp). `ObservabilityDbContext` (schema
-`observability`) owns the migration and the admin queries. Retention: an hourly job deletes rows older than
-`RetentionDays` (14, decision 2026-09-25) in chunks of 10 000. The table is not in the integration tests'
+Indexes: (level, timestamp), trace_id, (source_context, timestamp), id. `ObservabilityDbContext` (schema
+`observability`) owns the migration and the admin queries.
+
+*Revised 2026-09-26 (log store at scale, slice 12):* the table shares the application's database, so a `DELETE`-based
+retention would leave the busiest table full of dead rows and every dump full of logs. `log_events` is **partitioned
+by UTC day** (key `(timestamp, id)`; the migration writes the table by hand because EF cannot declare partitioning).
+`LogPartitions` keeps yesterday … today+2 created (startup, then hourly) and drops a day once all of it is older than
+`RetentionDays` (14, decision 2026-09-25). A default partition catches an event with no day partition; creating the day
+moves its parked events into it in the same transaction (Postgres refuses to create a partition whose rows sit in the
+default one). All partition DDL runs under one advisory lock. Backups use
+`--exclude-table-data='observability.log_events*'`. The overview reports the store's size and day range. Sampling
+successful request events was considered and rejected for now: the overview's request counts and p95 are computed
+from those events, so sampling would falsify them unless every statistic were weighted. The table is not in the integration tests'
 `DatabaseReset` (tests use unique markers; truncating a table a background writer is filling buys nothing).
 
 ### D7 — HybridCache with a resilient, keyed L2

@@ -32,6 +32,7 @@ public sealed record SystemOverview(
     IReadOnlyList<ErrorGroup> TopErrorsLastHour,
     CacheOverview Cache,
     LogStoreStats? LogStore,
+    LogStorage? LogStorage,
     IReadOnlyList<CounterTotal> Counters);
 
 /// <summary>Assembles the admin overview and the AI digest.</summary>
@@ -56,8 +57,10 @@ public sealed class SystemOverviewService(
         IReadOnlyList<TimelineBucket> timeline = [];
         IReadOnlyList<RouteLatency> routes = [];
         IReadOnlyList<ErrorGroup> errors = [];
+        LogStorage? storage = null;
         if (logs is not null && store is { Ready: true })
         {
+            storage = await services.GetRequiredService<LogPartitions>().StorageAsync(cancellationToken);
             levels = await logs.LevelCountsAsync(hourAgo, now, null, cancellationToken);
             timeline = await logs.TimelineAsync(now.AddHours(-24), now, cancellationToken);
             routes = await logs.SlowestRoutesAsync(hourAgo, now, 10, cancellationToken);
@@ -73,7 +76,7 @@ public sealed class SystemOverviewService(
             routes.Count == 0 ? 0 : routes.Max(r => r.P95Ms));
 
         return new SystemOverview(now, environment.EnvironmentName, Version(), StartedAt, ProcessNow(), summary,
-            levels, timeline, routes, errors, cache.Snapshot(), store, counters.Snapshot());
+            levels, timeline, routes, errors, cache.Snapshot(), store, storage, counters.Snapshot());
     }
 
     /// <param name="source">Optional source-context prefix (e.g. <c>AsanRezerve.ServiceCatalog</c>) for levels and errors.</param>

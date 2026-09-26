@@ -31,7 +31,7 @@ public static class ObservabilityRegistration
         services.AddSingleton(sp => new LogStoreDataSource(
             sp.GetRequiredService<IConfiguration>().GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required by the log store.")));
-        services.AddSingleton<LogRetention>();
+        services.AddSingleton<LogPartitions>();
         services.AddScoped<LogQueryService>();
 
         if (options.Enabled)
@@ -40,7 +40,7 @@ public static class ObservabilityRegistration
             services.AddSingleton<LogStoreWriter>();
             services.AddHostedService(sp => sp.GetRequiredService<LogStoreWriter>());
             services.AddSingleton<ILogEventSink, LogStoreSink>();
-            services.AddHostedService<LogRetentionService>();
+            services.AddHostedService<LogPartitionMaintenanceService>();
             services.Replace(ServiceDescriptor.Singleton<ILogLevelOverrideStore, EfLogLevelOverrideStore>());
         }
 
@@ -48,8 +48,10 @@ public static class ObservabilityRegistration
     }
 
     /// <summary>
-    /// Applies the <c>observability</c> migration, then lets the log store start writing. Never fails startup: the
-    /// API must run without its log store, which then only buffers (and, when full, drops) events.
+    /// Applies the <c>observability</c> migration, creates the current days' log partitions, then lets the log store
+    /// start writing. Never fails startup: the API must run without its log store, which then only buffers (and, when
+    /// full, drops) events. Without its day partitions the store still works: events wait in the default partition
+    /// and move into their day when the hourly maintenance creates it.
     /// </summary>
     public static async Task MigrateObservabilityStoreAsync(this IServiceProvider services)
     {
@@ -58,11 +60,22 @@ public static class ObservabilityRegistration
         try
         {
             await scope.ServiceProvider.GetRequiredService<ObservabilityDbContext>().Database.MigrateAsync();
-            services.GetService<LogStoreWriter>()?.MarkReady();
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "The observability log store could not be migrated; stored logs are unavailable until the next start");
+            return;
         }
+
+        try
+        {
+            await services.GetRequiredService<LogPartitions>().EnsureAsync(services.GetRequiredService<TimeProvider>().GetUtcNow());
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "The log store's day partitions could not be created; events wait in the default partition");
+        }
+
+        services.GetService<LogStoreWriter>()?.MarkReady();
     }
 }
