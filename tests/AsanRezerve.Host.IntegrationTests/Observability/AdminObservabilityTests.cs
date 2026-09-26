@@ -187,13 +187,16 @@ public class AdminObservabilityTests : ServiceCatalogIntegrationTestBase
         }
         await FlushLogStoreAsync();
 
-        var json = await DataAsync(await Client.GetAsync($"{Base}/digest?format=json"));
+        // Narrowed to this test's source: the whole suite logs errors into the same table, and the digest lists the
+        // top groups only.
+        var source = "AsanRezerve.Tests.Digest." + marker;
+        var json = await DataAsync(await Client.GetAsync($"{Base}/digest?format=json&source={source}"));
         var group = ((JArray)json["errorGroups"]!).Single(g => g["sourceContext"]!.Value<string>() == "AsanRezerve.Tests.Digest." + marker);
         group["count"]!.Value<long>().Should().Be(3);
         ((JArray)group["sampleTraceIds"]!).Should().NotBeEmpty();
         group["exceptionType"]!.Value<string>().Should().StartWith("System.TimeoutException");
 
-        var markdown = (await DataAsync(await Client.GetAsync($"{Base}/digest?format=markdown")))["markdown"]!.Value<string>();
+        var markdown = (await DataAsync(await Client.GetAsync($"{Base}/digest?format=markdown&source={source}")))["markdown"]!.Value<string>();
         markdown.Should().Contain("# AsanRezerve system digest").And.Contain("AsanRezerve.Tests.Digest." + marker);
     }
 

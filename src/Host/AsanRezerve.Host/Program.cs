@@ -38,6 +38,8 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var persianFriendlyJson = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All);
+
 // ---------------------------------------------------------------------------
 // Logging — Logging:LogLevel decides what is logged (and admins can override it at runtime);
 // Serilog masks secrets and writes to console, rolling CLEF file, the database log store and
@@ -56,6 +58,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    options.SerializerOptions.Encoder = persianFriendlyJson;
 });
 
 builder.Services.AddControllers(options =>
@@ -74,6 +77,9 @@ builder.Services.AddControllers(options =>
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
         options.JsonSerializerOptions.AllowTrailingCommas = true;
         options.JsonSerializerOptions.ReadCommentHandling = JsonCommentHandling.Skip;
+        // Persian text as UTF-8 instead of \uXXXX escapes: up to a third of the bytes for the same text, and less
+        // work to write. HTML-sensitive characters (<, >, &, quotes) are still escaped.
+        options.JsonSerializerOptions.Encoder = persianFriendlyJson;
     });
 
 builder.Services.ConfigureApiOptions(builder.Configuration, builder.Environment);

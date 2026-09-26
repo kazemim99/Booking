@@ -77,13 +77,13 @@ installable here), `full` to finish.
 - [x] 7.2 AdminObservabilityController + registration; X-Trace-Id + digest integration checks green.
 
 ## 8. Hot path
-- [ ] 8.1 Unit tests: ApiResponseMiddleware envelope identical shape, raw embed, non-JSON body as string, traceId.
-- [ ] 8.2 ApiResponseMiddleware Utf8JsonWriter raw embed; Unicode-friendly JSON encoder for MVC and envelope.
+- [x] 8.1 Unit tests: ApiResponseMiddleware envelope identical shape, raw embed, non-JSON body as string, traceId.
+- [x] 8.2 ApiResponseMiddleware Utf8JsonWriter raw embed; Unicode-friendly JSON encoder for MVC and envelope.
 
 ## 9. Admin panel (asan-rezerve-admin)
-- [ ] 9.1 observability.api.ts + types + unit tests (URLs, params, payloads).
-- [ ] 9.2 Composables useLogExplorer / useLogLevels / useSystemOverview + unit tests.
-- [ ] 9.3 Logs page with Events / Log levels / Overview tabs; fa/en keys; type-check + unit tests green.
+- [x] 9.1 observability.api.ts + types + unit tests (URLs, params, payloads).
+- [x] 9.2 Composables useLogExplorer / useLogLevels / useSystemOverview + unit tests.
+- [x] 9.3 Logs page with Events / Log levels / Overview tabs; fa/en keys; type-check + unit tests green.
 
 ## 10. MCP server
 - [ ] 10.1 tools/observability-mcp: tools over the admin API, read-only unless allowed; node:test unit tests.
@@ -111,6 +111,10 @@ installable here), `full` to finish.
 
 ## Log
 
+- 2026-09-26 Slices 8-9: envelope embeds raw JSON (Utf8JsonWriter) with a correct Content-Length; Persian as UTF-8
+  in MVC and envelope; NDJSON export excluded from the envelope. The full suite caught an order-dependent digest
+  test (other tests' errors outranked its group) → digest gained a `source` filter. Admin Logs page: Events / Log
+  levels / Overview tabs; vitest 145/145, type-check clean, build OK. Integration 898/898.
 - 2026-09-26 Slices 6-7: log store (observability schema, binary COPY writer, retention), query service, AI digest,
   overview, admin controller. Found and fixed: BoundedChannelFullMode.DropWrite reports success while discarding
   (drops were uncountable) → Wait mode with TryWrite; exception and message text now scrubbed of phones/e-mails

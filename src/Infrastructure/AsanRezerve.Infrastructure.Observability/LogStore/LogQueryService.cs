@@ -115,12 +115,15 @@ public sealed class LogQueryService(ObservabilityDbContext db, LogStoreDataSourc
         }
     }
 
-    public async Task<IReadOnlyList<LevelCount>> LevelCountsAsync(DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<LevelCount>> LevelCountsAsync(
+        DateTimeOffset from, DateTimeOffset to, string? source = null, CancellationToken cancellationToken = default)
     {
         await using var command = dataSource.Value.CreateCommand(
             "SELECT level, count(*) FROM observability.log_events WHERE timestamp >= $1 AND timestamp < $2 " +
+            "AND ($3::text IS NULL OR source_context LIKE $3) " +
             "GROUP BY level ORDER BY level DESC");
         Window(command, from, to);
+        Source(command, source);
 
         var result = new List<LevelCount>();
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
@@ -131,17 +134,18 @@ public sealed class LogQueryService(ObservabilityDbContext db, LogStoreDataSourc
 
     /// <summary>Warnings and errors grouped by level, source, message template and exception type.</summary>
     public async Task<IReadOnlyList<ErrorGroup>> ErrorGroupsAsync(
-        DateTimeOffset from, DateTimeOffset to, int limit = 20, CancellationToken cancellationToken = default)
+        DateTimeOffset from, DateTimeOffset to, int limit = 20, string? source = null, CancellationToken cancellationToken = default)
     {
         await using var command = dataSource.Value.CreateCommand(
             "SELECT level, source_context, message_template, NULLIF(split_part(exception, E'\\n', 1), '') AS exception_head, " +
             "       count(*) AS n, min(timestamp), max(timestamp), " +
             "       (array_remove(array_agg(DISTINCT trace_id), NULL))[1:3] " +
             "FROM observability.log_events " +
-            "WHERE timestamp >= $1 AND timestamp < $2 AND level >= 3 " +
+            "WHERE timestamp >= $1 AND timestamp < $2 AND level >= 3 AND ($4::text IS NULL OR source_context LIKE $4) " +
             "GROUP BY 1, 2, 3, 4 ORDER BY n DESC, max(timestamp) DESC LIMIT $3");
         Window(command, from, to);
         command.Parameters.Add(new NpgsqlParameter { Value = Math.Clamp(limit, 1, 100) });
+        Source(command, source);
 
         var result = new List<ErrorGroup>();
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
@@ -245,6 +249,14 @@ public sealed class LogQueryService(ObservabilityDbContext db, LogStoreDataSourc
 
         return query;
     }
+
+    /// <summary>A source-context prefix as a LIKE pattern parameter; DBNull for "every source".</summary>
+    private static void Source(NpgsqlCommand command, string? source) =>
+        command.Parameters.Add(new NpgsqlParameter
+        {
+            NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Text,
+            Value = string.IsNullOrWhiteSpace(source) ? DBNull.Value : Escape(source.Trim()) + "%",
+        });
 
     private static string Escape(string text) =>
         text.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");

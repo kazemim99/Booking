@@ -94,15 +94,20 @@ public sealed class AdminObservabilityController(
 
     /// <summary>
     /// A window summarised for a person or an AI assistant: level counts, grouped warnings/errors with sample trace
-    /// ids, slowest routes, cache hit ratios. Default window: the last hour. <c>format=markdown</c> returns
+    /// ids, slowest routes, cache hit ratios. Default window: the last hour; <c>source</c> narrows levels and errors
+    /// to a source-context prefix (e.g. <c>AsanRezerve.ServiceCatalog</c>). <c>format=markdown</c> returns
     /// <c>{ markdown }</c> ready to paste into a model.
     /// </summary>
     [HttpGet("digest")]
     public async Task<IActionResult> Digest(
-        [FromQuery] DateTimeOffset? from, [FromQuery] DateTimeOffset? to, [FromQuery] string? format, CancellationToken cancellationToken)
+        [FromQuery] DateTimeOffset? from,
+        [FromQuery] DateTimeOffset? to,
+        [FromQuery] string? format,
+        [FromQuery] string? source,
+        CancellationToken cancellationToken)
     {
         var (start, end) = logs.Window(from, to, TimeSpan.FromHours(1));
-        var digest = await overview.DigestAsync(start, end, cancellationToken);
+        var digest = await overview.DigestAsync(start, end, source, cancellationToken);
 
         return string.Equals(format, "markdown", StringComparison.OrdinalIgnoreCase)
             ? Ok(new { markdown = SystemDigestMarkdown.Render(digest) })

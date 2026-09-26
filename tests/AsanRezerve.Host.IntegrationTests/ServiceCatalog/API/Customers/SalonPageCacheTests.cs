@@ -67,6 +67,10 @@ public class SalonPageCacheTests : ServiceCatalogIntegrationTestBase
         response.StatusCode.Should().Be(HttpStatusCode.NoContent, await response.Content.ReadAsStringAsync());
 
         (await SalonPageAsync(provider.Id.Value))["businessName"]!.Value<string>().Should().Be("سالن نهال نو");
+
+        // And it travels as UTF-8, not as \uXXXX escapes (add-observability-and-caching, D9).
+        var raw = await (await Client.GetAsync($"/api/v1/providers/{provider.Id.Value}")).Content.ReadAsStringAsync();
+        raw.Should().Contain("سالن نهال نو");
     }
 
     [Fact]

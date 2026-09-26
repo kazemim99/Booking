@@ -58,10 +58,10 @@ public sealed class SystemOverviewService(
         IReadOnlyList<ErrorGroup> errors = [];
         if (logs is not null && store is { Ready: true })
         {
-            levels = await logs.LevelCountsAsync(hourAgo, now, cancellationToken);
+            levels = await logs.LevelCountsAsync(hourAgo, now, null, cancellationToken);
             timeline = await logs.TimelineAsync(now.AddHours(-24), now, cancellationToken);
             routes = await logs.SlowestRoutesAsync(hourAgo, now, 10, cancellationToken);
-            errors = await logs.ErrorGroupsAsync(hourAgo, now, 10, cancellationToken);
+            errors = await logs.ErrorGroupsAsync(hourAgo, now, 10, null, cancellationToken);
         }
 
         var requests = routes.Sum(r => r.Requests);
@@ -76,13 +76,15 @@ public sealed class SystemOverviewService(
             levels, timeline, routes, errors, cache.Snapshot(), store, counters.Snapshot());
     }
 
-    public async Task<SystemDigest> DigestAsync(DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken = default)
+    /// <param name="source">Optional source-context prefix (e.g. <c>AsanRezerve.ServiceCatalog</c>) for levels and errors.</param>
+    public async Task<SystemDigest> DigestAsync(
+        DateTimeOffset from, DateTimeOffset to, string? source = null, CancellationToken cancellationToken = default)
     {
         var logs = services.GetRequiredService<LogQueryService>();
         return new SystemDigest(
             from, to, time.GetUtcNow(),
-            await logs.LevelCountsAsync(from, to, cancellationToken),
-            await logs.ErrorGroupsAsync(from, to, 25, cancellationToken),
+            await logs.LevelCountsAsync(from, to, source, cancellationToken),
+            await logs.ErrorGroupsAsync(from, to, 25, source, cancellationToken),
             await logs.SlowestRoutesAsync(from, to, 15, cancellationToken),
             cacheMetrics.Snapshot(),
             services.GetService<LogStoreWriter>()?.Stats);
