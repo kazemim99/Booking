@@ -131,6 +131,10 @@ installable here), `full` to finish.
 
 ## Log
 
+- 2026-09-26 CI (user asked to carry it on this PR): `Playwright keystone (UI)` had failed on every run since it was
+  added — `dotnet run` applied launchSettings.json (applicationUrl :5000) over the job's ASPNETCORE_URLS (:5050), so
+  the health wait polled a closed port. Reproduced locally with the job's env; `--no-launch-profile` → healthy on
+  :5050 in ~18 s. Workflow patched; the Playwright suite itself runs in CI for the first time with this push.
 - 2026-09-26 Slice 12 (log store at scale): log_events partitioned by UTC day (hand-written in the regenerated
   InitialObservabilityStore migration; key (timestamp, id)); LogPartitions creates yesterday..today+2 at startup and
   hourly, moves events parked in the default partition into a new day in the same transaction, drops whole days past

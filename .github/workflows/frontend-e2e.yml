@@ -78,8 +78,10 @@ jobs:
         # COMPLETION_ROADMAP Epic 1.1 — the self-call should become an in-process call.
         Services__UserManagement__BaseUrl: "http://localhost:5050/api"
         Services__ServiceCatalog__BaseUrl: "http://localhost:5050/api"
+      # --no-launch-profile: otherwise dotnet run applies Properties/launchSettings.json, whose applicationUrl
+      # (http://localhost:5000) overrides ASPNETCORE_URLS above and the health wait below polls a closed port.
       run: |
-        dotnet run --project src/Host/AsanRezerve.Host/AsanRezerve.Host.csproj --configuration Release > host.log 2>&1 &
+        dotnet run --project src/Host/AsanRezerve.Host/AsanRezerve.Host.csproj --configuration Release --no-launch-profile > host.log 2>&1 &
         echo $! > host.pid
 
     - name: Wait for host to become healthy
